@@ -64,7 +64,8 @@ class EphemerisService {
 
       for (const planetName of this.planets) {
         const body = planetName as Astronomy.Body;
-        const ecliptic = Astronomy.Ecliptic(body, date);
+        const vector = Astronomy.HelioVector(body, date);
+        const ecliptic = Astronomy.Ecliptic(vector);
 
         const { sign, degree } = this.getZodiacSign(ecliptic.elon);
 
@@ -92,7 +93,8 @@ class EphemerisService {
   ): Promise<Array<{ number: number; cusp: number; sign: string }>> {
     try {
       // Simplified house calculation using equal house system
-      const sunPos = Astronomy.Ecliptic('Sun', date);
+      const sunVector = Astronomy.HelioVector('Sun' as Astronomy.Body, date);
+      const sunPos = Astronomy.Ecliptic(sunVector);
       const ascendant = this.calculateAscendant(date, latitude, longitude);
 
       const houses = [];
@@ -117,7 +119,8 @@ class EphemerisService {
     // Simplified ascendant calculation
     // In a production system, use a more accurate algorithm
     const observer = new Astronomy.Observer(latitude, longitude, 0);
-    const equ = Astronomy.Equator('Sun', date, observer, true, true);
+    const sunVector = Astronomy.GeoVector('Sun' as Astronomy.Body, date, false);
+    const equ = Astronomy.EquatorFromVector(sunVector);
     const hor = Astronomy.Horizon(date, observer, equ.ra, equ.dec, 'normal');
     
     // Convert to ecliptic longitude (simplified)

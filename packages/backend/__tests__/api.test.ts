@@ -1,5 +1,31 @@
 import request from 'supertest';
-import app from '../src/index';
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import { requestLogger } from '../src/middleware/requestLogger';
+import { errorHandler } from '../src/middleware/errorHandler';
+import layerRoutes from '../src/routes/layer.routes';
+import ephemerisRoutes from '../src/routes/ephemeris.routes';
+
+// Create a test app without database connection
+const app = express();
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.use('/api/layers', layerRoutes);
+app.use('/api/ephemeris', ephemerisRoutes);
+
+app.use((_req, res) => {
+  res.status(404).json({ status: 'error', message: 'Route not found' });
+});
+
+app.use(errorHandler);
 
 describe('Health Check', () => {
   it('should return 200 OK', async () => {

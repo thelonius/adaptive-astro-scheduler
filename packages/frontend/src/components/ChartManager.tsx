@@ -111,10 +111,7 @@ function ChartManager({ onSelectChart }: ChartManagerProps) {
           latitude: parseFloat(formData.latitude),
           longitude: parseFloat(formData.longitude),
         },
-        planets: [],
-        houses: [],
-        aspects: [],
-      });
+      } as any);
       await fetchCharts();
       onClose();
       setFormData({
