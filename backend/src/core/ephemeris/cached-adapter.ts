@@ -6,8 +6,14 @@ import type {
   Aspect,
   House,
   PlanetaryHour,
+  PlanetsApiResponse,
+  AspectsApiResponse,
+  HousesApiResponse,
+  VoidMoonApiResponse,
+  PlanetaryHoursApiResponse,
+  RetrogradesApiResponse,
 } from '@adaptive-astro/shared/types/astrology';
-import { IEphemerisCalculator, PlanetPositions } from './interface';
+import { IEphemerisCalculator } from './interface';
 
 /**
  * Simple Cache Interface
@@ -114,9 +120,9 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     }
   }
 
-  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetPositions> {
+  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
     const cacheKey = this.getCacheKey('planets', dateTime);
-    const cached = await this.cache.get<PlanetPositions>(cacheKey);
+    const cached = await this.cache.get<PlanetsApiResponse>(cacheKey);
 
     if (cached) {
       return cached;
@@ -156,11 +162,11 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     return result;
   }
 
-  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidOfCourseMoon | null> {
+  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
     const cacheKey = this.getCacheKey('void-moon', dateTime);
-    const cached = await this.cache.get<VoidOfCourseMoon | null>(cacheKey);
+    const cached = await this.cache.get<VoidMoonApiResponse>(cacheKey);
 
-    if (cached !== undefined) {
+    if (cached) {
       return cached;
     }
 
@@ -170,9 +176,9 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     return result;
   }
 
-  async getRetrogradePlanets(dateTime: DateTime): Promise<CelestialBody[]> {
+  async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
     const cacheKey = this.getCacheKey('retrogrades', dateTime);
-    const cached = await this.cache.get<CelestialBody[]>(cacheKey);
+    const cached = await this.cache.get<RetrogradesApiResponse>(cacheKey);
 
     if (cached) {
       return cached;
@@ -184,48 +190,40 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     return result;
   }
 
-  async calculateAspects(
-    bodies: CelestialBody[],
-    orb?: number
-  ): Promise<Aspect[]> {
-    // Aspects depend on specific bodies, so we create a hash of the input
-    const bodiesHash = bodies
-      .map(b => `${b.name}:${b.longitude.toFixed(2)}`)
-      .join('|');
-    const cacheKey = `aspects:${bodiesHash}:${orb || 8}`;
-
-    const cached = await this.cache.get<Aspect[]>(cacheKey);
+  async getAspects(dateTime: DateTime, orb: number = 8): Promise<AspectsApiResponse> {
+    const cacheKey = this.getCacheKey(`aspects-orb${orb}`, dateTime);
+    const cached = await this.cache.get<AspectsApiResponse>(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const result = await this.calculator.calculateAspects(bodies, orb);
-    await this.cache.set(cacheKey, result, 86400); // Cache aspects for 24h
-
-    return result;
-  }
-
-  async calculateHouses(
-    dateTime: DateTime,
-    system?: 'placidus' | 'whole-sign' | 'equal'
-  ): Promise<{[key: number]: House}> {
-    const cacheKey = this.getCacheKey(`houses-${system || 'placidus'}`, dateTime);
-    const cached = await this.cache.get<{[key: number]: House}>(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    const result = await this.calculator.calculateHouses(dateTime, system);
+    const result = await this.calculator.getAspects(dateTime, orb);
     await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
 
     return result;
   }
 
-  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHour[]> {
+  async getHouses(
+    dateTime: DateTime,
+    system: string = 'placidus'
+  ): Promise<HousesApiResponse> {
+    const cacheKey = this.getCacheKey(`houses-${system}`, dateTime);
+    const cached = await this.cache.get<HousesApiResponse>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.calculator.getHouses(dateTime, system);
+    await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
+
+    return result;
+  }
+
+  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
     const cacheKey = this.getCacheKey('planetary-hours', dateTime);
-    const cached = await this.cache.get<PlanetaryHour[]>(cacheKey);
+    const cached = await this.cache.get<PlanetaryHoursApiResponse>(cacheKey);
 
     if (cached) {
       return cached;

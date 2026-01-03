@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import calendarRoutes from './api/routes/calendar.routes';
+import ephemerisRoutes from './api/routes/ephemeris.routes';
 
 /**
  * Create and configure Express application
@@ -25,6 +26,7 @@ export function createApp(): Express {
 
   // API Routes
   app.use('/api/calendar', calendarRoutes);
+  app.use('/api/ephemeris', ephemerisRoutes);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

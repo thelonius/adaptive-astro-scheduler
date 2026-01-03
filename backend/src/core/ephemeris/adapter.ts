@@ -8,8 +8,14 @@ import type {
   PlanetaryHour,
   LunarPhaseType,
   LunarEnergyType,
+  PlanetsApiResponse,
+  AspectsApiResponse,
+  HousesApiResponse,
+  VoidMoonApiResponse,
+  PlanetaryHoursApiResponse,
+  RetrogradesApiResponse,
 } from '@adaptive-astro/shared/types/astrology';
-import { IEphemerisCalculator, PlanetPositions } from './interface';
+import { IEphemerisCalculator } from './interface';
 import { EphemerisError } from './errors';
 
 /**
@@ -190,89 +196,90 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   }
 
   /**
-   * Get positions of all major planets
-   *
-   * NOTE: The current API doesn't provide planet positions.
-   * This is a placeholder implementation that will need to be extended
-   * when full ephemeris data becomes available.
+   * Get planetary positions from API
    */
-  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetPositions> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'Planet positions not available in current API. Requires full ephemeris integration.',
-      { requestedDate: dateTime.date }
-    );
+  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      time: this.formatTime(dateTime.date),
+      lat: dateTime.location.latitude.toString(),
+      lon: dateTime.location.longitude.toString(),
+      tz: dateTime.timezone,
+    };
+
+    return this.fetch<PlanetsApiResponse>('/api/v1/planets', params);
   }
 
   /**
-   * Detect Void of Course Moon periods
-   *
-   * NOTE: Not available in current API
+   * Get void of course moon from API
    */
-  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidOfCourseMoon | null> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'Void of Course Moon detection not available in current API',
-      { requestedDate: dateTime.date }
-    );
+  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      tz: dateTime.timezone,
+    };
+
+    return this.fetch<VoidMoonApiResponse>('/api/v1/void-moon', params);
   }
 
   /**
-   * Get list of retrograde planets
-   *
-   * NOTE: Not available in current API
+   * Get retrograde planets from API
    */
-  async getRetrogradePlanets(dateTime: DateTime): Promise<CelestialBody[]> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'Retrograde planet detection not available in current API',
-      { requestedDate: dateTime.date }
-    );
+  async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+    };
+
+    return this.fetch<RetrogradesApiResponse>('/api/v1/retrogrades', params);
   }
 
   /**
-   * Calculate aspects between celestial bodies
-   *
-   * NOTE: Not available in current API
+   * Get aspects from API
    */
-  async calculateAspects(
-    bodies: CelestialBody[],
-    orb: number = 8
-  ): Promise<Aspect[]> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'Aspect calculations not available in current API',
-      { bodiesCount: bodies.length, orb }
-    );
+  async getAspects(dateTime: DateTime, orb: number = 8): Promise<AspectsApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      time: this.formatTime(dateTime.date),
+      orb: orb.toString(),
+    };
+
+    return this.fetch<AspectsApiResponse>('/api/v1/aspects', params);
   }
 
   /**
-   * Calculate house cusps
-   *
-   * NOTE: Not available in current API
+   * Get houses from API
    */
-  async calculateHouses(
-    dateTime: DateTime,
-    system: 'placidus' | 'whole-sign' | 'equal' = 'placidus'
-  ): Promise<{[key: number]: House}> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'House calculations not available in current API',
-      { requestedDate: dateTime.date, system }
-    );
+  async getHouses(dateTime: DateTime, system: string = 'placidus'): Promise<HousesApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      time: this.formatTime(dateTime.date),
+      lat: dateTime.location.latitude.toString(),
+      lon: dateTime.location.longitude.toString(),
+      system,
+    };
+
+    return this.fetch<HousesApiResponse>('/api/v1/houses', params);
   }
 
   /**
-   * Get planetary hours
-   *
-   * NOTE: Not available in current API
+   * Get planetary hours from API
    */
-  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHour[]> {
-    throw new EphemerisError(
-      'DATA_UNAVAILABLE',
-      'Planetary hours not available in current API',
-      { requestedDate: dateTime.date }
-    );
+  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      lat: dateTime.location.latitude.toString(),
+      lon: dateTime.location.longitude.toString(),
+      tz: dateTime.timezone,
+    };
+
+    return this.fetch<PlanetaryHoursApiResponse>('/api/v1/planetary-hours', params);
+  }
+
+  /**
+   * Format time for API (HH:MM:SS)
+   */
+  private formatTime(date: Date): string {
+    return date.toTimeString().split(' ')[0];
   }
 
   /**

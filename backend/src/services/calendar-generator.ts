@@ -3,6 +3,9 @@ import type {
   CalendarDay,
   CalendarMonth,
   CelestialBody,
+  PlanetsApiResponse,
+  VoidMoonApiResponse,
+  RetrogradesApiResponse,
 } from '@adaptive-astro/shared/types';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
@@ -21,9 +24,18 @@ export class CalendarGenerator {
    */
   async generateDay(dateTime: DateTime): Promise<CalendarDay> {
     // Fetch astronomical data in parallel
-    const [lunarDay, moonPhase] = await Promise.all([
+    const [
+      lunarDay,
+      moonPhase,
+      planetsData,
+      voidMoonData,
+      retrogradesData,
+    ] = await Promise.all([
       this.ephemeris.getLunarDay(dateTime),
       this.ephemeris.getMoonPhase(dateTime),
+      this.ephemeris.getPlanetsPositions(dateTime),
+      this.ephemeris.getVoidOfCourseMoon(dateTime),
+      this.ephemeris.getRetrogradePlanets(dateTime),
     ]);
 
     const lunarDayEntity = new LunarDayEntity(lunarDay);
@@ -37,26 +49,23 @@ export class CalendarGenerator {
     // Generate basic recommendations from lunar day
     const recommendations = this.generateRecommendations(lunarDayEntity, moonPhase);
 
-    // For now, we'll use placeholders for data not available from the API
-    // These will be populated when full ephemeris data becomes available
+    // Convert API planet data to CelestialBody objects
+    const transits = this.convertPlanetApiDataToTransits(planetsData);
+
+    // Get Moon's zodiac sign from planets data
+    const moonPlanet = planetsData.planets.find(p => p.name === 'Moon');
+    const moonSign = moonPlanet ? this.getZodiacSignFromName(moonPlanet.zodiacSign) : this.getPlaceholderZodiacSign();
+
     const calendarDay: CalendarDay = {
       date: dateTime,
       lunarDay,
       lunarPhase: moonPhase,
-      moonSign: this.getPlaceholderZodiacSign(), // TODO: Get from ephemeris when available
+      moonSign,
       dayOfWeek,
       seasonalPhase,
-      transits: {
-        sun: this.getPlaceholderCelestialBody('Sun'),
-        moon: this.getPlaceholderCelestialBody('Moon'),
-        mercury: this.getPlaceholderCelestialBody('Mercury'),
-        venus: this.getPlaceholderCelestialBody('Venus'),
-        mars: this.getPlaceholderCelestialBody('Mars'),
-        jupiter: this.getPlaceholderCelestialBody('Jupiter'),
-        saturn: this.getPlaceholderCelestialBody('Saturn'),
-      },
-      voidOfCourseMoon: null, // TODO: Get from ephemeris when available
-      retrogradesActive: [], // TODO: Get from ephemeris when available
+      transits,
+      voidOfCourseMoon: voidMoonData.isVoidOfCourse ? this.convertVoidMoonApiData(voidMoonData) : null,
+      retrogradesActive: retrogradesData.retrogradePlanets.map(r => r.name) as any, // TODO: Fix type definition
       eclipseWindow: false, // TODO: Calculate when ephemeris supports it
       recommendations,
     };
@@ -283,6 +292,94 @@ export class CalendarGenerator {
       speed: 1,
       isRetrograde: false,
       distanceAU: 1,
+    };
+  }
+
+  /**
+   * Convert planets API data to transits object
+   */
+  private convertPlanetApiDataToTransits(planetsData: any): any {
+    const transits: any = {};
+
+    const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+
+    planetNames.forEach(planetName => {
+      const apiPlanet = planetsData.planets.find((p: any) =>
+        p.name.toLowerCase() === planetName.toLowerCase()
+      );
+
+      if (apiPlanet) {
+        transits[planetName] = this.convertPlanetApiDataToCelestialBody(apiPlanet);
+      } else {
+        transits[planetName] = this.getPlaceholderCelestialBody(planetName);
+      }
+    });
+
+    return transits;
+  }
+
+  /**
+   * Convert single planet API data to CelestialBody
+   */
+  private convertPlanetApiDataToCelestialBody(apiPlanet: any): CelestialBody {
+    return {
+      name: apiPlanet.name,
+      longitude: apiPlanet.longitude,
+      latitude: apiPlanet.latitude,
+      zodiacSign: this.getZodiacSignFromName(apiPlanet.zodiacSign),
+      speed: apiPlanet.speed,
+      isRetrograde: apiPlanet.isRetrograde,
+      distanceAU: apiPlanet.distanceAU,
+    };
+  }
+
+  /**
+   * Convert zodiac sign name to ZodiacSign object
+   */
+  private getZodiacSignFromName(signName: string): any {
+    const zodiacSigns: Record<string, any> = {
+      'Aries': { id: 1, name: 'Овен', element: 'Огонь', quality: 'Кардинальный', rulingPlanet: 'Mars', symbol: '♈', dateRange: [21, 19] },
+      'Taurus': { id: 2, name: 'Телец', element: 'Земля', quality: 'Фиксированный', rulingPlanet: 'Venus', symbol: '♉', dateRange: [20, 20] },
+      'Gemini': { id: 3, name: 'Близнецы', element: 'Воздух', quality: 'Мутабельный', rulingPlanet: 'Mercury', symbol: '♊', dateRange: [21, 20] },
+      'Cancer': { id: 4, name: 'Рак', element: 'Вода', quality: 'Кардинальный', rulingPlanet: 'Moon', symbol: '♋', dateRange: [21, 22] },
+      'Leo': { id: 5, name: 'Лев', element: 'Огонь', quality: 'Фиксированный', rulingPlanet: 'Sun', symbol: '♌', dateRange: [23, 22] },
+      'Virgo': { id: 6, name: 'Дева', element: 'Земля', quality: 'Мутабельный', rulingPlanet: 'Mercury', symbol: '♍', dateRange: [23, 22] },
+      'Libra': { id: 7, name: 'Весы', element: 'Воздух', quality: 'Кардинальный', rulingPlanet: 'Venus', symbol: '♎', dateRange: [23, 22] },
+      'Scorpio': { id: 8, name: 'Скорпион', element: 'Вода', quality: 'Фиксированный', rulingPlanet: 'Mars', symbol: '♏', dateRange: [23, 21] },
+      'Sagittarius': { id: 9, name: 'Стрелец', element: 'Огонь', quality: 'Мутабельный', rulingPlanet: 'Jupiter', symbol: '♐', dateRange: [22, 19] },
+      'Capricorn': { id: 10, name: 'Козерог', element: 'Земля', quality: 'Кардинальный', rulingPlanet: 'Saturn', symbol: '♑', dateRange: [20, 18] },
+      'Aquarius': { id: 11, name: 'Водолей', element: 'Воздух', quality: 'Фиксированный', rulingPlanet: 'Uranus', symbol: '♒', dateRange: [19, 18] },
+      'Pisces': { id: 12, name: 'Рыбы', element: 'Вода', quality: 'Мутабельный', rulingPlanet: 'Neptune', symbol: '♓', dateRange: [19, 20] }
+    };
+
+    return zodiacSigns[signName] || this.getPlaceholderZodiacSign();
+  }
+
+  /**
+   * Convert void moon API data to VoidOfCourseMoon
+   */
+  private convertVoidMoonApiData(voidData: any): any {
+    if (!voidData.voidPeriod) return null;
+
+    return {
+      startTime: {
+        date: new Date(voidData.voidPeriod.startTime),
+        timezone: 'UTC',
+        location: { latitude: 0, longitude: 0 }
+      },
+      endTime: {
+        date: new Date(voidData.voidPeriod.endTime),
+        timezone: 'UTC',
+        location: { latitude: 0, longitude: 0 }
+      },
+      sign: this.getZodiacSignFromName(voidData.voidPeriod.currentSign),
+      duration: voidData.voidPeriod.durationHours,
+      isActive: (at: any) => {
+        const start = new Date(voidData.voidPeriod.startTime);
+        const end = new Date(voidData.voidPeriod.endTime);
+        const checkDate = at.date || at;
+        return checkDate >= start && checkDate <= end;
+      }
     };
   }
 }

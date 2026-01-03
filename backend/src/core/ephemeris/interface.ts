@@ -6,6 +6,12 @@ import type {
   Aspect,
   House,
   PlanetaryHour,
+  PlanetsApiResponse,
+  AspectsApiResponse,
+  HousesApiResponse,
+  VoidMoonApiResponse,
+  PlanetaryHoursApiResponse,
+  RetrogradesApiResponse,
 } from '@adaptive-astro/shared/types/astrology';
 
 /**
@@ -19,9 +25,39 @@ export interface IEphemerisCalculator {
   /**
    * Get positions of all major planets for a given date/time
    * @param dateTime - Date, time, and location
-   * @returns Object with planet positions
+   * @returns Planet positions from API
    */
-  getPlanetsPositions(dateTime: DateTime): Promise<PlanetPositions>;
+  getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse>;
+
+  /**
+   * Get aspects between planets for a given date/time
+   * @param dateTime - Date and time
+   * @param orb - Orb tolerance (default: 8 degrees)
+   * @returns Planetary aspects from API
+   */
+  getAspects(dateTime: DateTime, orb?: number): Promise<AspectsApiResponse>;
+
+  /**
+   * Get astrological houses for a given date/time/location
+   * @param dateTime - Date, time, and location
+   * @param system - House system ('placidus', 'whole-sign', 'equal')
+   * @returns Houses from API
+   */
+  getHouses(dateTime: DateTime, system?: string): Promise<HousesApiResponse>;
+
+  /**
+   * Get planetary hours for a given date and location
+   * @param dateTime - Date and location
+   * @returns Planetary hours from API
+   */
+  getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse>;
+
+  /**
+   * Get retrograde planets for a given date
+   * @param dateTime - Date to check
+   * @returns Retrograde planets from API
+   */
+  getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse>;
 
   /**
    * Get current moon phase (illumination percentage)
@@ -40,45 +76,9 @@ export interface IEphemerisCalculator {
   /**
    * Detect Void of Course Moon periods
    * @param dateTime - Date and time to check
-   * @returns VoidOfCourseMoon object or null
+   * @returns VoidOfCourseMoon data from API
    */
-  getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidOfCourseMoon | null>;
-
-  /**
-   * Get list of retrograde planets
-   * @param dateTime - Date and time
-   * @returns Array of retrograde planets
-   */
-  getRetrogradePlanets(dateTime: DateTime): Promise<CelestialBody[]>;
-
-  /**
-   * Calculate aspects between celestial bodies
-   * @param bodies - Array of celestial bodies
-   * @param orb - Orb tolerance (default: 8 degrees)
-   * @returns Array of aspects
-   */
-  calculateAspects(
-    bodies: CelestialBody[],
-    orb?: number
-  ): Promise<Aspect[]>;
-
-  /**
-   * Calculate house cusps for given birth data
-   * @param dateTime - Birth date, time, and location
-   * @param system - House system ('placidus', 'whole-sign', 'equal', etc.)
-   * @returns House cusps
-   */
-  calculateHouses(
-    dateTime: DateTime,
-    system?: 'placidus' | 'whole-sign' | 'equal'
-  ): Promise<{[key: number]: House}>;
-
-  /**
-   * Get planetary hours for a given date and location
-   * @param dateTime - Date and location
-   * @returns Array of planetary hours
-   */
-  getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHour[]>;
+  getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse>;
 }
 
 /**
