@@ -14,6 +14,7 @@
 - [Getting Started](#getting-started)
 - [Development Roadmap](#development-roadmap)
 - [Tech Stack](#tech-stack)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -300,13 +301,23 @@ console.log(bestDays); // ✨ Optimized schedule!
 
 ## 📖 Documentation
 
-See `/docs` folder:
+### Quick Start
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Essential commands and tips
+- **[GETTING_STARTED.md](docs/GETTING_STARTED.md)** - Setup and development guide
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Scaffolding overview
 
-- `CONCEPT.md` - Full conceptual overview
-- `ARCHITECTURE.md` - Technical architecture
-- `LLM_PIPELINE.md` - LLM rule generation system
-- `GEO_OPTIMIZATION.md` - Geolocation features
-- `API.md` - REST API documentation
+### Core Documentation
+- **[CONCEPT.md](CONCEPT.md)** - Full conceptual overview (Russian)
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Technical architecture
+- **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - 16-week development plan
+
+### Integration Guides
+- **[EPHEMERIS_INTEGRATION.md](docs/EPHEMERIS_INTEGRATION.md)** - Ephemeris calculator integration
+- **[EXTERNAL_CALENDAR_API.md](docs/EXTERNAL_CALENDAR_API.md)** - Public API specification
+
+### Coming Soon
+- `LLM_PIPELINE.md` - LLM rule generation system (Phase 2)
+- `GEO_OPTIMIZATION.md` - Geolocation features (Phase 4)
 - `DEPLOYMENT.md` - Production setup guide
 
 ---
