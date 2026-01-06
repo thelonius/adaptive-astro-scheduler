@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Card, 
-  CardBody, 
+import {
+  Box,
+  Card,
+  CardBody,
   CardHeader,
-  Heading, 
-  Text, 
-  VStack, 
-  HStack, 
-  Badge, 
+  Heading,
+  Text,
+  VStack,
+  HStack,
+  Badge,
   Spinner,
   Grid,
   GridItem,
@@ -60,7 +60,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
     'linear(to-br, blue.50, purple.50, pink.50)',
     'linear(to-br, blue.900, purple.900, pink.900)'
   );
-  
+
   const cardBg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.700', 'gray.200');
 
@@ -75,17 +75,17 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
     try {
       setLoading(true);
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Fetch lunar day data
       const lunarDayResponse = await fetch(
         `/api/ephemeris/lunar-day?date=${today}&timezone=${timezone}`
       );
-      
+
       // Fetch moon phase
       const moonPhaseResponse = await fetch(
         `/api/ephemeris/moon-phase?date=${today}&timezone=${timezone}`
       );
-      
+
       // Fetch void moon
       const voidMoonResponse = await fetch(
         `/api/ephemeris/void-moon?date=${today}&timezone=${timezone}`
@@ -102,7 +102,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
       // Calculate moon phase info from illumination
       const illumination = moonPhaseData.moonPhase || 0;
       const age = (illumination * 29.53); // Approximate age in days
-      
+
       let phaseName = 'New';
       if (illumination < 0.125) phaseName = 'New';
       else if (illumination < 0.25) phaseName = 'Waxing Crescent';
@@ -118,7 +118,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
       const dayChangeHour = 6; // Lunar day typically changes around sunrise
       const dayChange = new Date(now);
       dayChange.setHours(dayChangeHour, 0, 0, 0);
-      
+
       const nextDayChange = new Date(dayChange);
       nextDayChange.setDate(dayChange.getDate() + 1);
 
@@ -133,7 +133,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
         dayChangeTime: dayChange.toLocaleTimeString(),
         nextDayChangeTime: nextDayChange.toLocaleTimeString()
       });
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch lunar data');
     } finally {
@@ -196,8 +196,8 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <MotionCard 
-        bg={cardBg} 
+      <MotionCard
+        bg={cardBg}
         shadow="xl"
         border="1px solid"
         borderColor="purple.200"
@@ -205,7 +205,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
         overflow="hidden"
       >
         <Box bgGradient={bgGradient} p={1} />
-        
+
         <CardHeader pb={2}>
           <HStack justify="space-between" align="center">
             <HStack>
@@ -222,7 +222,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
 
         <CardBody pt={0}>
           <VStack spacing={6} align="stretch">
-            
+
             {/* Current Lunar Day */}
             <MotionBox
               initial={{ scale: 0.9 }}
@@ -234,8 +234,8 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                 <Heading size="xl" color="purple.600" _dark={{ color: 'purple.300' }} mb={2}>
                   Lunar Day {lunarData.lunarDay.number}
                 </Heading>
-                <Badge 
-                  colorScheme={getLunarEnergyColor(lunarData.lunarDay.energy)} 
+                <Badge
+                  colorScheme={getLunarEnergyColor(lunarData.lunarDay.energy)}
                   size="lg"
                   px={3}
                   py={1}
@@ -262,14 +262,14 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                   </CardBody>
                 </Card>
               </GridItem>
-              
+
               <GridItem>
                 <Card bg="yellow.50" _dark={{ bg: 'yellow.900' }} variant="filled">
                   <CardBody>
                     <VStack spacing={3}>
                       <Text fontWeight="bold">Illumination</Text>
-                      <Progress 
-                        value={lunarData.moonPhase.illumination * 100} 
+                      <Progress
+                        value={lunarData.moonPhase.illumination * 100}
                         colorScheme="yellow"
                         size="lg"
                         w="full"
@@ -301,8 +301,8 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
             </Card>
 
             {/* Void of Course Moon */}
-            <Card 
-              bg={lunarData.voidMoon.isVoid ? "red.50" : "gray.50"} 
+            <Card
+              bg={lunarData.voidMoon.isVoid ? "red.50" : "gray.50"}
               _dark={{ bg: lunarData.voidMoon.isVoid ? "red.900" : "gray.800" }}
               variant="filled"
             >
@@ -312,7 +312,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                     <Text fontWeight="bold">
                       🌘 Void of Course Moon
                     </Text>
-                    <Badge 
+                    <Badge
                       colorScheme={lunarData.voidMoon.isVoid ? "red" : "green"}
                       variant="solid"
                     >
@@ -322,7 +322,15 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                   {lunarData.voidMoon.isVoid && (
                     <VStack align="end" spacing={1}>
                       <Text fontSize="xs" color={textColor}>
-                        Until: {lunarData.voidMoon.voidEnd}
+                        Until: {lunarData.voidMoon.voidEnd
+                          ? new Date(lunarData.voidMoon.voidEnd).toLocaleString('ru-RU', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              timeZone: timezone
+                            })
+                          : 'N/A'}
                       </Text>
                       <Text fontSize="xs" color={textColor}>
                         Next: {lunarData.voidMoon.nextAspect}
@@ -340,7 +348,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                   <Heading size="sm" color="indigo.600" _dark={{ color: 'indigo.300' }}>
                     Day Characteristics
                   </Heading>
-                  
+
                   <VStack align="stretch" spacing={3}>
                     <Box>
                       <Text fontWeight="bold" color="green.600" _dark={{ color: 'green.300' }} mb={1}>
@@ -350,7 +358,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                         {lunarData.lunarDay.characteristics?.spiritual || "Focus on inner reflection and meditation"}
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text fontWeight="bold" color="blue.600" _dark={{ color: 'blue.300' }} mb={1}>
                         🎯 Practical Activities:
@@ -359,7 +367,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                         {lunarData.lunarDay.characteristics?.practical || "Good for planning and organizing tasks"}
                       </Text>
                     </Box>
-                    
+
                     <Box>
                       <Text fontWeight="bold" color="red.600" _dark={{ color: 'red.300' }} mb={1}>
                         ⚠️ Best to Avoid:
