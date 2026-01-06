@@ -3,6 +3,7 @@ import cors from 'cors';
 import calendarRoutes from './api/routes/calendar.routes';
 import ephemerisRoutes from './api/routes/ephemeris.routes';
 import natalChartRoutes from './api/routes/natal-chart.routes';
+import analyticsRoutes from './api/routes/analytics.routes';
 
 /**
  * Create and configure Express application
@@ -34,6 +35,7 @@ export function createApp(): Express {
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/ephemeris', ephemerisRoutes);
   app.use('/api/natal-chart', natalChartRoutes);
+  app.use('/api/analytics', analyticsRoutes);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

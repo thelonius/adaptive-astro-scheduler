@@ -10,14 +10,34 @@ const natalChartController = new NatalChartController();
  * All routes return natal chart data in JSON format
  */
 
-// POST /api/natal-chart/calculate - Calculate natal chart
+// Calculation endpoints
 router.post('/calculate', async (req, res) => {
   await natalChartController.calculateNatalChart(req, res);
 });
 
-// GET /api/natal-chart/quick - Quick calculation using query params
 router.get('/quick', async (req, res) => {
   await natalChartController.quickCalculate(req, res);
+});
+
+// Persistence endpoints
+router.post('/save', async (req, res) => {
+  await natalChartController.saveNatalChart(req, res);
+});
+
+router.get('/list/guest', async (req, res) => {
+  await natalChartController.listGuestCharts(req, res);
+});
+
+router.get('/:id', async (req, res) => {
+  await natalChartController.getNatalChart(req, res);
+});
+
+router.put('/:id', async (req, res) => {
+  await natalChartController.updateNatalChart(req, res);
+});
+
+router.delete('/:id', async (req, res) => {
+  await natalChartController.deleteNatalChart(req, res);
 });
 
 export default router;
