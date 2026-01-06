@@ -33,18 +33,33 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
     // Use date to generate consistent but varying positions
     const dayOfYear = this.getDayOfYear(dateTime.date);
+    const year = dateTime.date.getFullYear();
+
+    // Add realistic base offsets for each planet (approximate positions for 2026)
+    const baseOffsets = {
+      Sun: 0,
+      Moon: 0,
+      Mercury: 45,
+      Venus: 80,
+      Mars: 120,
+      Jupiter: 95,
+      Saturn: 340,
+      Uranus: 55,
+      Neptune: 355,
+      Pluto: 300,
+    };
 
     const planets: CelestialBody[] = [
-      this.createMockPlanet('Sun', dayOfYear * 0.986, 1.0, false),
-      this.createMockPlanet('Moon', dayOfYear * 13.176, 27.3, false),
-      this.createMockPlanet('Mercury', dayOfYear * 4.09, 88, dayOfYear % 117 < 20),
-      this.createMockPlanet('Venus', dayOfYear * 1.602, 225, dayOfYear % 584 < 40),
-      this.createMockPlanet('Mars', dayOfYear * 0.524, 687, dayOfYear % 780 < 72),
-      this.createMockPlanet('Jupiter', dayOfYear * 0.083, 4333, dayOfYear % 399 < 121),
-      this.createMockPlanet('Saturn', dayOfYear * 0.033, 10759, dayOfYear % 378 < 138),
-      this.createMockPlanet('Uranus', dayOfYear * 0.012, 30687, dayOfYear % 370 < 151),
-      this.createMockPlanet('Neptune', dayOfYear * 0.006, 60190, dayOfYear % 367 < 158),
-      this.createMockPlanet('Pluto', dayOfYear * 0.004, 90560, dayOfYear % 366 < 182),
+      this.createMockPlanet('Sun', baseOffsets.Sun + dayOfYear * 0.986, 1.0, false),
+      this.createMockPlanet('Moon', baseOffsets.Moon + dayOfYear * 13.176, 27.3, false),
+      this.createMockPlanet('Mercury', baseOffsets.Mercury + dayOfYear * 4.09, 88, dayOfYear % 117 < 20),
+      this.createMockPlanet('Venus', baseOffsets.Venus + dayOfYear * 1.602, 225, dayOfYear % 584 < 40),
+      this.createMockPlanet('Mars', baseOffsets.Mars + dayOfYear * 0.524, 687, dayOfYear % 780 < 72),
+      this.createMockPlanet('Jupiter', baseOffsets.Jupiter + dayOfYear * 0.083, 4333, dayOfYear % 399 < 121),
+      this.createMockPlanet('Saturn', baseOffsets.Saturn + dayOfYear * 0.033, 10759, dayOfYear % 378 < 138),
+      this.createMockPlanet('Uranus', baseOffsets.Uranus + dayOfYear * 0.012, 30687, dayOfYear % 370 < 151),
+      this.createMockPlanet('Neptune', baseOffsets.Neptune + dayOfYear * 0.006, 60190, dayOfYear % 367 < 158),
+      this.createMockPlanet('Pluto', baseOffsets.Pluto + dayOfYear * 0.004, 90560, dayOfYear % 366 < 182),
     ];
 
     return {
