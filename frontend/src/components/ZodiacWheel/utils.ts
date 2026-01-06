@@ -60,34 +60,43 @@ export function calculateAspectLines(
   colorScheme: ColorScheme
 ): AspectLine[] {
   console.log('Calculating aspect lines for:', aspects.length, 'aspects');
-  
-  return aspects
-    .filter(aspect => aspect.orb <= 8 && aspect.type) // Show aspects within 8 degrees orb
+  console.log('Available planet positions:', planetPositions.map(p => p.planet.name));
+  console.log('First aspect example:', aspects[0]);
+
+  const filteredAspects = aspects.filter(aspect => aspect.orb <= 8); // Temporarily ignore type requirement
+  console.log('Aspects after orb/type filter:', filteredAspects.length);
+
+  return filteredAspects
     .map(aspect => {
+      console.log(`Looking for planets: "${aspect.body1.name}" and "${aspect.body2.name}"`);
       const from = planetPositions.find(p => p.planet.name === aspect.body1.name);
       const to = planetPositions.find(p => p.planet.name === aspect.body2.name);
 
-      if (!from || !to) {
-        console.warn('Planet not found for aspect:', aspect);
+      if (!from) {
+        console.warn('Planet not found for aspect body1:', aspect.body1.name, 'Available:', planetPositions.map(p => p.planet.name));
         return null;
       }
 
-      if (!aspect.type) {
-        console.warn('Aspect missing type:', aspect);
+      if (!to) {
+        console.warn('Planet not found for aspect body2:', aspect.body2.name, 'Available:', planetPositions.map(p => p.planet.name));
         return null;
       }
+
+      // Handle missing aspect type
+      const aspectType = aspect.type || 'conjunction'; // Default to conjunction
+      const aspectColor = colorScheme.aspects[aspectType] || colorScheme.aspects.conjunction || '#888';
 
       // Calculate strength based on orb (closer = stronger)
       const maxOrb = 8; // Default max orb
       const strength = 1 - Math.min(aspect.orb / maxOrb, 1);
 
-      console.log(`Creating aspect line: ${aspect.body1.name} ${aspect.type} ${aspect.body2.name} (orb: ${aspect.orb}°)`);
+      console.log(`✓ Creating aspect line: ${aspect.body1.name} ${aspectType} ${aspect.body2.name} (orb: ${aspect.orb}°)`);
 
       return {
-        aspect,
+        aspect: { ...aspect, type: aspectType }, // Ensure type is set
         from,
         to,
-        color: colorScheme.aspects[aspect.type] || '#888',
+        color: aspectColor,
         strength,
       };
     })

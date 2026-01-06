@@ -87,7 +87,9 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
 
         for (const aspectType of aspectTypes) {
           const diff = Math.abs(angle - aspectType.targetAngle);
+          console.log(`Checking ${planet1.name}-${planet2.name}: angle=${angle.toFixed(1)}°, target=${aspectType.targetAngle}°, diff=${diff.toFixed(1)}°, orb=${orb}°`);
           if (diff <= orb) {
+            console.log(`✅ Found ${aspectType.type} aspect: ${planet1.name} ${aspectType.type} ${planet2.name}`);
             aspects.push({
               planet1: planet1.name,
               planet2: planet2.name,
@@ -202,6 +204,59 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
     const lunarCycle = 29.53;
     const phase = (dayOfYear % lunarCycle) / lunarCycle;
     return phase;
+  }
+
+  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
+    const dayOfYear = this.getDayOfYear(dateTime.date);
+    const isVoid = dayOfYear % 3 === 0; // Mock: void every 3rd day
+    
+    return {
+      date: dateTime.date.toISOString(),
+      isVoid,
+      voidStart: isVoid ? new Date(dateTime.date.getTime() - 2 * 60 * 60 * 1000).toISOString() : undefined,
+      voidEnd: isVoid ? new Date(dateTime.date.getTime() + 4 * 60 * 60 * 1000).toISOString() : undefined,
+      nextAspect: isVoid ? 'Moon sextile Mercury' : undefined,
+    };
+  }
+
+  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
+    const hours = [];
+    const planets = ['Sun', 'Venus', 'Mercury', 'Moon', 'Saturn', 'Jupiter', 'Mars'];
+    const startHour = 6; // 6 AM start
+    
+    for (let i = 0; i < 24; i++) {
+      const hour = new Date(dateTime.date);
+      hour.setHours(startHour + i, 0, 0, 0);
+      
+      hours.push({
+        hour: i + 1,
+        planet: planets[i % 7] as any,
+        startTime: hour.toISOString(),
+        endTime: new Date(hour.getTime() + 60 * 60 * 1000).toISOString(),
+      });
+    }
+    
+    return {
+      date: dateTime.date.toISOString(),
+      hours,
+    };
+  }
+
+  async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
+    const dayOfYear = this.getDayOfYear(dateTime.date);
+    const retrogrades = [];
+    
+    // Mock retrograde patterns
+    if (dayOfYear % 117 < 20) retrogrades.push('Mercury');
+    if (dayOfYear % 584 < 40) retrogrades.push('Venus');
+    if (dayOfYear % 780 < 72) retrogrades.push('Mars');
+    if (dayOfYear % 399 < 121) retrogrades.push('Jupiter');
+    if (dayOfYear % 378 < 138) retrogrades.push('Saturn');
+    
+    return {
+      date: dateTime.date.toISOString(),
+      retrogrades: retrogrades as any[],
+    };
   }
 
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {

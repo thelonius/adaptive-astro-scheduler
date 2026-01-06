@@ -10,13 +10,13 @@ interface ZodiacSignTooltipProps {
   isVisible: boolean;
 }
 
-export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({ 
-  signName, 
-  position, 
-  isVisible 
+export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
+  signName,
+  position,
+  isVisible
 }) => {
   const zodiacInfo = getDetailedZodiacInfo(signName);
-  
+
   if (!isVisible || !zodiacInfo) return null;
 
   return (
@@ -82,7 +82,7 @@ export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
                 <Text fontSize="xs" color="gray.400" fontWeight="bold">
                   ELEMENT
                 </Text>
-                <Badge 
+                <Badge
                   colorScheme={
                     zodiacInfo.element === 'Fire' ? 'red' :
                     zodiacInfo.element === 'Earth' ? 'green' :
@@ -94,26 +94,26 @@ export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
                   {zodiacInfo.element}
                 </Badge>
               </VStack>
-              
+
               <VStack spacing={1} align="center">
                 <Text fontSize="xs" color="gray.400" fontWeight="bold">
                   QUALITY
                 </Text>
-                <Badge 
-                  colorScheme="purple" 
+                <Badge
+                  colorScheme="purple"
                   variant="solid"
                   fontSize="xs"
                 >
                   {zodiacInfo.quality}
                 </Badge>
               </VStack>
-              
+
               <VStack spacing={1} align="center">
                 <Text fontSize="xs" color="gray.400" fontWeight="bold">
                   RULER
                 </Text>
-                <Badge 
-                  colorScheme="orange" 
+                <Badge
+                  colorScheme="orange"
                   variant="solid"
                   fontSize="xs"
                 >
@@ -130,9 +130,9 @@ export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
               <Wrap spacing={1}>
                 {zodiacInfo.keywords.map((keyword, i) => (
                   <WrapItem key={i}>
-                    <Badge 
-                      size="sm" 
-                      variant="outline" 
+                    <Badge
+                      size="sm"
+                      variant="outline"
                       colorScheme="cyan"
                       fontSize="xs"
                     >
@@ -155,7 +155,7 @@ export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
                   </Text>
                 ))}
               </VStack>
-              
+
               <VStack align="stretch" spacing={1} flex={1}>
                 <Text fontSize="xs" color="orange.300" fontWeight="bold">
                   CHALLENGES
@@ -176,7 +176,7 @@ export const ZodiacSignTooltip: React.FC<ZodiacSignTooltipProps> = ({
                   {zodiacInfo.bodyParts.join(', ')}
                 </Text>
               </VStack>
-              
+
               <VStack align="end" spacing={0}>
                 <Text color="gray.400" fontWeight="bold">Colors:</Text>
                 <Text color="gray.300">

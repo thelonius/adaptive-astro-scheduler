@@ -27,6 +27,7 @@ import {
   useColorMode,
 } from '@chakra-ui/react';
 import { ZodiacWheel } from '../components/ZodiacWheel';
+import { LunarSection } from '../components/LunarSection';
 import { themes, type ThemeName } from '../components/ZodiacWheel/themes';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
 
@@ -35,7 +36,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
   // Configuration state
   const [size, setSize] = useState(600);
-  const [showHouses, setShowHouses] = useState(false);
+  const [showHouses, setShowHouses] = useState(true);
   const [showAspects, setShowAspects] = useState(true);
   const [showDegrees, setShowDegrees] = useState(true);
   const [showRetrogrades, setShowRetrogrades] = useState(true);
@@ -165,7 +166,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                         Show Aspects
                         {currentData && (
                           <Text fontSize="xs" color="gray.500" mt={1}>
-                            {currentData.aspects?.filter(a => a.orb <= 8).length || 0 > 0 
+                            {currentData.aspects?.filter(a => a.orb <= 8).length || 0 > 0
                               ? `${currentData.aspects?.filter(a => a.orb <= 8).length || 0} available`
                               : 'No aspects currently'}
                           </Text>
@@ -203,7 +204,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                         Show Retrogrades
                         {currentData && (
                           <Text fontSize="xs" color="gray.500" mt={1}>
-                            {currentData.planets?.filter(p => p.isRetrograde).length || 0 > 0 
+                            {currentData.planets?.filter(p => p.isRetrograde).length || 0 > 0
                               ? `${currentData.planets?.filter(p => p.isRetrograde).length || 0} retrograde planets`
                               : 'No retrogrades currently'}
                           </Text>
@@ -353,6 +354,13 @@ export const ZodiacWheelDemo: React.FC = () => {
             </VStack>
           </GridItem>
         </Grid>
+
+        {/* Lunar Section */}
+        <LunarSection
+          latitude={latitude}
+          longitude={longitude}
+          timezone={timezone}
+        />
 
         {/* Feature Highlights */}
         <Card>

@@ -152,14 +152,14 @@ export const ZodiacCircle: React.FC<ZodiacCircleProps> = ({ size, colorScheme, s
             width={size * 0.05}
             height={size * 0.05}
           >
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
               height: '100%'
             }}>
-              <ZodiacIcon 
+              <ZodiacIcon
                 sign={sign.name}
                 size={size * 0.035}
                 color={colorScheme.zodiacText}

@@ -1029,7 +1029,7 @@ export const ZodiacWheelTest: React.FC = () => {
                                 </Badge>
                               )}
                             </HStack>
-                            <ZodiacIcon 
+                            <ZodiacIcon
                               sign={planet.zodiacSign.name}
                               size={16}
                               color="gray.600"

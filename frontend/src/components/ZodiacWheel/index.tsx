@@ -177,7 +177,15 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
 
         {/* Aspect lines */}
         {config.showAspects && aspectLines.length > 0 && (
-          <AspectLines lines={aspectLines} size={config.size} />
+          <>
+            {console.log('Rendering AspectLines with', aspectLines.length, 'lines')}
+            <AspectLines lines={aspectLines} size={config.size} />
+          </>
+        )}
+        {config.showAspects && aspectLines.length === 0 && (
+          <>
+            {console.log('AspectLines: showAspects=true but no aspect lines calculated')}
+          </>
         )}
 
         {/* Planets */}
