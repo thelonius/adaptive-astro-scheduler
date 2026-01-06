@@ -121,3 +121,101 @@ export interface PlanetaryHour {
   startTime: DateTime;
   endTime: DateTime;
 }
+
+// API Response Types
+// These match the actual API responses from the ephemeris service
+
+export interface PlanetsApiResponse {
+  date: string;               // ISO string
+  location: {
+    latitude: number;
+    longitude: number;
+    timezone: string;
+  };
+  planets: PlanetApiData[];
+}
+
+export interface PlanetApiData {
+  name: string;
+  longitude: number;          // 0-360 degrees
+  latitude: number;
+  zodiacSign: string;
+  degree: number;             // Degree within sign (0-30)
+  speed: number;              // Degrees per day
+  isRetrograde: boolean;
+  distanceAU: number;
+}
+
+export interface AspectsApiResponse {
+  date: string;
+  aspects: AspectApiData[];
+}
+
+export interface AspectApiData {
+  planet1: string;
+  planet2: string;
+  type: AspectType;
+  angle: number;              // Actual angle
+  orb: number;                // Distance from exact
+  isApplying: boolean;        // Moving toward exact or separating
+  interpretation: string;
+}
+
+export interface HousesApiResponse {
+  date: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  system: string;             // "placidus", "whole-sign", "equal"
+  houses: HouseApiData[];
+}
+
+export interface HouseApiData {
+  number: number;             // 1-12
+  cusp: number;               // Degrees
+  zodiacSign: string;
+  degree: number;
+}
+
+export interface VoidMoonApiResponse {
+  date: string;
+  isVoidOfCourse: boolean;
+  voidPeriod?: {
+    startTime: string;
+    endTime: string;
+    currentSign: string;
+    nextSign: string;
+    durationHours: number;
+  };
+  nextVoid?: {
+    startTime: string;
+    sign: string;
+  };
+}
+
+export interface PlanetaryHoursApiResponse {
+  date: string;
+  sunrise: string;            // Time string
+  sunset: string;             // Time string
+  hours: PlanetaryHourApiData[];
+}
+
+export interface PlanetaryHourApiData {
+  hour: number;               // 0-23
+  planet: string;
+  startTime: string;          // Time string
+  endTime: string;            // Time string
+}
+
+export interface RetrogradesApiResponse {
+  date: string;
+  retrogradePlanets: RetrogradeApiData[];
+}
+
+export interface RetrogradeApiData {
+  name: string;
+  retrogradeStart: string;    // Date string
+  retrogradeEnd: string;      // Date string
+  currentSign: string;
+}

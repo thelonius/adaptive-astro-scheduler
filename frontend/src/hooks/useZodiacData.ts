@@ -1,0 +1,201 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import axios from 'axios';
+import type { CelestialBody, Aspect, House, PlanetApiData, AspectApiData, HouseApiData } from '@adaptive-astro/shared/types';
+import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import { transformPlanetData, transformAspectData, transformHouseData } from '../utils/apiTransform';
+
+interface UseZodiacDataOptions {
+  refreshInterval?: number;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  includeHouses?: boolean;
+  aspectOrb?: number;
+  enabled?: boolean;
+}
+
+interface UseZodiacDataResult {
+  data: ZodiacWheelData | null;
+  loading: boolean;
+  error: Error | null;
+  refresh: () => Promise<void>;
+  lastUpdate: Date | null;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacDataResult {
+  const {
+    refreshInterval = 1 * 60 * 1000, // 1 minute
+    latitude = 55.7558, // Moscow default
+    longitude = 37.6173,
+    timezone = 'Europe/Moscow',
+    includeHouses = false,
+    aspectOrb = 8,
+    enabled = true,
+  } = options;
+
+  const [data, setData] = useState<ZodiacWheelData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!enabled) return;
+
+    // Cancel previous request if still pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().split(' ')[0];
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch planets and aspects in parallel
+      const [planetsResponse, aspectsResponse, housesResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/ephemeris/planets`, {
+          params: { date, time, latitude, longitude, timezone },
+          signal: abortControllerRef.current.signal,
+        }),
+        axios.get(`${API_BASE_URL}/api/ephemeris/aspects`, {
+          params: { date, time, orb: aspectOrb },
+          signal: abortControllerRef.current.signal,
+        }),
+        includeHouses
+          ? axios.get(`${API_BASE_URL}/api/ephemeris/houses`, {
+              params: { date, time, latitude, longitude, system: 'placidus' },
+              signal: abortControllerRef.current.signal,
+            })
+          : Promise.resolve(null),
+      ]);
+
+      // Transform API data to frontend types
+      const apiPlanets = planetsResponse.data.planets as PlanetApiData[];
+      const apiAspects = (aspectsResponse.data.aspects as AspectApiData[]) || [];
+      const apiHouses = housesResponse?.data.houses as HouseApiData[] | undefined;
+
+      // Transform planets
+      const planets = apiPlanets.map(transformPlanetData);
+
+      // Create a map for quick planet lookup for aspects
+      const planetsMap = new Map<string, CelestialBody>();
+      planets.forEach(planet => planetsMap.set(planet.name, planet));
+
+      // Transform aspects
+      const aspects = apiAspects
+        .map(apiAspect => transformAspectData(apiAspect, planetsMap))
+        .filter((aspect): aspect is Aspect => aspect !== null);
+
+      // Transform houses
+      const houses = apiHouses?.map(transformHouseData);
+
+      // Validate that we got valid data
+      if (!Array.isArray(planets)) {
+        throw new Error('Invalid planets data received from API');
+      }
+      if (!Array.isArray(aspects)) {
+        throw new Error('Invalid aspects data received from API');
+      }
+
+      setData({
+        planets,
+        aspects,
+        houses,
+        timestamp: now,
+      });
+      setLastUpdate(now);
+    } catch (err) {
+      if (axios.isCancel(err)) {
+        // Request was cancelled, ignore
+        return;
+      }
+      const error = err instanceof Error ? err : new Error('Failed to fetch zodiac data');
+      setError(error);
+      console.error('Error fetching zodiac data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [enabled, latitude, longitude, timezone, aspectOrb, includeHouses]);
+
+  const refresh = useCallback(async () => {
+    await fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
+    // Initial fetch
+    fetchData();
+
+    // Set up interval for updates
+    if (refreshInterval > 0) {
+      intervalRef.current = setInterval(fetchData, refreshInterval);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [enabled, refreshInterval, fetchData]);
+
+  return {
+    data,
+    loading,
+    error,
+    refresh,
+    lastUpdate,
+  };
+}
+
+// Hook for adaptive refresh rates based on celestial body speed
+export function useAdaptiveZodiacData(options: UseZodiacDataOptions = {}): UseZodiacDataResult {
+  const [refreshInterval, setRefreshInterval] = useState(1 * 60 * 1000);
+
+  const result = useZodiacData({
+    ...options,
+    refreshInterval,
+  });
+
+  useEffect(() => {
+    if (!result.data?.planets) return;
+
+    // Calculate optimal refresh interval based on fastest moving planet
+    const speeds = result.data.planets.map(p => Math.abs(p.speed));
+    const maxSpeed = Math.max(...speeds);
+
+    // Moon moves ~13°/day, Mercury ~1-2°/day, outer planets <0.1°/day
+    // Refresh every minute for all bodies to reduce load
+    let interval: number;
+
+    if (maxSpeed > 10) {
+      // Fast (Moon): every 1 minute
+      interval = 1 * 60 * 1000;
+    } else if (maxSpeed > 1) {
+      // Medium (inner planets): every 1 minute
+      interval = 1 * 60 * 1000;
+    } else {
+      // Slow (outer planets): every 1 minute
+      interval = 1 * 60 * 1000;
+    }
+
+    setRefreshInterval(interval);
+  }, [result.data?.planets]);
+
+  return result;
+}

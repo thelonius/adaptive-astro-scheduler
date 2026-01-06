@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import calendarRoutes from './api/routes/calendar.routes';
 import ephemerisRoutes from './api/routes/ephemeris.routes';
+import natalChartRoutes from './api/routes/natal-chart.routes';
 
 /**
  * Create and configure Express application
@@ -10,7 +11,12 @@ export function createApp(): Express {
   const app = express();
 
   // Middleware
-  app.use(cors());
+  app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -27,6 +33,7 @@ export function createApp(): Express {
   // API Routes
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/ephemeris', ephemerisRoutes);
+  app.use('/api/natal-chart', natalChartRoutes);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

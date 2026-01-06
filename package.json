@@ -8,11 +8,15 @@
     "shared"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
+    "dev": "./dev-start.sh",
+    "dev:backend": "cd backend && PORT=3001 npm run dev",
+    "dev:frontend": "cd frontend && npm run dev", 
+    "dev:parallel": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
-    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules shared/node_modules"
+    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules shared/node_modules",
+    "setup": "npm install && npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

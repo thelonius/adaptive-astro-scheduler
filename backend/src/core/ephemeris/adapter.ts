@@ -196,18 +196,38 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   }
 
   /**
+   * Calculate zodiac sign from ecliptic longitude
+   */
+  private getZodiacSign(longitude: number): string {
+    const signs = [
+      'Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
+      'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'
+    ];
+    const index = Math.floor(longitude / 30);
+    return signs[index % 12];
+  }
+
+  /**
    * Get planetary positions from API
    */
   async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
     const params = {
       date: this.formatDate(dateTime.date),
       time: this.formatTime(dateTime.date),
-      lat: dateTime.location.latitude.toString(),
-      lon: dateTime.location.longitude.toString(),
-      tz: dateTime.timezone,
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
+      timezone: dateTime.timezone,
     };
 
-    return this.fetch<PlanetsApiResponse>('/api/v1/planets', params);
+    const response = await this.fetch<PlanetsApiResponse>('/api/v1/ephemeris/planets', params);
+
+    // Ensure all planets have zodiacSign calculated from longitude
+    response.planets = response.planets.map(planet => ({
+      ...planet,
+      zodiacSign: planet.zodiacSign || this.getZodiacSign(planet.longitude),
+    }));
+
+    return response;
   }
 
   /**
@@ -243,7 +263,13 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       orb: orb.toString(),
     };
 
-    return this.fetch<AspectsApiResponse>('/api/v1/aspects', params);
+    const rawResponse = await this.fetch<any[]>('/api/v1/ephemeris/aspects', params);
+
+    // Transform array response to AspectsApiResponse format
+    return {
+      date: params.date,
+      aspects: rawResponse,
+    };
   }
 
   /**
@@ -253,12 +279,28 @@ export class EphemerisAdapter implements IEphemerisCalculator {
     const params = {
       date: this.formatDate(dateTime.date),
       time: this.formatTime(dateTime.date),
-      lat: dateTime.location.latitude.toString(),
-      lon: dateTime.location.longitude.toString(),
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
       system,
     };
 
-    return this.fetch<HousesApiResponse>('/api/v1/houses', params);
+    const rawResponse = await this.fetch<any>('/api/v1/ephemeris/houses', params);
+
+    // Transform the object response to array format
+    const housesArray = Object.values(rawResponse).map((house: any) => ({
+      number: house.number,
+      cusp: house.cusp_longitude,
+      zodiacSign: house.cusp_sign || this.getZodiacSign(house.cusp_longitude),
+    }));
+
+    return {
+      date: params.date,
+      location: {
+        latitude: parseFloat(params.latitude),
+        longitude: parseFloat(params.longitude),
+      },
+      houses: housesArray,
+    };
   }
 
   /**
