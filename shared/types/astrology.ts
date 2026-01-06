@@ -219,3 +219,48 @@ export interface RetrogradeApiData {
   retrogradeEnd: string;      // Date string
   currentSign: string;
 }
+
+// ============================================================================
+// Aspect Strength & Analysis Types
+// ============================================================================
+
+/**
+ * Aspect Strength Weights
+ * Individual components that contribute to overall aspect strength
+ */
+export interface StrengthWeights {
+  orbTightness: number;      // 0-1: How close to exact (1° = 1.0, 8° = 0.25)
+  planetImportance: number;  // 0-1: Significance of planets involved
+  aspectPower: number;       // 0-1: Inherent power of aspect type
+  applyingBonus: number;     // 0-0.1: Bonus if aspect is applying (building)
+}
+
+/**
+ * Scored Aspect with Strength Analysis
+ * Extends basic aspect data with calculated strength metrics
+ */
+export interface ScoredAspect {
+  // Original aspect data
+  planet1: string;
+  planet2: string;
+  type: AspectType;
+  angle: number;
+  orb: number;
+  isApplying: boolean;
+  interpretation: string;
+
+  // Strength analysis
+  strength: number;          // 0-1 composite score
+  weights: StrengthWeights;
+  rank: 'weak' | 'moderate' | 'strong' | 'very-strong';
+}
+
+/**
+ * Aspect Analysis Response
+ * Comprehensive aspect analysis including scored aspects
+ */
+export interface AspectAnalysisResponse {
+  date: string;
+  aspects: ScoredAspect[];
+  topAspects: ScoredAspect[];  // Top 5 by strength
+}
