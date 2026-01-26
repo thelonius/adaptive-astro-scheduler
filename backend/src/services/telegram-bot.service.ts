@@ -2,6 +2,11 @@ import { Telegraf, Context, Markup, session } from 'telegraf';
 import LocalSession from 'telegraf-session-local';
 import { UserRepository } from '../database/repositories/user.repository';
 import { NatalChartRepository } from '../database/repositories/natal-chart.repository';
+import { PersonalizedAnalyticsService, PersonalizedDayAnalytics } from './personalized-analytics';
+import { createEphemerisCalculator } from '../core/ephemeris';
+import { IEphemerisCalculator } from '../core/ephemeris';
+import type { DateTime } from '@adaptive-astro/shared/types';
+import type { CreateNatalChartInput } from '../database/models';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -20,12 +25,21 @@ if (!TOKEN) {
 
 // Define session interface
 interface SessionData {
-  awaiting?: 'BIRTH_DATE' | 'BIRTH_TIME' | null;
-  temp?: {
-    lat?: number;
-    lon?: number;
-    birthDate?: string;
+  awaiting?: 'BIRTH_DATE' | 'BIRTH_TIME' | 'CHART_NAME' | 'CHART_TYPE' | null;
+  chartCreationFlow?: {
+    step: number;
+    chartType: 'self' | 'other';
+    tempData: {
+      lat?: number;
+      lon?: number;
+      timezone?: string;
+      birthDate?: string;
+      birthTime?: string;
+      chartName?: string;
+      placeName?: string;
+    };
   };
+  activeChart?: string; // Currently selected chart ID for /today
 }
 
 interface BotContext extends Context {
@@ -36,6 +50,8 @@ export class TelegramBotService {
   private bot: Telegraf<BotContext>;
   private userRepo: UserRepository;
   private natalRepo: NatalChartRepository;
+  private analyticsService!: PersonalizedAnalyticsService;
+  private ephemeris!: IEphemerisCalculator;
   private isRunning: boolean = false;
   private static instance: TelegramBotService | null = null;
 
@@ -54,11 +70,15 @@ export class TelegramBotService {
     try {
       this.userRepo = new UserRepository();
       this.natalRepo = new NatalChartRepository();
-      console.log('🔧 Repositories initialized successfully');
+      this.ephemeris = createEphemerisCalculator();
+      this.analyticsService = new PersonalizedAnalyticsService(this.ephemeris);
+      console.log('🔧 Repositories and analytics service initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize repositories:', error);
+      console.error('❌ Failed to initialize services:', error);
       this.userRepo = new UserRepository();
       this.natalRepo = new NatalChartRepository();
+      this.ephemeris = createEphemerisCalculator();
+      this.analyticsService = new PersonalizedAnalyticsService(this.ephemeris);
     }
 
     // Middleware - use different path for local vs docker
@@ -75,70 +95,76 @@ export class TelegramBotService {
   }
 
   private registerCommands() {
-    // /start
+    // Enhanced /start command with multi-chart support
     this.bot.start(async (ctx) => {
       console.log('🎯 /start command received from user:', ctx.from.id);
       try {
         const telegramId = ctx.from.id;
 
-        // Try to create/find user, but don't fail if DB is down
-        try {
-          let user = await this.userRepo.findByTelegramId(telegramId);
-          if (!user) {
-            user = await this.userRepo.create({
-              telegram_id: telegramId,
-              username: ctx.from.username,
-              metadata: {
-                first_name: ctx.from.first_name,
-                last_name: ctx.from.last_name,
-              }
-            });
-          }
-        } catch (dbError) {
-          console.log('💾 Database not available, proceeding without user storage');
+        // Initialize or find user
+        let user = await this.userRepo.findByTelegramId(telegramId);
+        if (!user) {
+          user = await this.userRepo.create({
+            telegram_id: telegramId,
+            username: ctx.from.username,
+            metadata: {
+              first_name: ctx.from.first_name,
+              last_name: ctx.from.last_name,
+            }
+          });
         }
 
-        await ctx.reply(
-          `Welcome ${ctx.from.first_name}! 🌟\n` +
-          "I am your Adaptive Astro Scheduler. To give you accurate personalized insights, I need your birth chart data.\n\n" +
-          "Let's start with your birth location.",
-          Markup.keyboard([
-            Markup.button.locationRequest('📍 Share Location')
-          ]).resize().oneTime()
-        );
-        console.log('✅ /start response sent successfully');
+        // Check if user has any charts
+        const charts = await this.natalRepo.findByUserId(user.id);
+        
+        if (charts.length > 0) {
+          await this.showMainMenu(ctx, charts);
+        } else {
+          await this.startChartCreation(ctx, 'self');
+        }
+        
       } catch (error) {
         console.error('❌ Error in /start command:', error);
         await ctx.reply('Hello! I\'m your Astro Scheduler bot. Something went wrong, but you can try again!');
       }
     });
 
-    // Handle Location
+    // Enhanced Location Handler for chart creation
     this.bot.on('location', async (ctx) => {
-      const { latitude, longitude } = ctx.message.location;
-      ctx.session.temp = { lat: latitude, lon: longitude };
-      ctx.session.awaiting = 'BIRTH_DATE';
+      if (!ctx.session.chartCreationFlow) {
+        await ctx.reply('Please start with /start or use "Add New Chart" first.');
+        return;
+      }
 
-      // Resolve Timezone immediately to verify location service
+      const { latitude, longitude } = ctx.message.location;
+      ctx.session.chartCreationFlow.tempData.lat = latitude;
+      ctx.session.chartCreationFlow.tempData.lon = longitude;
+      
       try {
         const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
-            latitude, longitude
+          latitude, longitude
         });
+        
         const timezone = tzResponse.data.timezone;
+        const placeName = tzResponse.data.place_name || `${latitude}, ${longitude}`;
+        
+        ctx.session.chartCreationFlow.tempData.timezone = timezone;
+        ctx.session.chartCreationFlow.tempData.placeName = placeName;
+        ctx.session.chartCreationFlow.step = 2;
+        ctx.session.awaiting = 'BIRTH_DATE';
 
         await ctx.reply(
-            `Got it! Location received (${latitude}, ${longitude}).\n` +
-            `Timezone detected: ${timezone}\n\n` +
-            `Now, please enter your birth date (YYYY-MM-DD):`,
-            Markup.removeKeyboard()
+          `Got it! 📍\nLocation: ${placeName}\nTimezone: ${timezone}\n\n` +
+          `Now, please enter the birth date (YYYY-MM-DD):`,
+          Markup.removeKeyboard()
         );
       } catch (error) {
-          console.error('Timezone Error:', error);
-          await ctx.reply("I couldn't detect the timezone for that location. Please try sharing the location again.");
+        console.error('Timezone Error:', error);
+        await ctx.reply("I couldn't detect the timezone for that location. Please try sharing the location again.");
       }
     });
 
-    // Handle Text (for dates/times)
+    // Enhanced Text Handler for comprehensive chart creation workflow
     this.bot.on('text', async (ctx) => {
       if (!ctx.session.awaiting) return;
 
@@ -147,86 +173,567 @@ export class TelegramBotService {
       if (ctx.session.awaiting === 'BIRTH_DATE') {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(text)) {
-            return ctx.reply('Please use the format YYYY-MM-DD (e.g. 1990-05-25)');
+          return ctx.reply('Please use the format YYYY-MM-DD (e.g. 1990-05-25)');
         }
 
-        ctx.session.temp!.birthDate = text;
+        ctx.session.chartCreationFlow!.tempData.birthDate = text;
+        ctx.session.chartCreationFlow!.step = 3;
         ctx.session.awaiting = 'BIRTH_TIME';
-        return ctx.reply('Great! Now enter your birth time (HH:MM) - use 24h format (e.g. 14:30):');
+        
+        return ctx.reply('Perfect! Now enter the birth time (HH:MM) - use 24h format (e.g. 14:30):');
       }
 
       if (ctx.session.awaiting === 'BIRTH_TIME') {
-          const timeRegex = /^\d{2}:\d{2}$/;
-          if (!timeRegex.test(text)) {
-              return ctx.reply('Please use the format HH:MM (e.g. 14:30)');
-          }
+        const timeRegex = /^\d{2}:\d{2}$/;
+        if (!timeRegex.test(text)) {
+          return ctx.reply('Please use the format HH:MM (e.g. 14:30)');
+        }
 
-          const birthTime = text + ':00';
-          const { lat, lon, birthDate } = ctx.session.temp!;
-          const telegramId = ctx.from.id;
+        ctx.session.chartCreationFlow!.tempData.birthTime = text + ':00';
+        ctx.session.chartCreationFlow!.step = 4;
+        ctx.session.awaiting = 'CHART_NAME';
 
-          await ctx.reply('Calculating your natal chart... ✨');
-          ctx.session.awaiting = null;
+        const chartType = ctx.session.chartCreationFlow!.chartType;
+        const defaultName = chartType === 'self' ? 'My Chart' : 'Chart';
+        
+        return ctx.reply(
+          `Great! Finally, what would you like to name this chart?\n\n` +
+          `You can just type "${defaultName}" or choose a custom name:`
+        );
+      }
 
-          try {
-              // 1. Get User
-              const user = await this.userRepo.findByTelegramId(telegramId);
-              if (!user) throw new Error('User not found');
-
-              // 2. Resolve Timezone again (or could store it in session)
-              const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
-                latitude: lat, longitude: lon
-              });
-              const timezone = tzResponse.data.timezone;
-
-              // 3. Create Natal Chart (Logic to call python API or internal repo)
-              // For now we just reply success. Real implementation needs to call ephemeris to calculate positions first.
-
-              await ctx.reply(`Chart created for ${birthDate} ${birthTime} in ${timezone}!\n(Full calculation integration pending)`);
-
-              // TODO: Integrate NatalChartController logic here to actually calculate and save.
-
-          } catch (error) {
-              console.error(error);
-              ctx.reply('Something went wrong calculating your chart. Please try /start again.');
-          }
+      if (ctx.session.awaiting === 'CHART_NAME') {
+        ctx.session.chartCreationFlow!.tempData.chartName = text;
+        ctx.session.awaiting = null;
+        
+        await this.createAndSaveChart(ctx);
       }
     });
 
-    // /today command
+    // Enhanced /today command with personalized readings
     this.bot.command('today', async (ctx) => {
       console.log('🎯 /today command received from user:', ctx.from.id);
+      
       try {
-        const today = new Date().toISOString().split('T')[0];
-        await ctx.reply(
-          `📅 Today's Astrological Energy (${today}) 🌟\n\n` +
-          "🌙 Moon Phase: Waxing Crescent\n" +
-          "⭐ Key Aspects: Venus trine Jupiter\n" +
-          "🔮 Energy: Focus on creativity and relationships\n\n" +
-          "(Full real-time calculations coming soon!)"
-        );
-        console.log('✅ /today response sent successfully');
+        const telegramId = ctx.from.id;
+        const user = await this.userRepo.findByTelegramId(telegramId);
+        
+        if (!user) {
+          await ctx.reply('Please start with /start first to create your natal chart.');
+          return;
+        }
+
+        // Get user's charts
+        const charts = await this.natalRepo.findByUserId(user.id);
+        
+        if (charts.length === 0) {
+          await ctx.reply(
+            'You don\'t have any natal charts yet! 📊\n\n' +
+            'I need your birth information to give you personalized readings. Let\'s create your chart now!',
+            Markup.inlineKeyboard([
+              [Markup.button.callback('✨ Create My Chart', 'add_self')]
+            ])
+          );
+          return;
+        }
+
+        // If multiple charts, let user choose
+        if (charts.length > 1 && !ctx.session.activeChart) {
+          await this.showChartSelector(ctx, 'today');
+          return;
+        }
+
+        // Get the chart to use
+        const chartId = ctx.session.activeChart || charts[0].id;
+        await this.generateTodayReading(ctx, chartId);
+
       } catch (error) {
         console.error('❌ Error in /today command:', error);
-        await ctx.reply('Today\'s energy: 🌙 ... (Coming soon)');
+        await ctx.reply('Sorry, I couldn\'t generate your reading right now. Please try again later.');
       }
     });
 
-    // Add help command
+    // /charts command - list all charts
+    this.bot.command('charts', async (ctx) => {
+      try {
+        const telegramId = ctx.from?.id;
+        if (!telegramId) {
+          await ctx.reply('Error: Unable to identify user');
+          return;
+        }
+        
+        const user = await this.userRepo.findByTelegramId(telegramId);
+        if (!user) {
+          await ctx.reply('Please start with /start first.');
+          return;
+        }
+
+        const charts = await this.natalRepo.findByUserId(user.id);
+        
+        if (charts.length === 0) {
+          await ctx.reply('You don\'t have any charts yet. Use /start to create one!');
+          return;
+        }
+
+        let text = `📊 *Your Natal Charts* (${charts.length})\n\n`;
+        charts.forEach((chart, index) => {
+          const date = chart.birth_date.toISOString().split('T')[0];
+          text += `${index + 1}. *${chart.name}*\n`;
+          text += `   📅 ${date}\n`;
+          text += `   📍 ${chart.birth_location.placeName || 'Location'}\n\n`;
+        });
+
+        await ctx.reply(text, { 
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '➕ Add New Chart', callback_data: 'add_chart' }],
+              [{ text: '🏠 Main Menu', callback_data: 'main_menu' }]
+            ]
+          }
+        });
+
+      } catch (error) {
+        console.error('Error in /charts command:', error);
+        await ctx.reply('Error loading your charts.');
+      }
+    });
+
+    // Enhanced help command
     this.bot.command('help', async (ctx) => {
       try {
         await ctx.reply(
           "🤖 *Astro Scheduler Commands:*\n\n" +
           "/start - Begin setup or restart bot\n" +
-          "/today - Get today's astrological energy\n" +
+          "/today - Get personalized daily reading\n" +
+          "/charts - View and manage your natal charts\n" +
           "/help - Show this help message\n\n" +
-          "Send me your location to create a personalized natal chart!",
+          "✨ I can create multiple natal charts (for yourself and others) and provide personalized daily insights based on current planetary transits!",
           { parse_mode: 'Markdown' }
         );
       } catch (error) {
         console.error('Error in /help command:', error);
-        await ctx.reply('Available commands: /start, /today, /help');
+        await ctx.reply('Available commands: /start, /today, /charts, /help');
       }
+    });
+
+    // Add comprehensive callback handlers after commands
+    this.addCallbackHandlers();
+  }
+
+  private async showMainMenu(ctx: BotContext, charts: any[]) {
+    const keyboard = [
+      [Markup.button.callback('📊 Today\'s Reading', 'today')],
+      [Markup.button.callback('➕ Add New Chart', 'add_chart')],
+      [Markup.button.callback('📋 Manage Charts', 'manage_charts')],
+    ];
+
+    await ctx.reply(
+      `Welcome back ${ctx.from?.first_name || 'there'}! 🌟\n\n` +
+      `You have ${charts.length} natal chart${charts.length > 1 ? 's' : ''} stored.\n\n` +
+      `What would you like to do today?`,
+      Markup.inlineKeyboard(keyboard)
+    );
+  }
+
+  private async startChartCreation(ctx: BotContext, chartType: 'self' | 'other') {
+    ctx.session.chartCreationFlow = {
+      step: 1,
+      chartType,
+      tempData: {}
+    };
+
+    const message = chartType === 'self' 
+      ? "Let's create your personal natal chart! 🌟\nFirst, I need your birth location."
+      : "Let's create a new natal chart! 🌟\nFirst, I need the birth location.";
+
+    await ctx.reply(
+      message,
+      Markup.keyboard([
+        Markup.button.locationRequest('📍 Share Location')
+      ]).resize().oneTime()
+    );
+  }
+
+  private async showChartSelector(ctx: BotContext, action: 'today' | 'manage') {
+    const telegramId = ctx.from?.id;
+    if (!telegramId) {
+      await ctx.reply('Error: Unable to identify user');
+      return;
+    }
+    
+    const user = await this.userRepo.findByTelegramId(telegramId);
+    
+    if (!user) {
+      await ctx.reply('Please start with /start first');
+      return;
+    }
+
+    const charts = await this.natalRepo.findByUserId(user.id);
+    
+    if (charts.length === 0) {
+      await ctx.reply('You don\'t have any charts yet. Let\'s create one!');
+      await this.startChartCreation(ctx, 'self');
+      return;
+    }
+
+    const keyboard = charts.map(chart => [
+      Markup.button.callback(
+        `${chart.name} (${chart.birth_date.toISOString().split('T')[0]})`,
+        `${action}_${chart.id}`
+      )
+    ]);
+
+    await ctx.reply(
+      `Select a chart:`,
+      Markup.inlineKeyboard(keyboard)
+    );
+  }
+
+  private async createAndSaveChart(ctx: BotContext) {
+    if (!ctx.session.chartCreationFlow) return;
+
+    const { tempData, chartType } = ctx.session.chartCreationFlow;
+    const telegramId = ctx.from?.id;
+    if (!telegramId) {
+      await ctx.reply('Error: Unable to identify user');
+      return;
+    }
+
+    await ctx.reply('Calculating natal chart... ✨ This may take a moment...');
+
+    try {
+      // 1. Get User
+      const user = await this.userRepo.findByTelegramId(telegramId);
+      if (!user) throw new Error('User not found');
+
+      // 2. Create DateTime object for birth moment
+      const birthDateTime: DateTime = {
+        date: new Date(`${tempData.birthDate}T${tempData.birthTime}`),
+        timezone: tempData.timezone!,
+        location: {
+          latitude: tempData.lat!,
+          longitude: tempData.lon!,
+        },
+      };
+
+      // 3. Calculate natal chart data (parallel requests for speed)
+      const [planets, houses, aspects, lunarDay, moonPhase] = await Promise.all([
+        this.ephemeris.getPlanetsPositions(birthDateTime),
+        this.ephemeris.getHouses(birthDateTime, 'placidus'),
+        this.ephemeris.getAspects(birthDateTime, 8),
+        this.ephemeris.getLunarDay(birthDateTime),
+        this.ephemeris.getMoonPhase(birthDateTime),
+      ]);
+
+      // 4. Create natal chart input
+      const chartInput: CreateNatalChartInput = {
+        user_id: user.id,
+        name: tempData.chartName!,
+        birth_date: new Date(`${tempData.birthDate}T${tempData.birthTime}`),
+        birth_time: tempData.birthTime!,
+        birth_location: {
+          latitude: tempData.lat!,
+          longitude: tempData.lon!,
+          timezone: tempData.timezone!,
+          placeName: tempData.placeName,
+        },
+        planets: planets.planets as any[], // Convert API data to expected format
+        houses: houses.houses as any[], // Convert API data to expected format  
+        aspects: aspects.aspects as any[], // Convert API data to expected format
+        lunar_day: lunarDay,
+        moon_phase: moonPhase.toString(), // Convert number to string for database
+        house_system: 'placidus',
+      };
+
+      // 5. Save to database
+      const natalChart = await this.natalRepo.create(chartInput);
+
+      // 6. Set as active chart if it's the user's first chart
+      const userCharts = await this.natalRepo.findByUserId(user.id);
+      if (userCharts.length === 1) {
+        ctx.session.activeChart = natalChart.id;
+      }
+
+      // 7. Success response
+      await ctx.reply(
+        `🎉 Chart "${tempData.chartName}" created successfully!\n\n` +
+        `📅 Birth: ${tempData.birthDate} at ${tempData.birthTime?.slice(0, 5)}\n` +
+        `📍 Location: ${tempData.placeName}\n\n` +
+        `You can now use /today for personalized daily insights!`,
+        Markup.inlineKeyboard([
+          [Markup.button.callback('📊 Get Today\'s Reading', 'today')],
+          [Markup.button.callback('🏠 Main Menu', 'main_menu')]
+        ])
+      );
+
+      // 8. Clear session
+      ctx.session.chartCreationFlow = undefined;
+
+    } catch (error) {
+      console.error('Chart creation error:', error);
+      await ctx.reply(
+        '❌ Sorry, there was an error creating your chart. Please try again with /start.\n\n' +
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      
+      // Clear session on error
+      ctx.session.chartCreationFlow = undefined;
+      ctx.session.awaiting = null;
+    }
+  }
+
+  private async generateTodayReading(ctx: BotContext, chartId: string) {
+    try {
+      await ctx.reply('🔮 Generating your personalized reading... ✨');
+
+      // Get the natal chart
+      const natalChart = await this.natalRepo.findById(chartId);
+      if (!natalChart) {
+        await ctx.reply('Chart not found. Please use /start to create a new one.');
+        return;
+      }
+
+      // Generate today's analytics
+      const today = new Date();
+      const analytics = await this.analyticsService.generateDayAnalytics(
+        natalChart, 
+        today
+      );
+
+      // Format the reading
+      const readingText = this.formatDailyReading(analytics, natalChart);
+
+      // Send reading with options
+      await ctx.reply(
+        readingText,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '🔮 View Transits', callback_data: `transits_${chartId}` },
+                { text: '📊 Activities', callback_data: `activities_${chartId}` }
+              ],
+              [
+                { text: '🔄 Refresh', callback_data: `today_${chartId}` },
+                { text: '🏠 Menu', callback_data: 'main_menu' }
+              ]
+            ]
+          }
+        }
+      );
+
+      console.log('✅ /today reading generated successfully');
+
+    } catch (error) {
+      console.error('❌ Error generating today reading:', error);
+      await ctx.reply(
+        'Sorry, I couldn\'t generate your personalized reading right now. ' +
+        'The astrological calculation service might be temporarily unavailable.'
+      );
+    }
+  }
+
+  private formatDailyReading(analytics: PersonalizedDayAnalytics, chart: any): string {
+    const date = analytics.date.toISOString().split('T')[0];
+    const score = Math.round(analytics.overallScore);
+    
+    let scoreEmoji = '🌟';
+    if (score >= 80) scoreEmoji = '✨';
+    else if (score >= 60) scoreEmoji = '⭐';
+    else if (score >= 40) scoreEmoji = '🌙';
+    else scoreEmoji = '🌑';
+
+    let text = `📅 *${chart.name}* - Today's Energy (${date}) ${scoreEmoji}\n\n`;
+    
+    text += `*Overall Score:* ${score}/100\n\n`;
+    
+    text += `🌙 *Lunar Day:* ${analytics.universalEnergy.lunarDay} (${analytics.universalEnergy.moonPhase})\n\n`;
+    
+    text += `*Personal Summary:*\n${analytics.personalSummary}\n\n`;
+    
+    if (analytics.recommendations.bestActivities.length > 0) {
+      text += `✅ *Best Activities:*\n`;
+      analytics.recommendations.bestActivities.forEach(activity => {
+        text += `• ${activity}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analytics.recommendations.avoid.length > 0) {
+      text += `⚠️ *Avoid:*\n`;
+      analytics.recommendations.avoid.forEach(item => {
+        text += `• ${item}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analytics.recommendations.energyFocus.length > 0) {
+      text += `🎯 *Energy Focus:*\n`;
+      analytics.recommendations.energyFocus.forEach(focus => {
+        text += `• ${focus}\n`;
+      });
+    }
+
+    return text;
+  }
+
+  private async showTransitDetails(ctx: BotContext, chartId: string) {
+    try {
+      const natalChart = await this.natalRepo.findById(chartId);
+      if (!natalChart) return;
+
+      const analytics = await this.analyticsService.generateDayAnalytics(natalChart);
+      const transits = analytics.personalTransits;
+
+      let text = `🌍 *Current Transits* for ${natalChart.name}\n\n`;
+      
+      if (transits.significantTransits.length > 0) {
+        text += `*Significant Aspects:*\n`;
+        transits.significantTransits.slice(0, 5).forEach(transit => {
+          const orb = transit.orb.toFixed(1);
+          text += `• ${transit.transitingPlanet} ${transit.aspectType} ${transit.natalPlanet} (${orb}°)\n`;
+        });
+      } else {
+        text += `No major transits active today.\n`;
+      }
+
+      await ctx.reply(text, { parse_mode: 'Markdown' });
+      await ctx.answerCbQuery();
+      
+    } catch (error) {
+      console.error('Error showing transit details:', error);
+      await ctx.answerCbQuery('Error loading transit details');
+    }
+  }
+
+  private async showActivityRecommendations(ctx: BotContext, chartId: string) {
+    try {
+      const natalChart = await this.natalRepo.findById(chartId);
+      if (!natalChart) return;
+
+      // Define common activities to score
+      const activities = [
+        'Важные переговоры',
+        'Новые проекты', 
+        'Финансовые решения',
+        'Романтические встречи',
+        'Спортивная активность',
+        'Обучение и курсы',
+        'Медитация',
+        'Творческая работа'
+      ];
+
+      const recommendations = await this.analyticsService.scoreActivities(
+        natalChart, 
+        activities
+      );
+
+      let text = `📊 *Activity Recommendations* for ${natalChart.name}\n\n`;
+      
+      recommendations.slice(0, 6).forEach((rec, index) => {
+        const emoji = index < 2 ? '🟢' : index < 4 ? '🟡' : '🔴';
+        text += `${emoji} *${rec.activity}*: ${rec.score}/100\n`;
+      });
+
+      await ctx.reply(text, { parse_mode: 'Markdown' });
+      await ctx.answerCbQuery();
+      
+    } catch (error) {
+      console.error('Error showing activity recommendations:', error);
+      await ctx.answerCbQuery('Error loading recommendations');
+    }
+  }
+
+  private addCallbackHandlers() {
+    // Pattern-based callback handlers
+    this.bot.action(/^(.+)_(.+)$/, async (ctx) => {
+      const [, action, data] = ctx.match;
+      
+      try {
+        switch (action) {
+          case 'today':
+            await this.generateTodayReading(ctx, data);
+            break;
+            
+          case 'add':
+            if (data === 'self') {
+              await this.startChartCreation(ctx, 'self');
+            } else if (data === 'other') {
+              await this.startChartCreation(ctx, 'other');
+            }
+            break;
+            
+          case 'transits':
+            await this.showTransitDetails(ctx, data);
+            break;
+            
+          case 'activities':
+            await this.showActivityRecommendations(ctx, data);
+            break;
+            
+          default:
+            await ctx.answerCbQuery('Unknown action');
+        }
+      } catch (error) {
+        console.error('Callback error:', error);
+        await ctx.answerCbQuery('Error processing request');
+      }
+    });
+
+    // Single action handlers
+    this.bot.action('main_menu', async (ctx) => {
+      const telegramId = ctx.from?.id;
+      if (telegramId) {
+        const user = await this.userRepo.findByTelegramId(telegramId);
+        if (user) {
+          const charts = await this.natalRepo.findByUserId(user.id);
+          await this.showMainMenu(ctx, charts);
+        }
+      }
+      await ctx.answerCbQuery();
+    });
+
+    this.bot.action('today', async (ctx) => {
+      const telegramId = ctx.from?.id;
+      if (!telegramId) {
+        await ctx.reply('Error: Unable to identify user');
+        return;
+      }
+      
+      const user = await this.userRepo.findByTelegramId(telegramId);
+      if (!user) {
+        await ctx.reply('Please start with /start first.');
+        return;
+      }
+
+      const charts = await this.natalRepo.findByUserId(user.id);
+      if (charts.length === 0) {
+        await this.startChartCreation(ctx, 'self');
+      } else if (charts.length === 1) {
+        await this.generateTodayReading(ctx, charts[0].id);
+      } else {
+        await this.showChartSelector(ctx, 'today');
+      }
+      await ctx.answerCbQuery();
+    });
+
+    this.bot.action('add_chart', async (ctx) => {
+      await ctx.reply(
+        'What type of chart would you like to add?',
+        Markup.inlineKeyboard([
+          [Markup.button.callback('👤 My Chart', 'add_self')],
+          [Markup.button.callback('👥 Someone Else\'s Chart', 'add_other')],
+          [Markup.button.callback('⬅️ Back', 'main_menu')]
+        ])
+      );
+      await ctx.answerCbQuery();
+    });
+
+    this.bot.action('manage_charts', async (ctx) => {
+      await this.showChartSelector(ctx, 'manage');
+      await ctx.answerCbQuery();
     });
   }
 
