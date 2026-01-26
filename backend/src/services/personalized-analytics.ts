@@ -21,7 +21,7 @@ export interface PersonalizedDayAnalytics {
     avoid: string[];
     energyFocus: string[];
   };
-  overall Score: number; // 0-100
+  overallScore: number; // 0-100
   personalSummary: string;
 }
 
@@ -81,8 +81,9 @@ export class PersonalizedAnalyticsService {
     );
 
     // Calculate overall score
+    const dayStrength = 0.5; // Default/Mock value as it's not in CalendarDay
     const overallScore = this.calculateOverallScore(
-      calendarDay.dayStrength,
+      dayStrength,
       transits
     );
 
@@ -105,7 +106,7 @@ export class PersonalizedAnalyticsService {
         lunarDay: calendarDay.lunarDay.number,
         moonPhase: calendarDay.lunarDay.lunarPhase,
         voidOfCourse: false, // TODO: Add void moon check
-        dayStrength: calendarDay.dayStrength,
+        dayStrength: dayStrength,
       },
       personalTransits: transits,
       recommendations,

@@ -1,4 +1,4 @@
-import type { DateTime, CelestialBody, Aspect } from '@adaptive-astro/shared/types/astrology';
+import type { DateTime, CelestialBody, Aspect, PlanetApiData, AspectApiData } from '@adaptive-astro/shared/types/astrology';
 import { IEphemerisCalculator } from '../core/ephemeris';
 
 /**
@@ -54,7 +54,7 @@ export class VoidMoonCalculator {
     ];
 
     // Calculate when Moon enters next sign
-    const currentSign = moon.zodiacSign.name;
+    const currentSign = moon.zodiacSign;
     const nextSignChange = this.calculateNextSignChange(moon, dateTime.date);
 
     // Find last aspect before sign change
@@ -86,7 +86,7 @@ export class VoidMoonCalculator {
    * Calculate when Moon enters the next zodiac sign
    * Each zodiac sign is 30 degrees
    */
-  private calculateNextSignChange(moon: CelestialBody, currentDate: Date): Date {
+  private calculateNextSignChange(moon: CelestialBody | PlanetApiData, currentDate: Date): Date {
     const currentLongitude = moon.longitude;
     const moonSpeed = Math.abs(moon.speed); // degrees per day
 
@@ -113,7 +113,7 @@ export class VoidMoonCalculator {
    * Find the last aspect Moon makes before changing signs
    */
   private findLastAspectBeforeSignChange(
-    aspects: Aspect[],
+    aspects: AspectApiData[],
     currentDate: Date,
     signChangeTime: Date
   ): { time: number; description: string } | null {

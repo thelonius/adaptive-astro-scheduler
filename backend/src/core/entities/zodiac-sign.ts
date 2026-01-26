@@ -5,7 +5,7 @@ import type {
   QualityType,
   PlanetName,
 } from '@adaptive-astro/shared/types/astrology';
-import { ZODIAC_SIGNS } from '@adaptive-astro/shared/constants/zodiac';
+import { ZODIAC_SIGNS } from '@adaptive-astro/shared';
 
 /**
  * Zodiac Sign Entity

@@ -25,7 +25,7 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
           <stop offset="50%" stopColor="#FFF8DC" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#FFFFE0" stopOpacity="0.8" />
         </linearGradient>
-        
+
         {/* Opposition: Tension - Deep red to electric blue */}
         <linearGradient id="oppositionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#DC143C" stopOpacity="0.8" />
@@ -33,14 +33,14 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
           <stop offset="75%" stopColor="#4169E1" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#00BFFF" stopOpacity="0.8" />
         </linearGradient>
-        
+
         {/* Trine: Harmony - Forest green to spring green */}
         <linearGradient id="trineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#228B22" stopOpacity="0.8" />
           <stop offset="50%" stopColor="#32CD32" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#98FB98" stopOpacity="0.8" />
         </linearGradient>
-        
+
         {/* Square: Challenge - Fiery red to blazing orange */}
         <linearGradient id="squareGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#B22222" stopOpacity="0.8" />
@@ -48,14 +48,14 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
           <stop offset="70%" stopColor="#FF6347" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#FFA500" stopOpacity="0.8" />
         </linearGradient>
-        
+
         {/* Sextile: Opportunity - Ocean cyan to sky blue */}
         <linearGradient id="sextileGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#008B8B" stopOpacity="0.8" />
           <stop offset="50%" stopColor="#00CED1" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#87CEEB" stopOpacity="0.8" />
         </linearGradient>
-        
+
         {/* Quincunx: Adjustment - Deep purple to mystical violet */}
         <linearGradient id="quincunxGradient" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor="#4B0082" stopOpacity="0.8" />
@@ -63,7 +63,7 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
           <stop offset="100%" stopColor="#DDA0DD" stopOpacity="0.8" />
         </linearGradient>
       </defs>
-      
+
       {sortedLines.map((line, i) => {
         const { from, to, color, strength, aspect } = line;
 

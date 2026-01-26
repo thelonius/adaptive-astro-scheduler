@@ -55,6 +55,7 @@ import { CheckCircleIcon, WarningIcon, InfoIcon } from '@chakra-ui/icons';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { themes, type ThemeName } from '../components/ZodiacWheel/themes';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import type { PlanetName } from '@adaptive-astro/shared/types';
 import ZodiacIcon from '../components/ZodiacWheel/ZodiacIcon';
 
 interface TestResult {
@@ -129,7 +130,7 @@ export const ZodiacWheelTest: React.FC = () => {
 
     // Test 2: All planets present
     const testAllPlanets = () => {
-      const expectedPlanets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+      const expectedPlanets: PlanetName[] = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
       const loadedPlanets = currentData?.planets.map((p) => p.name) || [];
       const allPresent = expectedPlanets.every((p) => loadedPlanets.includes(p));
 

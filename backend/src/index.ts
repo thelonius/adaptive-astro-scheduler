@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { createApp } from './app';
 import { testConnection, closePool } from './database';
+import { TelegramBotService } from './services/telegram-bot.service';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -20,6 +21,13 @@ async function start() {
     }
 
     const app = createApp();
+
+    // Start Telegram Bot (non-blocking)
+    const botService = new TelegramBotService();
+    TelegramBotService.setInstance(botService);
+    botService.launch().catch(err => {
+      console.error('Bot launch failed:', err);
+    });
 
     app.listen(PORT, () => {
       console.log(`🚀 Adaptive Astro-Scheduler API`);

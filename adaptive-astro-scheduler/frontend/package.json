@@ -1,0 +1,43 @@
+{
+  "name": "adaptive-astro-scheduler",
+  "version": "1.0.0",
+  "description": "A zodiac wheel component for real-time astrological data visualization.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "framer-motion": "^4.1.17",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "chakra-ui/react": "^1.6.5",
+    "typescript": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "^17.0.34",
+    "@types/react-dom": "^17.0.9",
+    "vite": "^2.6.4",
+    "jest": "^27.0.6",
+    "@testing-library/react": "^12.1.2"
+  },
+  "keywords": [
+    "astrology",
+    "zodiac",
+    "react",
+    "visualization"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/adaptive-astro-scheduler",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/adaptive-astro-scheduler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/adaptive-astro-scheduler/issues"
+  }
+}

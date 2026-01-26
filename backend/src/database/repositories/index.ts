@@ -5,3 +5,4 @@
  */
 
 export * from './natal-chart.repository';
+export * from './user.repository';

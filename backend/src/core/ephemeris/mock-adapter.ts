@@ -16,8 +16,10 @@ import type {
   RetrogradesApiResponse,
   ZodiacSign,
   PlanetName,
+  PlanetApiData,
+  HouseApiData,
 } from '@adaptive-astro/shared/types/astrology';
-import { ZODIAC_SIGNS, getZodiacSignByLongitude } from '@adaptive-astro/shared/constants/zodiac';
+import { ZODIAC_SIGNS, getZodiacSignByLongitude } from '@adaptive-astro/shared';
 import { IEphemerisCalculator } from './interface';
 
 /**
@@ -49,7 +51,7 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
       Pluto: 300,
     };
 
-    const planets: CelestialBody[] = [
+    const celestialBodies: CelestialBody[] = [
       this.createMockPlanet('Sun', baseOffsets.Sun + dayOfYear * 0.986, 1.0, false),
       this.createMockPlanet('Moon', baseOffsets.Moon + dayOfYear * 13.176, 27.3, false),
       this.createMockPlanet('Mercury', baseOffsets.Mercury + dayOfYear * 4.09, 88, dayOfYear % 117 < 20),
@@ -61,6 +63,17 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
       this.createMockPlanet('Neptune', baseOffsets.Neptune + dayOfYear * 0.006, 60190, dayOfYear % 367 < 158),
       this.createMockPlanet('Pluto', baseOffsets.Pluto + dayOfYear * 0.004, 90560, dayOfYear % 366 < 182),
     ];
+
+    const planets: PlanetApiData[] = celestialBodies.map(p => ({
+      name: p.name,
+      longitude: p.longitude,
+      latitude: p.latitude,
+      zodiacSign: p.zodiacSign.name,
+      degree: Math.floor(p.longitude % 30),
+      isRetrograde: p.isRetrograde,
+      speed: p.speed,
+      distanceAU: p.distanceAU,
+    }));
 
     return {
       date: dateTime.date.toISOString(),
@@ -133,15 +146,16 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
     const hourAngle = (dateTime.date.getHours() + dateTime.date.getMinutes() / 60) * 15;
     const ascendant = (hourAngle + dateTime.location.longitude) % 360;
 
-    const houses: House[] = [];
+    const houses: HouseApiData[] = [];
     for (let i = 1; i <= 12; i++) {
       const cusp = (ascendant + (i - 1) * 30) % 360;
       const zodiacSign = getZodiacSignByLongitude(cusp);
 
       houses.push({
-        number: i as House['number'],
+        number: i,
         cusp,
-        sign: zodiacSign,
+        zodiacSign: zodiacSign.name,
+        degree: Math.floor(cusp % 30),
       });
     }
 
@@ -157,19 +171,22 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   }
 
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
-    // Simplified: void moon happens periodically
     const dayOfYear = this.getDayOfYear(dateTime.date);
-    const isVoid = dayOfYear % 3 === 0;
+    const isVoid = dayOfYear % 3 === 0; // Mock: void every 3rd day
 
     return {
       date: dateTime.date.toISOString(),
       isVoidOfCourse: isVoid,
       voidPeriod: isVoid ? {
-        startTime: dateTime.date.toISOString(),
-        endTime: new Date(dateTime.date.getTime() + 6 * 3600000).toISOString(),
+        startTime: new Date(dateTime.date.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+        endTime: new Date(dateTime.date.getTime() + 4 * 60 * 60 * 1000).toISOString(),
         currentSign: 'Gemini',
         nextSign: 'Cancer',
-        durationHours: 6,
+        durationHours: 6
+      } : undefined,
+      nextVoid: !isVoid ? {
+        startTime: new Date(dateTime.date.getTime() + 8 * 60 * 60 * 1000).toISOString(),
+        sign: 'Cancer'
       } : undefined,
     };
   }
@@ -204,7 +221,7 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
         name: p.name,
         retrogradeStart: new Date(dateTime.date.getTime() - 30 * 86400000).toISOString(),
         retrogradeEnd: new Date(dateTime.date.getTime() + 30 * 86400000).toISOString(),
-        currentSign: p.zodiacSign.name,
+        currentSign: p.zodiacSign,
       }));
 
     return {
@@ -219,59 +236,6 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
     const lunarCycle = 29.53;
     const phase = (dayOfYear % lunarCycle) / lunarCycle;
     return phase;
-  }
-
-  async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
-    const dayOfYear = this.getDayOfYear(dateTime.date);
-    const isVoid = dayOfYear % 3 === 0; // Mock: void every 3rd day
-    
-    return {
-      date: dateTime.date.toISOString(),
-      isVoid,
-      voidStart: isVoid ? new Date(dateTime.date.getTime() - 2 * 60 * 60 * 1000).toISOString() : undefined,
-      voidEnd: isVoid ? new Date(dateTime.date.getTime() + 4 * 60 * 60 * 1000).toISOString() : undefined,
-      nextAspect: isVoid ? 'Moon sextile Mercury' : undefined,
-    };
-  }
-
-  async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
-    const hours = [];
-    const planets = ['Sun', 'Venus', 'Mercury', 'Moon', 'Saturn', 'Jupiter', 'Mars'];
-    const startHour = 6; // 6 AM start
-    
-    for (let i = 0; i < 24; i++) {
-      const hour = new Date(dateTime.date);
-      hour.setHours(startHour + i, 0, 0, 0);
-      
-      hours.push({
-        hour: i + 1,
-        planet: planets[i % 7] as any,
-        startTime: hour.toISOString(),
-        endTime: new Date(hour.getTime() + 60 * 60 * 1000).toISOString(),
-      });
-    }
-    
-    return {
-      date: dateTime.date.toISOString(),
-      hours,
-    };
-  }
-
-  async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
-    const dayOfYear = this.getDayOfYear(dateTime.date);
-    const retrogrades = [];
-    
-    // Mock retrograde patterns
-    if (dayOfYear % 117 < 20) retrogrades.push('Mercury');
-    if (dayOfYear % 584 < 40) retrogrades.push('Venus');
-    if (dayOfYear % 780 < 72) retrogrades.push('Mars');
-    if (dayOfYear % 399 < 121) retrogrades.push('Jupiter');
-    if (dayOfYear % 378 < 138) retrogrades.push('Saturn');
-    
-    return {
-      date: dateTime.date.toISOString(),
-      retrogrades: retrogrades as any[],
-    };
   }
 
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {

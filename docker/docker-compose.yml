@@ -44,8 +44,15 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/adaptive_astro
       REDIS_URL: redis://redis:6379
-      EPHEMERIS_MODE: hybrid
-      SWEPH_DATA_PATH: /usr/share/ephe
+      EPHEMERIS_MODE: api
+      EPHEMERIS_API_URL: http://ephemeris:8000
+      TELEGRAM_BOT_TOKEN: "8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
+      TELEGRAM_WEBHOOK_URL: "http://176.123.166.252:3000/webhook/telegram"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: adaptive_astro
+      PGHOST: postgres
+      PGPORT: 5432
     ports:
       - "3000:3000"
     depends_on:
@@ -53,6 +60,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      ephemeris:
+        condition: service_started
+    restart: unless-stopped
+
+  # Ephemeris Service (Python)
+  ephemeris:
+    build:
+      context: ../lunar-calendar-api
+      dockerfile: Dockerfile
+    container_name: astro_ephemeris
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    ports:
+      - "8000:8000"
     restart: unless-stopped
 
   # Frontend (Telegram Mini App)

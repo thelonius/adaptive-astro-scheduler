@@ -263,4 +263,40 @@ export interface AspectAnalysisResponse {
   date: string;
   aspects: ScoredAspect[];
   topAspects: ScoredAspect[];  // Top 5 by strength
+  patterns?: AspectPattern[];  // Detected geometric patterns
+}
+
+// ============================================================================
+// Aspect Pattern Detection Types
+// ============================================================================
+
+/**
+ * Aspect Pattern Types
+ * Geometric configurations formed by multiple planets
+ */
+export type AspectPatternType =
+  | 'grand-trine'    // 3 planets forming 120° triangle (harmony)
+  | 't-square'       // 2 oppositions + apex squaring both (tension)
+  | 'grand-cross'    // 4 planets in cross (challenge)
+  | 'yod'            // 2 quincunxes + sextile "Finger of God" (fate)
+  | 'kite'           // Grand Trine + opposition (talent with direction)
+  | 'stellium';      // 3+ planets within 8° (concentration)
+
+/**
+ * Pattern Rarity Classification
+ */
+export type PatternRarity = 'common' | 'moderate' | 'rare' | 'very-rare';
+
+/**
+ * Aspect Pattern
+ * Detected geometric pattern with participating planets and aspects
+ */
+export interface AspectPattern {
+  type: AspectPatternType;
+  planets: string[];           // Planet names involved in pattern
+  aspects: ScoredAspect[];     // Aspects forming the pattern
+  strength: number;            // 0-1 based on average orb tightness
+  interpretation: string;      // Human-readable description
+  rarity: PatternRarity;       // How rare this pattern is
+  element?: string;            // For Grand Trine/Cross (Fire, Earth, Air, Water)
 }

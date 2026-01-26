@@ -1,5 +1,5 @@
 import type { CelestialBody, PlanetName, ZodiacSign } from '@adaptive-astro/shared/types/astrology';
-import { getZodiacSignByLongitude } from '@adaptive-astro/shared/constants/zodiac';
+import { getZodiacSignByLongitude } from '@adaptive-astro/shared';
 
 /**
  * Celestial Body Entity

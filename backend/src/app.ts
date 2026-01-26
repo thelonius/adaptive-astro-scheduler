@@ -14,7 +14,18 @@ export function createApp(): Express {
 
   // Middleware
   app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'],
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:8000',
+      'http://176.123.166.252',
+      'https://176.123.166.252'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -38,6 +49,17 @@ export function createApp(): Express {
   app.use('/api/natal-chart', natalChartRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/aspects', aspectAnalysisRoutes);
+
+  // Telegram Bot Webhook
+  app.post('/webhook/telegram', (req, res) => {
+    const { TelegramBotService } = require('./services/telegram-bot.service');
+    const botService = TelegramBotService.getInstance();
+    if (botService && botService.handleWebhook) {
+      botService.handleWebhook(req, res);
+    } else {
+      res.status(404).send('Bot webhook handler not available');
+    }
+  });
 
   // 404 handler
   app.use((req: Request, res: Response) => {

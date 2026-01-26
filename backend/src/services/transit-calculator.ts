@@ -3,6 +3,8 @@ import type {
   DateTime,
   Aspect,
   House,
+  PlanetApiData,
+  HouseApiData,
 } from '@adaptive-astro/shared/types/astrology';
 import type { NatalChart } from '../database/models';
 import { IEphemerisCalculator } from '../core/ephemeris';
@@ -116,8 +118,8 @@ export class TransitCalculator {
    * Calculate aspects between transiting and natal planets
    */
   private calculatePlanetTransits(
-    currentPlanets: CelestialBody[],
-    natalPlanets: CelestialBody[]
+    currentPlanets: (CelestialBody | PlanetApiData)[],
+    natalPlanets: (CelestialBody | PlanetApiData)[]
   ): Transit[] {
     const transits: Transit[] = [];
     const maxOrb = 8; // degrees
@@ -172,9 +174,9 @@ export class TransitCalculator {
    * Calculate which houses transiting planets are in
    */
   private calculateHouseTransits(
-    currentPlanets: CelestialBody[],
+    currentPlanets: (CelestialBody | PlanetApiData)[],
     natalHouses: House[],
-    currentHouses: House[]
+    currentHouses: (House | HouseApiData)[]
   ): HouseTransit[] {
     const houseTransits: HouseTransit[] = [];
 
@@ -200,8 +202,8 @@ export class TransitCalculator {
    * Find which house a planet is in
    */
   private findHouseForPlanet(
-    planet: CelestialBody,
-    houses: House[]
+    planet: CelestialBody | PlanetApiData,
+    houses: (House | HouseApiData)[]
   ): number | null {
     for (let i = 0; i < houses.length; i++) {
       const currentHouse = houses[i];
@@ -229,8 +231,8 @@ export class TransitCalculator {
    * Find retrograde planets affecting natal planets
    */
   private findRetrogradeInfluences(
-    currentPlanets: CelestialBody[],
-    natalPlanets: CelestialBody[]
+    currentPlanets: (CelestialBody | PlanetApiData)[],
+    natalPlanets: (CelestialBody | PlanetApiData)[]
   ) {
     const influences: { planet: string; affectedNatalPlanets: string[] }[] = [];
 

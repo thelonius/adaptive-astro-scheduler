@@ -20,7 +20,7 @@ import { MockEphemerisAdapter } from './mock-adapter';
 import { CachedEphemerisCalculator, InMemoryCache } from './cached-adapter';
 
 export function createEphemerisCalculator(
-  baseUrl: string = process.env.EPHEMERIS_API_URL || 'http://91.84.112.120:8000',
+  baseUrl: string = process.env.EPHEMERIS_API_URL || 'http://localhost:8000',
   enableCache: boolean = true,
   useMock: boolean = process.env.USE_MOCK_EPHEMERIS === 'true'
 ) {

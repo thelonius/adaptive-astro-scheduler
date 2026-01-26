@@ -232,14 +232,35 @@ export class EphemerisAdapter implements IEphemerisCalculator {
 
   /**
    * Get void of course moon from API
+   * Falls back to calculation from aspects if API doesn't support it
    */
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
-    const params = {
-      date: this.formatDate(dateTime.date),
-      tz: dateTime.timezone,
-    };
+    try {
+      const params = {
+        date: this.formatDate(dateTime.date),
+        tz: dateTime.timezone,
+      };
 
-    return this.fetch<VoidMoonApiResponse>('/api/v1/void-moon', params);
+      return await this.fetch<VoidMoonApiResponse>('/api/v1/void-moon', params);
+    } catch (error) {
+      // API doesn't support void moon - calculate from aspects
+      // Import here to avoid circular dependency
+      const { VoidMoonCalculator } = await import('../../services/void-moon-calculator');
+      const calculator = new VoidMoonCalculator(this);
+      const voidPeriod = await calculator.calculateVoidMoon(dateTime);
+
+      return {
+        date: this.formatDate(dateTime.date),
+        isVoidOfCourse: voidPeriod.isVoid,
+        voidPeriod: voidPeriod.isVoid && voidPeriod.voidStart && voidPeriod.voidEnd ? {
+          startTime: voidPeriod.voidStart.toISOString(),
+          endTime: voidPeriod.voidEnd.toISOString(),
+          currentSign: voidPeriod.currentSign || '',
+          nextSign: voidPeriod.nextSign || '',
+          durationHours: (voidPeriod.voidEnd.getTime() - voidPeriod.voidStart.getTime()) / (1000 * 60 * 60),
+        } : undefined,
+      };
+    }
   }
 
   /**
@@ -291,6 +312,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       number: house.number,
       cusp: house.cusp_longitude,
       zodiacSign: house.cusp_sign || this.getZodiacSign(house.cusp_longitude),
+      degree: Math.floor(house.cusp_longitude % 30),
     }));
 
     return {
@@ -299,6 +321,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
         latitude: parseFloat(params.latitude),
         longitude: parseFloat(params.longitude),
       },
+      system: system, // Fixed: added missing property
       houses: housesArray,
     };
   }
