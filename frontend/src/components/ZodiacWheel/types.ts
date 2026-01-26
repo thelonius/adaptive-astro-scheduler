@@ -33,6 +33,16 @@ export interface PlanetPosition {
   x: number;
   y: number;
   angle: number;
+  clustered?: boolean;
+  clusterIndex?: number;
+  originalLongitude?: number;
+}
+
+export interface SmartLabelPosition extends PlanetPosition {
+  labelX: number;
+  labelY: number;
+  needsLeader: boolean;
+  originalLabelAngle?: number;
 }
 
 export interface AspectLine {
