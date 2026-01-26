@@ -162,11 +162,11 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    * Get current moon phase (illumination percentage)
    */
   async getMoonPhase(dateTime: DateTime): Promise<number> {
-    const response = await this.fetch<MoonPhaseResponse>('/api/v1/moon-phase', {
-      date: this.formatDate(dateTime.date),
-      lat: dateTime.location.latitude.toString(),
-      lon: dateTime.location.longitude.toString(),
-      tz: dateTime.timezone,
+    const response = await this.fetch<MoonPhaseResponse>('/api/v1/ephemeris/moon-phase', {
+      date: dateTime.date.toISOString().split('.')[0], // Remove milliseconds and timezone
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
+      timezone: dateTime.timezone,
     });
 
     // Convert percentage (0-100) to decimal (0-1)
@@ -177,7 +177,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    * Calculate lunar day (1-30) for given date/time
    */
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {
-    const response = await this.fetch<LunarDayResponse>('/api/v1/lunar-day', {
+    const response = await this.fetch<LunarDayResponse>('/api/v1/ephemeris/lunar-day', {
       date: this.formatDate(dateTime.date),
       timezone: dateTime.timezone,
     });
@@ -212,14 +212,14 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
     const params = {
-      date: this.formatDate(dateTime.date),
-      time: this.formatTime(dateTime.date),
+      date: dateTime.date.toISOString().split('.')[0], // Remove milliseconds and timezone
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
+      elevation: '0',
       timezone: dateTime.timezone,
     };
 
-    const response = await this.fetch<PlanetsApiResponse>('/api/v1/planets', params);
+    const response = await this.fetch<PlanetsApiResponse>('/api/v1/ephemeris/planets', params);
 
     // Ensure all planets have zodiacSign calculated from longitude
     response.planets = response.planets.map(planet => ({
@@ -241,7 +241,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
         tz: dateTime.timezone,
       };
 
-      return await this.fetch<VoidMoonApiResponse>('/api/v1/void-moon', params);
+      return await this.fetch<VoidMoonApiResponse>('/api/v1/ephemeris/void-moon', params);
     } catch (error) {
       // API doesn't support void moon - calculate from aspects
       // Import here to avoid circular dependency
@@ -271,7 +271,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       date: this.formatDate(dateTime.date),
     };
 
-    return this.fetch<RetrogradesApiResponse>('/api/v1/retrogrades', params);
+    return this.fetch<RetrogradesApiResponse>('/api/v1/ephemeris/retrogrades', params);
   }
 
   /**
@@ -284,7 +284,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       orb: orb.toString(),
     };
 
-    const rawResponse = await this.fetch<any[]>('/api/v1/aspects', params);
+    const rawResponse = await this.fetch<any[]>('/api/v1/ephemeris/aspects', params);
 
     // Transform array response to AspectsApiResponse format
     return {
@@ -305,7 +305,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       system,
     };
 
-    const rawResponse = await this.fetch<any>('/api/v1/houses', params);
+    const rawResponse = await this.fetch<any>('/api/v1/ephemeris/houses', params);
 
     // Transform the object response to array format
     const housesArray = Object.values(rawResponse).map((house: any) => ({
@@ -337,7 +337,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       tz: dateTime.timezone,
     };
 
-    return this.fetch<PlanetaryHoursApiResponse>('/api/v1/planetary-hours', params);
+    return this.fetch<PlanetaryHoursApiResponse>('/api/v1/ephemeris/planetary-hours', params);
   }
 
   /**
