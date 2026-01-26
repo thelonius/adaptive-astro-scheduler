@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: astro_postgres
+    container_name: astro_postgres_dev
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -23,62 +23,48 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: astro_redis
+    container_name: astro_redis_dev
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_dev_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
 
-  # Backend API
+  # Backend API (Development)
   backend:
     build:
       context: ..
       dockerfile: docker/Dockerfile.backend
-    container_name: astro_backend
+    container_name: astro_backend_dev
     environment:
-      NODE_ENV: production
-      PORT: 3000
+      NODE_ENV: development
+      PORT: 3001
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/adaptive_astro
       REDIS_URL: redis://redis:6379
       EPHEMERIS_MODE: api
       EPHEMERIS_API_URL: http://176.123.166.252:3000
       TELEGRAM_BOT_TOKEN: "8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
-      TELEGRAM_WEBHOOK_URL: "http://176.123.166.252:3000/webhook/telegram"
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      PGDATABASE: adaptive_astro
-      PGHOST: postgres
-      PGPORT: 5432
+      TELEGRAM_WEBHOOK_URL: ""
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
-
-  # Frontend (Telegram Mini App)
-  frontend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.frontend
-    container_name: astro_frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
+    volumes:
+      - ../backend/src:/app/backend/src
+      - ../shared/src:/app/shared/src
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres_dev_data:
+  redis_dev_data:
 
 networks:
   default:
-    name: astro_network
+    name: astro_dev_network
