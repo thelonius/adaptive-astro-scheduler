@@ -798,17 +798,10 @@ export class TelegramBotService {
 
       // Add debug logging for bot startup
       console.log('🔧 Bot instance created with token:', TOKEN ? 'Present' : 'Missing');
-      console.log('🔧 Bot handlers registered:', Object.keys(this.bot.context).length);
       
       // For now, always use polling mode since we don't have HTTPS webhook setup
       console.log('🔄 Using polling mode');
-      await this.bot.launch({
-        polling: {
-          timeout: 30,
-          limit: 100,
-          allowedUpdates: ['message', 'callback_query']
-        }
-      });
+      await this.bot.launch();
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
       console.log('🎯 Enhanced Telegram bot with natal chart management is LIVE!');
@@ -818,11 +811,11 @@ export class TelegramBotService {
       const me = await this.bot.telegram.getMe();
       console.log('✅ Bot connected successfully:', me.username);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Failed to launch Telegram Bot:', err);
       console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
-      console.error('Error details:', err.message);
-      if (err.stack) console.error('Stack trace:', err.stack);
+      console.error('Error details:', err?.message || 'Unknown error');
+      if (err?.stack) console.error('Stack trace:', err.stack);
     }
 
     // Enable graceful stop
