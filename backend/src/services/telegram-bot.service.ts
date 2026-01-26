@@ -858,36 +858,25 @@ export class TelegramBotService {
   private async setupManualPolling() {
     console.log('🔧 Setting up manual polling as fallback...');
     
-    let offset = 0;
-    const pollForUpdates = async () => {
-      try {
-        const updates = await this.bot.telegram.getUpdates({
-          offset,
-          timeout: 10,
-          limit: 100
-        });
-        
-        for (const update of updates) {
-          try {
-            await this.bot.handleUpdate(update);
-            offset = update.update_id + 1;
-          } catch (updateErr: any) {
-            console.error('❌ Error processing update:', updateErr?.message);
-          }
-        }
-        
-        // Continue polling
-        setTimeout(pollForUpdates, 100);
-        
-      } catch (pollErr: any) {
-        console.error('❌ Polling error:', pollErr?.message);
-        // Retry after delay
-        setTimeout(pollForUpdates, 5000);
-      }
-    };
-    
-    console.log('✅ Starting manual polling loop...');
-    pollForUpdates();
+    // Simplified approach: just try to restart the bot with a clean state
+    try {
+      console.log('🔄 Attempting to restart bot with clean state...');
+      await this.bot.telegram.deleteWebhook();
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Try launching again without the timeout wrapper
+      await this.bot.launch({
+        dropPendingUpdates: true
+      });
+      
+      console.log('✅ Manual restart successful!');
+      
+    } catch (manualErr: any) {
+      console.error('❌ Manual restart also failed:', manualErr?.message);
+      
+      // Last resort: log the error and continue with other services
+      console.log('⚠️ Bot will be unavailable, but other services will continue');
+    }
   }
 
   private async setBotCommands() {
