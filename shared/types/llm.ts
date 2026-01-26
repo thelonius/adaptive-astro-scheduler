@@ -1,12 +1,12 @@
 /**
  * LLM Pipeline Types
- * 
+ *
  * Types for Large Language Model integration and rule generation
  */
 
 export type LLMProvider = 'openai' | 'claude';
 
-export type LayerCreationMode = 
+export type LayerCreationMode =
   | 'natural' // Natural language description
   | 'guided' // Step-by-step wizard
   | 'example' // Based on existing examples

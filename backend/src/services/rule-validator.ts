@@ -1,15 +1,15 @@
-import type { 
-  CustomRule, 
-  RuleExecutionContext, 
+import type {
+  CustomRule,
+  RuleExecutionContext,
   RuleExecutionResult,
-  LayerValidationResult 
+  LayerValidationResult
 } from '@adaptive-astro/shared/types';
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 
 /**
  * Rule Validation Engine
- * 
+ *
  * Validates and executes custom astrological rules safely.
  * Includes JavaScript syntax checking, security validation, and sandboxed execution.
  */
@@ -51,21 +51,21 @@ export class RuleValidationEngine {
     try {
       // 1. Basic validation
       this.validateBasicStructure(rule, result);
-      
+
       // 2. JavaScript syntax validation
       this.validateJavaScriptSyntax(rule.condition_code, result);
-      
+
       // 3. Security validation
       this.validateSecurity(rule.condition_code, result);
-      
+
       // 4. Astrological logic validation
       await this.validateAstrologicalLogic(rule, result);
-      
+
       // 5. Performance validation
       this.validatePerformance(rule.condition_code, result);
 
       result.isValid = result.errors.length === 0;
-      
+
       console.log('✅ Rule validation completed:', {
         valid: result.isValid,
         errors: result.errors.length,
@@ -73,7 +73,7 @@ export class RuleValidationEngine {
       });
 
       return result;
-      
+
     } catch (error) {
       result.isValid = false;
       result.errors.push(`Validation process failed: ${error}`);
@@ -85,7 +85,7 @@ export class RuleValidationEngine {
    * Execute rule safely in controlled environment
    */
   async executeRule(
-    rule: CustomRule, 
+    rule: CustomRule,
     context: RuleExecutionContext,
     timeoutMs: number = 5000
   ): Promise<RuleExecutionResult> {
@@ -100,7 +100,7 @@ export class RuleValidationEngine {
     try {
       // Create safe execution function
       const safeFunction = this.createSafeFunction(rule.condition_code);
-      
+
       // Execute with timeout protection
       const result = await this.executeWithTimeout(
         () => safeFunction(context.astroData, context.userPrefs, context.currentTime),
@@ -118,10 +118,10 @@ export class RuleValidationEngine {
       });
 
       return result as RuleExecutionResult;
-      
+
     } catch (error) {
       console.error('❌ Rule execution failed:', error);
-      
+
       return {
         score: 0,
         reasoning: `Rule execution failed: ${error}`,
@@ -154,7 +154,7 @@ export class RuleValidationEngine {
     });
 
     await Promise.allSettled(promises);
-    
+
     console.log('✅ Batch execution completed:', {
       total: rules.length,
       successful: Array.from(results.values()).filter(r => !r.metadata?.error).length
@@ -194,10 +194,10 @@ export class RuleValidationEngine {
   private validateJavaScriptSyntax(code: string, result: LayerValidationResult): void {
     try {
       // Parse JavaScript syntax
-      const ast = esprima.parseScript(code, { 
+      const ast = esprima.parseScript(code, {
         tolerant: false,
         range: true,
-        loc: true 
+        loc: true
       });
 
       // Check for function structure
@@ -207,7 +207,7 @@ export class RuleValidationEngine {
       }
 
       const func = ast.body[0] as any;
-      
+
       // Check function name
       if (func.id?.name !== 'evaluateCondition') {
         result.warnings.push('Function should be named "evaluateCondition"');
@@ -243,7 +243,7 @@ export class RuleValidationEngine {
     // Check for potential infinite loops (basic heuristics)
     const whileMatches = code.match(/while\s*\(/g)?.length || 0;
     const forMatches = code.match(/for\s*\(/g)?.length || 0;
-    
+
     if (whileMatches + forMatches > 3) {
       result.warnings.push('Multiple loops detected - ensure they terminate properly');
     }
@@ -260,7 +260,7 @@ export class RuleValidationEngine {
    */
   private async validateAstrologicalLogic(rule: CustomRule, result: LayerValidationResult): Promise<void> {
     const code = rule.condition_code.toLowerCase();
-    
+
     // Check for common astrological terms
     const astroTerms = [
       'planets', 'aspects', 'houses', 'moon', 'sun', 'venus', 'mars', 'jupiter', 'saturn',
@@ -340,7 +340,7 @@ export class RuleValidationEngine {
     // Create function with restricted scope
     const keys = Object.keys(safeGlobals);
     const values = Object.values(safeGlobals);
-    
+
     const factory = new Function(...keys, wrappedCode);
     return factory(...values);
   }
@@ -349,7 +349,7 @@ export class RuleValidationEngine {
    * Execute function with timeout protection
    */
   private async executeWithTimeout<T>(
-    fn: () => T, 
+    fn: () => T,
     timeoutMs: number
   ): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -373,13 +373,13 @@ export class RuleValidationEngine {
    */
   private isValidResult(result: any): boolean {
     if (!result || typeof result !== 'object') return false;
-    
+
     if (typeof result.score !== 'number') return false;
     if (result.score < 0 || result.score > 100) return false;
-    
+
     if (typeof result.reasoning !== 'string') return false;
     if (result.reasoning.length === 0) return false;
-    
+
     return true;
   }
 

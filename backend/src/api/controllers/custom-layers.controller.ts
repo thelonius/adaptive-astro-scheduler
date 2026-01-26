@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { LLMPipelineService } from '../../services/llm-pipeline';
 import { RuleValidationEngine } from '../../services/rule-validator';
-import type { 
+import type {
   LayerGenerationRequest,
   CustomRule,
   RuleExecutionContext,
@@ -12,7 +12,7 @@ import { createEphemerisCalculator } from '../../core/ephemeris';
 
 /**
  * Custom Layers Controller
- * 
+ *
  * Handles API requests for LLM-powered custom astrological layers
  */
 export class CustomLayersController {
@@ -52,7 +52,7 @@ export class CustomLayersController {
       console.log('🔮 Generating rule for:', request.description);
 
       const rule = await this.llmService.generateRule(request);
-      
+
       // Validate generated rule immediately
       const validation = await this.validator.validateRule(rule);
 
@@ -215,7 +215,7 @@ export class CustomLayersController {
     try {
       // TODO: Implement database layer storage
       // For now, return mock data
-      
+
       const mockLayers: AstrologicalLayer[] = [
         {
           id: '1',
@@ -468,7 +468,7 @@ export class CustomLayersController {
       };
     } catch (error) {
       console.warn('⚠️  Failed to get live astronomical data, using mock data');
-      
+
       // Return mock context if ephemeris fails
       return {
         astroData: {

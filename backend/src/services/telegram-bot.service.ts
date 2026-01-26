@@ -745,22 +745,16 @@ export class TelegramBotService {
 
     console.log('🚀 Launching Telegram Bot...');
 
-    if (IS_PRODUCTION && WEBHOOK_URL) {
-      // Production: Use webhook mode
-      console.log('📡 Using webhook mode');
-      await this.setupWebhook();
-    } else {
-      // Development: Use polling mode
-      console.log('🔄 Using polling mode');
-
-      try {
-        await this.bot.launch();
-        console.log('🤖 Telegram Bot started in polling mode!');
-        console.log('📞 Bot is now listening for messages...');
-      } catch (err) {
-        console.error('❌ Failed to launch Telegram Bot:', err);
-        console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
-      }
+    // For now, always use polling mode since we don't have HTTPS webhook setup
+    console.log('🔄 Using polling mode');
+    try {
+      await this.bot.launch();
+      console.log('🤖 Telegram Bot started in polling mode!');
+      console.log('📞 Bot is now listening for messages...');
+      console.log('🎯 Enhanced Telegram bot with natal chart management is LIVE!');
+    } catch (err) {
+      console.error('❌ Failed to launch Telegram Bot:', err);
+      console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
     }
 
     // Enable graceful stop

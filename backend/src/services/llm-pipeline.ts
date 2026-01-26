@@ -1,16 +1,16 @@
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import type { 
+import type {
   AstrologicalLayer,
   CustomRule,
   LayerGenerationRequest,
   LayerValidationResult,
-  LLMProvider 
+  LLMProvider
 } from '@adaptive-astro/shared/types';
 
 /**
  * LLM Pipeline Service
- * 
+ *
  * Handles intelligent rule generation using Large Language Models.
  * Supports both OpenAI (GPT-4) and Anthropic (Claude) providers.
  */
@@ -35,7 +35,7 @@ export class LLMPipelineService {
 
     // Set default provider preference: Claude > GPT-4
     this.defaultProvider = this.anthropic ? 'claude' : 'openai';
-    
+
     console.log('🤖 LLM Pipeline initialized with providers:', {
       openai: !!this.openai,
       anthropic: !!this.anthropic,
@@ -48,15 +48,15 @@ export class LLMPipelineService {
    */
   async generateRule(request: LayerGenerationRequest): Promise<CustomRule> {
     const { description, category, mode, examples } = request;
-    
+
     console.log('🔮 Generating rule:', { description, category, mode });
 
     const provider = request.preferredProvider || this.defaultProvider;
-    
+
     try {
       const prompt = this.buildRuleGenerationPrompt(description, category, mode, examples);
       const response = await this.callLLM(prompt, provider);
-      
+
       return this.parseRuleResponse(response, request);
     } catch (error) {
       console.error('❌ Rule generation failed:', error);
@@ -73,7 +73,7 @@ export class LLMPipelineService {
     try {
       const prompt = this.buildValidationPrompt(rule);
       const response = await this.callLLM(prompt, this.defaultProvider);
-      
+
       return this.parseValidationResponse(response, rule);
     } catch (error) {
       console.error('❌ Rule validation failed:', error);
@@ -90,15 +90,15 @@ export class LLMPipelineService {
    * Improve existing rule based on feedback
    */
   async improveRule(
-    rule: CustomRule, 
-    feedback: string, 
+    rule: CustomRule,
+    feedback: string,
     outcomeData?: any[]
   ): Promise<CustomRule> {
     console.log('🔄 Improving rule:', rule.rule_name);
 
     const prompt = this.buildImprovementPrompt(rule, feedback, outcomeData);
     const response = await this.callLLM(prompt, this.defaultProvider);
-    
+
     return this.parseRuleResponse(response, {
       description: `Improved: ${rule.rule_name}`,
       category: rule.category,
@@ -140,7 +140,7 @@ function evaluateCondition(astroData, userPrefs, currentTime) {
   // astroData: { planets, aspects, lunarDay, moonPhase, houses }
   // userPrefs: { birthChart, timezone, location }
   // currentTime: Date object
-  
+
   // Return { score: 0-100, reasoning: "explanation" }
   return { score: 85, reasoning: "Venus trine Jupiter suggests..." };
 }
@@ -205,7 +205,7 @@ Validate now:`;
     feedback: string,
     outcomeData?: any[]
   ): string {
-    const outcomeAnalysis = outcomeData ? 
+    const outcomeAnalysis = outcomeData ?
       `\n## Outcome Data\n${JSON.stringify(outcomeData, null, 2)}` : '';
 
     return `
@@ -255,7 +255,7 @@ Generate improved rule:`;
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }],
         });
-        
+
         // Extract text from Claude's response format
         const content = claudeResponse.content[0];
         return content.type === 'text' ? content.text : '';
@@ -271,15 +271,15 @@ Generate improved rule:`;
   private parseRuleResponse(response: string, request: LayerGenerationRequest): CustomRule {
     try {
       // Extract JSON from response (handle markdown code blocks)
-      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || 
+      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ||
                        response.match(/(\{[\s\S]*\})/);
-      
+
       if (!jsonMatch) {
         throw new Error('No JSON found in LLM response');
       }
 
       const parsed = JSON.parse(jsonMatch[1]);
-      
+
       // Validate required fields
       if (!parsed.rule_name || !parsed.condition_code) {
         throw new Error('Missing required fields in generated rule');
@@ -314,9 +314,9 @@ Generate improved rule:`;
    */
   private parseValidationResponse(response: string, rule: CustomRule): LayerValidationResult {
     try {
-      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || 
+      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ||
                        response.match(/(\{[\s\S]*\})/);
-      
+
       if (!jsonMatch) {
         return {
           isValid: false,
@@ -327,7 +327,7 @@ Generate improved rule:`;
       }
 
       const parsed = JSON.parse(jsonMatch[1]);
-      
+
       return {
         isValid: parsed.isValid || false,
         errors: parsed.errors || [],
@@ -356,17 +356,17 @@ Generate improved rule:`;
 Example 1: "Moon trine Venus for relationship activities"
 Example 2: "Mars in strong aspect for physical activities"
 Example 3: "Mercury direct for communication tasks"`,
-      
+
       energy: `
 Example 1: "New Moon for starting projects"
 Example 2: "Full Moon for completion and manifestation"
 Example 3: "Waxing Moon for growth-oriented activities"`,
-      
+
       compatibility: `
 Example 1: "Venus-Jupiter aspects for social activities"
 Example 2: "Sun-Mercury conjunction for learning"
 Example 3: "Moon-Saturn aspects for disciplined work"`,
-      
+
       avoidance: `
 Example 1: "Void of Course Moon for important decisions"
 Example 2: "Mercury retrograde for signing contracts"

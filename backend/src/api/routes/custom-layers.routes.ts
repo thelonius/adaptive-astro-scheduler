@@ -6,7 +6,7 @@ const controller = new CustomLayersController();
 
 /**
  * Custom Layer Routes
- * 
+ *
  * API endpoints for LLM-powered custom astrological layer creation
  */
 

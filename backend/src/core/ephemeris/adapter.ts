@@ -70,12 +70,12 @@ interface MoonPhaseResponse {
  * Wraps the external Lunar Calendar & Ephemeris API
  * and normalizes output to match our type system.
  *
- * Base API URL: http://91.84.112.120:8000
+ * Base API URL: http://176.123.166.252:8000
  */
 export class EphemerisAdapter implements IEphemerisCalculator {
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = 'http://91.84.112.120:8000') {
+  constructor(baseUrl: string = 'http://176.123.166.252:8000') {
     this.baseUrl = baseUrl;
   }
 
@@ -219,7 +219,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       timezone: dateTime.timezone,
     };
 
-    const response = await this.fetch<PlanetsApiResponse>('/api/v1/ephemeris/planets', params);
+    const response = await this.fetch<PlanetsApiResponse>('/api/v1/planets', params);
 
     // Ensure all planets have zodiacSign calculated from longitude
     response.planets = response.planets.map(planet => ({
@@ -284,7 +284,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       orb: orb.toString(),
     };
 
-    const rawResponse = await this.fetch<any[]>('/api/v1/ephemeris/aspects', params);
+    const rawResponse = await this.fetch<any[]>('/api/v1/aspects', params);
 
     // Transform array response to AspectsApiResponse format
     return {
@@ -305,7 +305,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       system,
     };
 
-    const rawResponse = await this.fetch<any>('/api/v1/ephemeris/houses', params);
+    const rawResponse = await this.fetch<any>('/api/v1/houses', params);
 
     // Transform the object response to array format
     const housesArray = Object.values(rawResponse).map((house: any) => ({
