@@ -851,8 +851,8 @@ export class TelegramBotService {
     }
 
     // Enable graceful stop
-    process.once('SIGINT', () => this.bot.stop('SIGINT'));
-    process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+    process.once('SIGINT', () => this.bot.stop());
+    process.once('SIGTERM', () => this.bot.stop());
   }
 
   private async setupManualPolling() {
