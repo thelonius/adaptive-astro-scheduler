@@ -116,13 +116,13 @@ export class TelegramBotService {
 
         // Check if user has any charts
         const charts = await this.natalRepo.findByUserId(user.id);
-        
+
         if (charts.length > 0) {
           await this.showMainMenu(ctx, charts);
         } else {
           await this.startChartCreation(ctx, 'self');
         }
-        
+
       } catch (error) {
         console.error('❌ Error in /start command:', error);
         await ctx.reply('Hello! I\'m your Astro Scheduler bot. Something went wrong, but you can try again!');
@@ -139,15 +139,15 @@ export class TelegramBotService {
       const { latitude, longitude } = ctx.message.location;
       ctx.session.chartCreationFlow.tempData.lat = latitude;
       ctx.session.chartCreationFlow.tempData.lon = longitude;
-      
+
       try {
         const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
           latitude, longitude
         });
-        
+
         const timezone = tzResponse.data.timezone;
         const placeName = tzResponse.data.place_name || `${latitude}, ${longitude}`;
-        
+
         ctx.session.chartCreationFlow.tempData.timezone = timezone;
         ctx.session.chartCreationFlow.tempData.placeName = placeName;
         ctx.session.chartCreationFlow.step = 2;
@@ -179,7 +179,7 @@ export class TelegramBotService {
         ctx.session.chartCreationFlow!.tempData.birthDate = text;
         ctx.session.chartCreationFlow!.step = 3;
         ctx.session.awaiting = 'BIRTH_TIME';
-        
+
         return ctx.reply('Perfect! Now enter the birth time (HH:MM) - use 24h format (e.g. 14:30):');
       }
 
@@ -195,7 +195,7 @@ export class TelegramBotService {
 
         const chartType = ctx.session.chartCreationFlow!.chartType;
         const defaultName = chartType === 'self' ? 'My Chart' : 'Chart';
-        
+
         return ctx.reply(
           `Great! Finally, what would you like to name this chart?\n\n` +
           `You can just type "${defaultName}" or choose a custom name:`
@@ -205,7 +205,7 @@ export class TelegramBotService {
       if (ctx.session.awaiting === 'CHART_NAME') {
         ctx.session.chartCreationFlow!.tempData.chartName = text;
         ctx.session.awaiting = null;
-        
+
         await this.createAndSaveChart(ctx);
       }
     });
@@ -213,11 +213,11 @@ export class TelegramBotService {
     // Enhanced /today command with personalized readings
     this.bot.command('today', async (ctx) => {
       console.log('🎯 /today command received from user:', ctx.from.id);
-      
+
       try {
         const telegramId = ctx.from.id;
         const user = await this.userRepo.findByTelegramId(telegramId);
-        
+
         if (!user) {
           await ctx.reply('Please start with /start first to create your natal chart.');
           return;
@@ -225,7 +225,7 @@ export class TelegramBotService {
 
         // Get user's charts
         const charts = await this.natalRepo.findByUserId(user.id);
-        
+
         if (charts.length === 0) {
           await ctx.reply(
             'You don\'t have any natal charts yet! 📊\n\n' +
@@ -261,7 +261,7 @@ export class TelegramBotService {
           await ctx.reply('Error: Unable to identify user');
           return;
         }
-        
+
         const user = await this.userRepo.findByTelegramId(telegramId);
         if (!user) {
           await ctx.reply('Please start with /start first.');
@@ -269,7 +269,7 @@ export class TelegramBotService {
         }
 
         const charts = await this.natalRepo.findByUserId(user.id);
-        
+
         if (charts.length === 0) {
           await ctx.reply('You don\'t have any charts yet. Use /start to create one!');
           return;
@@ -283,7 +283,7 @@ export class TelegramBotService {
           text += `   📍 ${chart.birth_location.placeName || 'Location'}\n\n`;
         });
 
-        await ctx.reply(text, { 
+        await ctx.reply(text, {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
@@ -343,7 +343,7 @@ export class TelegramBotService {
       tempData: {}
     };
 
-    const message = chartType === 'self' 
+    const message = chartType === 'self'
       ? "Let's create your personal natal chart! 🌟\nFirst, I need your birth location."
       : "Let's create a new natal chart! 🌟\nFirst, I need the birth location.";
 
@@ -361,16 +361,16 @@ export class TelegramBotService {
       await ctx.reply('Error: Unable to identify user');
       return;
     }
-    
+
     const user = await this.userRepo.findByTelegramId(telegramId);
-    
+
     if (!user) {
       await ctx.reply('Please start with /start first');
       return;
     }
 
     const charts = await this.natalRepo.findByUserId(user.id);
-    
+
     if (charts.length === 0) {
       await ctx.reply('You don\'t have any charts yet. Let\'s create one!');
       await this.startChartCreation(ctx, 'self');
@@ -439,7 +439,7 @@ export class TelegramBotService {
           placeName: tempData.placeName,
         },
         planets: planets.planets as any[], // Convert API data to expected format
-        houses: houses.houses as any[], // Convert API data to expected format  
+        houses: houses.houses as any[], // Convert API data to expected format
         aspects: aspects.aspects as any[], // Convert API data to expected format
         lunar_day: lunarDay,
         moon_phase: moonPhase.toString(), // Convert number to string for database
@@ -476,7 +476,7 @@ export class TelegramBotService {
         '❌ Sorry, there was an error creating your chart. Please try again with /start.\n\n' +
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-      
+
       // Clear session on error
       ctx.session.chartCreationFlow = undefined;
       ctx.session.awaiting = null;
@@ -497,7 +497,7 @@ export class TelegramBotService {
       // Generate today's analytics
       const today = new Date();
       const analytics = await this.analyticsService.generateDayAnalytics(
-        natalChart, 
+        natalChart,
         today
       );
 
@@ -538,7 +538,7 @@ export class TelegramBotService {
   private formatDailyReading(analytics: PersonalizedDayAnalytics, chart: any): string {
     const date = analytics.date.toISOString().split('T')[0];
     const score = Math.round(analytics.overallScore);
-    
+
     let scoreEmoji = '🌟';
     if (score >= 80) scoreEmoji = '✨';
     else if (score >= 60) scoreEmoji = '⭐';
@@ -546,13 +546,13 @@ export class TelegramBotService {
     else scoreEmoji = '🌑';
 
     let text = `📅 *${chart.name}* - Today's Energy (${date}) ${scoreEmoji}\n\n`;
-    
+
     text += `*Overall Score:* ${score}/100\n\n`;
-    
+
     text += `🌙 *Lunar Day:* ${analytics.universalEnergy.lunarDay} (${analytics.universalEnergy.moonPhase})\n\n`;
-    
+
     text += `*Personal Summary:*\n${analytics.personalSummary}\n\n`;
-    
+
     if (analytics.recommendations.bestActivities.length > 0) {
       text += `✅ *Best Activities:*\n`;
       analytics.recommendations.bestActivities.forEach(activity => {
@@ -560,7 +560,7 @@ export class TelegramBotService {
       });
       text += '\n';
     }
-    
+
     if (analytics.recommendations.avoid.length > 0) {
       text += `⚠️ *Avoid:*\n`;
       analytics.recommendations.avoid.forEach(item => {
@@ -568,7 +568,7 @@ export class TelegramBotService {
       });
       text += '\n';
     }
-    
+
     if (analytics.recommendations.energyFocus.length > 0) {
       text += `🎯 *Energy Focus:*\n`;
       analytics.recommendations.energyFocus.forEach(focus => {
@@ -588,7 +588,7 @@ export class TelegramBotService {
       const transits = analytics.personalTransits;
 
       let text = `🌍 *Current Transits* for ${natalChart.name}\n\n`;
-      
+
       if (transits.significantTransits.length > 0) {
         text += `*Significant Aspects:*\n`;
         transits.significantTransits.slice(0, 5).forEach(transit => {
@@ -601,7 +601,7 @@ export class TelegramBotService {
 
       await ctx.reply(text, { parse_mode: 'Markdown' });
       await ctx.answerCbQuery();
-      
+
     } catch (error) {
       console.error('Error showing transit details:', error);
       await ctx.answerCbQuery('Error loading transit details');
@@ -616,7 +616,7 @@ export class TelegramBotService {
       // Define common activities to score
       const activities = [
         'Важные переговоры',
-        'Новые проекты', 
+        'Новые проекты',
         'Финансовые решения',
         'Романтические встречи',
         'Спортивная активность',
@@ -626,12 +626,12 @@ export class TelegramBotService {
       ];
 
       const recommendations = await this.analyticsService.scoreActivities(
-        natalChart, 
+        natalChart,
         activities
       );
 
       let text = `📊 *Activity Recommendations* for ${natalChart.name}\n\n`;
-      
+
       recommendations.slice(0, 6).forEach((rec, index) => {
         const emoji = index < 2 ? '🟢' : index < 4 ? '🟡' : '🔴';
         text += `${emoji} *${rec.activity}*: ${rec.score}/100\n`;
@@ -639,7 +639,7 @@ export class TelegramBotService {
 
       await ctx.reply(text, { parse_mode: 'Markdown' });
       await ctx.answerCbQuery();
-      
+
     } catch (error) {
       console.error('Error showing activity recommendations:', error);
       await ctx.answerCbQuery('Error loading recommendations');
@@ -650,13 +650,13 @@ export class TelegramBotService {
     // Pattern-based callback handlers
     this.bot.action(/^(.+)_(.+)$/, async (ctx) => {
       const [, action, data] = ctx.match;
-      
+
       try {
         switch (action) {
           case 'today':
             await this.generateTodayReading(ctx, data);
             break;
-            
+
           case 'add':
             if (data === 'self') {
               await this.startChartCreation(ctx, 'self');
@@ -664,15 +664,15 @@ export class TelegramBotService {
               await this.startChartCreation(ctx, 'other');
             }
             break;
-            
+
           case 'transits':
             await this.showTransitDetails(ctx, data);
             break;
-            
+
           case 'activities':
             await this.showActivityRecommendations(ctx, data);
             break;
-            
+
           default:
             await ctx.answerCbQuery('Unknown action');
         }
@@ -701,7 +701,7 @@ export class TelegramBotService {
         await ctx.reply('Error: Unable to identify user');
         return;
       }
-      
+
       const user = await this.userRepo.findByTelegramId(telegramId);
       if (!user) {
         await ctx.reply('Please start with /start first.');

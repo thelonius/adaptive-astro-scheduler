@@ -46,7 +46,7 @@ export function findPlanetClusters(
   for (let i = 1; i < sortedPlanets.length; i++) {
     const currentPlanet = sortedPlanets[i];
     const lastInCluster = currentCluster[currentCluster.length - 1];
-    
+
     // Calculate angular distance (handle zodiac wrap-around)
     let distance = currentPlanet.longitude - lastInCluster.longitude;
     if (distance > 180) distance = 360 - distance;
@@ -60,7 +60,7 @@ export function findPlanetClusters(
       currentCluster = [currentPlanet];
     }
   }
-  
+
   // Add the last cluster
   clusters.push(currentCluster);
 
@@ -70,13 +70,13 @@ export function findPlanetClusters(
     const lastCluster = clusters[clusters.length - 1];
     const firstPlanet = firstCluster[0];
     const lastPlanet = lastCluster[lastCluster.length - 1];
-    
+
     // Calculate wrap-around distance
     const wrapDistance = Math.min(
       Math.abs(firstPlanet.longitude - lastPlanet.longitude),
       360 - Math.abs(firstPlanet.longitude - lastPlanet.longitude)
     );
-    
+
     if (wrapDistance <= threshold) {
       // Merge first and last clusters
       clusters[0] = [...lastCluster, ...firstCluster];
@@ -106,7 +106,7 @@ export function calculateCombinedClusterLabel(
 
   // Calculate cluster center longitude
   const clusterCenter = cluster.reduce((sum, pos) => sum + (pos.originalLongitude || pos.planet.longitude), 0) / cluster.length;
-  
+
   // Position label at optimal distance from cluster
   const labelRadius = 65; // Distance from center
   const labelAngle = (longitudeToAngle(clusterCenter) - 90) * Math.PI / 180;
@@ -142,7 +142,7 @@ export function groupPlanetsByCluster(
       const clusterGroup = positions.filter(
         p => p.clustered && p.clusterIndex === position.clusterIndex
       );
-      
+
       if (clusterGroup.length > 1) {
         clusteredGroups.push(clusterGroup);
         clusterGroup.forEach(p => processed.add(p.planet.name));
@@ -176,7 +176,7 @@ export function generateLeaderLine(
   // Curved leader line
   const midX = (planetX + labelX) / 2;
   const midY = (planetY + labelY) / 2;
-  
+
   // Add some curve by offsetting the middle point
   const dx = labelX - planetX;
   const dy = labelY - planetY;
@@ -216,13 +216,13 @@ export function calculateClusteredPlanetPositions(
   const clusterCenter = cluster.reduce((sum, p) => sum + p.longitude, 0) / cluster.length;
   const radiusStep = 15; // Pixels between radial layers
   const angleSpread = Math.min(8, 20 / cluster.length); // Smaller spread for more planets
-  
+
   cluster.forEach((planet, index) => {
     // Stagger planets in radial layers (every other planet in different layer)
     const layerIndex = Math.floor(index / 2);
     const radialOffset = layerIndex * radiusStep * (index % 2 === 0 ? 1 : -1);
     const planetRadius = baseRadius + radialOffset;
-    
+
     // Distribute planets in a small arc around cluster center
     const angularOffset = (index - (cluster.length - 1) / 2) * angleSpread;
     const adjustedLongitude = clusterCenter + angularOffset;

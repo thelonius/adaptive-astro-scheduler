@@ -3,7 +3,7 @@
 echo "🐳 Starting Adaptive Astro Scheduler - Production Mode"
 echo "========================================"
 
-# Navigate to docker directory  
+# Navigate to docker directory
 cd "$(dirname "$0")/docker"
 
 # Pull latest images
@@ -34,7 +34,7 @@ docker-compose exec backend npm run migrate 2>/dev/null || echo "No migrations t
 
 echo ""
 echo "🎉 Production environment ready!"
-echo "🌐 Backend API: http://localhost:3000"  
+echo "🌐 Backend API: http://localhost:3000"
 echo "🌍 Frontend: http://localhost:80"
 echo "🏥 Health check: http://localhost:3000/health"
 echo "🤖 Telegram Bot is running in webhook mode"

@@ -80,7 +80,7 @@ This will prompt you to choose between development and production environments.
 ```
 docker/
 ├── docker-compose.yml          # Production environment
-├── docker-compose.dev.yml      # Development environment  
+├── docker-compose.dev.yml      # Development environment
 ├── Dockerfile.backend          # Backend service image
 ├── init.sql                    # Database initialization
 └── nginx.conf                  # Nginx configuration (future use)
@@ -113,7 +113,7 @@ environment:
 # Development
 docker-compose -f docker/docker-compose.dev.yml logs -f
 
-# Production  
+# Production
 docker-compose -f docker/docker-compose.yml logs -f
 
 # Specific service
@@ -169,7 +169,7 @@ Expected response:
 ```json
 {
   "status": "healthy",
-  "service": "Adaptive Astro-Scheduler API", 
+  "service": "Adaptive Astro-Scheduler API",
   "version": "0.1.0",
   "timestamp": "2026-01-26T12:03:44.090Z"
 }

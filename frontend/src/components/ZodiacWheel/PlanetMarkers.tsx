@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { CelestialBody } from '@adaptive-astro/shared/types';
 import type { ColorScheme, PlanetPosition } from './types';
-import { 
-  getPlanetSymbol, 
+import {
+  getPlanetSymbol,
   formatPlanetDegree,
   groupPlanetsByCluster,
   calculateCombinedClusterLabel
@@ -33,7 +33,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   const clusterLabels = useMemo(() => {
     const centerX = size / 2;
     const centerY = size / 2;
-    return planetGroups.clusteredGroups.map(cluster => 
+    return planetGroups.clusteredGroups.map(cluster =>
       calculateCombinedClusterLabel(cluster, centerX, centerY)
     );
   }, [planetGroups.clusteredGroups, size]);
@@ -48,11 +48,11 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
     const planets = clusterLabel.planets;
     const labelX = clusterLabel.x;
     const labelY = clusterLabel.y;
-    
+
     // Create combined text showing all planets in cluster
     const planetSymbols = planets.map(pos => getPlanetSymbol(pos.planet.name)).join(' ');
     const planetNames = planets.map(pos => pos.planet.name).join(', ');
-    
+
     return (
       <g key={`cluster-label-${index}`}>
         {/* Label background */}
@@ -69,7 +69,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: index * 0.1 + 0.5, duration: 0.3 }}
         />
-        
+
         {/* Combined planet symbols */}
         <motion.text
           x={labelX}
@@ -85,7 +85,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
         >
           {planetSymbols}
         </motion.text>
-        
+
         {/* Planet count indicator */}
         <motion.text
           x={labelX}
@@ -100,7 +100,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
         >
           {planets.length} planets
         </motion.text>
-        
+
         {/* Connection line to cluster center */}
         <motion.line
           x1={labelX}
@@ -121,17 +121,17 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   return (
     <g id="planets">
       {/* Render combined cluster labels */}
-      {clusterLabels.map((clusterLabel, index) => 
+      {clusterLabels.map((clusterLabel, index) =>
         renderCombinedClusterLabel(clusterLabel, index)
       )}
-      
+
       {/* Render all planet markers (clustered and individual) */}
       {positions.map((pos, i) => {
         const planet = pos.planet;
         const color = colorScheme.planets?.[planet.name] || '#fff';
         const isRetrograde = planet.isRetrograde && showRetrogrades;
         const planetRadius = getPlanetRadius(pos);
-        const isInCluster = pos.clustered && planetGroups.clusteredGroups.some(cluster => 
+        const isInCluster = pos.clustered && planetGroups.clusteredGroups.some(cluster =>
           cluster.some(p => p.planet.name === planet.name)
         );
 
@@ -212,7 +212,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
                 >
                   {getPlanetSymbol(planet.name)}
                 </motion.text>
-                
+
                 <motion.text
                   x={pos.x + 15}
                   y={pos.y}
@@ -241,12 +241,12 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
                 strokeWidth={1}
                 strokeDasharray="2,2"
                 initial={{ scale: 0.8, opacity: 0.6 }}
-                animate={{ 
+                animate={{
                   scale: [0.8, 1.1, 0.8],
                   opacity: [0.6, 1, 0.6]
                 }}
-                transition={{ 
-                  duration: 2, 
+                transition={{
+                  duration: 2,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
