@@ -830,11 +830,6 @@ export class TelegramBotService {
       const me = await this.bot.telegram.getMe();
       console.log('✅ Bot connected successfully:', me.username);
       
-      // Test if we can get updates
-      console.log('🔍 Testing update retrieval...');
-      const updates = await this.bot.telegram.getUpdates({ limit: 1 });
-      console.log('📡 Update check successful, pending updates:', updates.length);
-      
     } catch (err: any) {
       console.error('❌ Failed to launch Telegram Bot:', err);
       console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
