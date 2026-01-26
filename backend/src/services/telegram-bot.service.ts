@@ -793,6 +793,13 @@ export class TelegramBotService {
     console.log('🚀 Launching Telegram Bot...');
 
     try {
+      // Clear any existing webhooks first to avoid conflicts
+      console.log('🧹 Clearing webhooks to ensure clean polling start...');
+      await this.bot.telegram.deleteWebhook();
+      
+      // Wait a moment for webhook cleanup
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // Set bot commands with Telegram API
       await this.setBotCommands();
 
@@ -800,8 +807,20 @@ export class TelegramBotService {
       console.log('🔧 Bot instance created with token:', TOKEN ? 'Present' : 'Missing');
       
       // For now, always use polling mode since we don't have HTTPS webhook setup
-      console.log('🔄 Using polling mode');
-      await this.bot.launch();
+      console.log('🔄 Using polling mode with timeout handling...');
+      
+      // Launch with explicit timeout and retry logic
+      const launchPromise = this.bot.launch({
+        dropPendingUpdates: true // Clear any pending updates
+      });
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Bot launch timeout after 15 seconds')), 15000);
+      });
+      
+      await Promise.race([launchPromise, timeoutPromise]);
+      
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
       console.log('🎯 Enhanced Telegram bot with natal chart management is LIVE!');
@@ -811,16 +830,64 @@ export class TelegramBotService {
       const me = await this.bot.telegram.getMe();
       console.log('✅ Bot connected successfully:', me.username);
       
+      // Test if we can get updates
+      console.log('🔍 Testing update retrieval...');
+      const updates = await this.bot.telegram.getUpdates({ limit: 1 });
+      console.log('📡 Update check successful, pending updates:', updates.length);
+      
     } catch (err: any) {
       console.error('❌ Failed to launch Telegram Bot:', err);
       console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
       console.error('Error details:', err?.message || 'Unknown error');
       if (err?.stack) console.error('Stack trace:', err.stack);
+      
+      // Try to recover with a different approach
+      console.log('🔄 Attempting recovery with manual polling setup...');
+      try {
+        await this.setupManualPolling();
+      } catch (recoveryErr: any) {
+        console.error('❌ Recovery attempt failed:', recoveryErr?.message);
+      }
     }
 
     // Enable graceful stop
     process.once('SIGINT', () => this.bot.stop('SIGINT'));
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+  }
+
+  private async setupManualPolling() {
+    console.log('🔧 Setting up manual polling as fallback...');
+    
+    let offset = 0;
+    const pollForUpdates = async () => {
+      try {
+        const updates = await this.bot.telegram.getUpdates({
+          offset,
+          timeout: 10,
+          limit: 100
+        });
+        
+        for (const update of updates) {
+          try {
+            await this.bot.handleUpdate(update);
+            offset = update.update_id + 1;
+          } catch (updateErr: any) {
+            console.error('❌ Error processing update:', updateErr?.message);
+          }
+        }
+        
+        // Continue polling
+        setTimeout(pollForUpdates, 100);
+        
+      } catch (pollErr: any) {
+        console.error('❌ Polling error:', pollErr?.message);
+        // Retry after delay
+        setTimeout(pollForUpdates, 5000);
+      }
+    };
+    
+    console.log('✅ Starting manual polling loop...');
+    pollForUpdates();
   }
 
   private async setBotCommands() {
