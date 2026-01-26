@@ -9,9 +9,12 @@ import { AspectLines } from './AspectLines';
 import { HousesOverlay } from './HousesOverlay';
 import { Tooltip } from './Tooltip';
 import { ZodiacSignTooltip } from './ZodiacSignTooltip';
+import { HouseTooltip } from './HouseTooltip';
+import { ClusterTooltip } from './ClusterTooltip';
 import { calculatePlanetPositions, calculateAspectLines, sortPlanetsByOrbit } from './utils';
 import type { ZodiacWheelConfig } from './types';
 import { DEFAULT_CONFIG } from './types';
+import { getHouseMeaning } from '../../constants/houses';
 
 interface ZodiacWheelProps {
   config?: Partial<ZodiacWheelConfig>;
@@ -33,8 +36,14 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   const config = useMemo(() => ({ ...DEFAULT_CONFIG, ...userConfig }), [userConfig]);
   const [hoveredPlanet, setHoveredPlanet] = useState<CelestialBody | null>(null);
   const [hoveredZodiacSign, setHoveredZodiacSign] = useState<string | null>(null);
+  const [hoveredHouse, setHoveredHouse] = useState<number | null>(null);
+  const [hoveredCluster, setHoveredCluster] = useState<CelestialBody[]>([]);
+  const [clickedCluster, setClickedCluster] = useState<CelestialBody[] | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [zodiacTooltipPosition, setZodiacTooltipPosition] = useState({ x: 0, y: 0 });
+  const [houseTooltipPosition, setHouseTooltipPosition] = useState({ x: 0, y: 0 });
+  const [clusterTooltipPosition, setClusterTooltipPosition] = useState({ x: 0, y: 0 });
+  const [clickedClusterPosition, setClickedClusterPosition] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Choose between adaptive or fixed refresh rate
@@ -91,6 +100,38 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   const handleZodiacHover = (signName: string | null, position: { x: number; y: number }) => {
     setHoveredZodiacSign(signName);
     setZodiacTooltipPosition(position);
+  };
+
+  // Handle house hover
+  const handleHouseHover = (houseNumber: number | null, position: { x: number; y: number }) => {
+    setHoveredHouse(houseNumber);
+    setHouseTooltipPosition(position);
+  };
+
+  // Handle cluster hover
+  const handleClusterHover = (planets: CelestialBody[], position: { x: number; y: number }) => {
+    // Only show hover if no clicked cluster is active
+    if (!clickedCluster) {
+      setHoveredCluster(planets);
+      setClusterTooltipPosition(position);
+      // Clear individual planet hover when hovering cluster
+      if (planets.length > 0) {
+        setHoveredPlanet(null);
+      }
+    }
+  };
+
+  // Handle cluster click
+  const handleClusterClick = (planets: CelestialBody[], position: { x: number; y: number }) => {
+    setClickedCluster(planets);
+    setClickedClusterPosition(position);
+    // Hide hover tooltip when clicked
+    setHoveredCluster([]);
+  };
+
+  // Close clicked tooltip
+  const closeClickedTooltip = () => {
+    setClickedCluster(null);
   };
 
   if (error) {
@@ -172,6 +213,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
             houses={data.houses}
             size={config.size}
             colorScheme={config.colorScheme}
+            onHouseHover={handleHouseHover}
           />
         )}
 
@@ -195,13 +237,15 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
             colorScheme={config.colorScheme}
             showRetrogrades={config.showRetrogrades}
             onPlanetHover={setHoveredPlanet}
+            onClusterHover={handleClusterHover}
+            onClusterClick={handleClusterClick}
             size={config.size}
           />
         )}
       </motion.svg>
 
       {/* Tooltip */}
-      {hoveredPlanet && (
+      {hoveredPlanet && hoveredCluster.length <= 1 && (
         <Tooltip
           planet={hoveredPlanet}
           aspects={data?.aspects}
@@ -215,6 +259,37 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
           signName={hoveredZodiacSign}
           position={zodiacTooltipPosition}
           isVisible={!!hoveredZodiacSign}
+        />
+      )}
+
+      {/* House Tooltip */}
+      {hoveredHouse && (
+        <HouseTooltip
+          house={getHouseMeaning(hoveredHouse)}
+          houseNumber={hoveredHouse}
+          position={houseTooltipPosition}
+          visible={!!hoveredHouse}
+        />
+      )}
+
+      {/* Cluster Tooltips */}
+      {hoveredCluster.length > 1 && !clickedCluster && (
+        <ClusterTooltip
+          planets={hoveredCluster}
+          position={clusterTooltipPosition}
+          visible={hoveredCluster.length > 1}
+          interactive={false}
+        />
+      )}
+
+      {/* Clicked Cluster Tooltip (Interactive) */}
+      {clickedCluster && clickedCluster.length > 1 && (
+        <ClusterTooltip
+          planets={clickedCluster}
+          position={clickedClusterPosition}
+          visible={true}
+          interactive={true}
+          onClose={closeClickedTooltip}
         />
       )}
     </Box>

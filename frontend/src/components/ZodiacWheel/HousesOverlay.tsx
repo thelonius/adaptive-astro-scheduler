@@ -1,20 +1,50 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import type { House } from '@adaptive-astro/shared/types';
 import type { ColorScheme } from './types';
 import { longitudeToAngle, polarToCartesian } from './utils';
+import { HouseTooltip } from './HouseTooltip';
+import { getHouseMeaning, isAngularHouse } from '../../constants/houses';
 
 interface HousesOverlayProps {
   houses: House[];
   size: number;
   colorScheme: ColorScheme;
+  onHouseHover?: (houseNumber: number | null, position: { x: number; y: number }) => void;
 }
 
-export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colorScheme }) => {
+export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colorScheme, onHouseHover }) => {
+  const [hoveredHouse, setHoveredHouse] = useState<number | null>(null);
+
   const centerX = size / 2;
   const centerY = size / 2;
   const outerRadius = size * 0.35;
   const innerRadius = size * 0.1;
+
+  const handleMouseEnter = useCallback((houseNumber: number, event: React.MouseEvent) => {
+    const rect = (event.target as Element).getBoundingClientRect();
+    const position = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    setHoveredHouse(houseNumber);
+    onHouseHover?.(houseNumber, position);
+  }, [onHouseHover]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredHouse(null);
+    onHouseHover?.(null, { x: 0, y: 0 });
+  }, [onHouseHover]);
+
+  const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    if (hoveredHouse) {
+      const position = {
+        x: event.clientX,
+        y: event.clientY
+      };
+      onHouseHover?.(hoveredHouse, position);
+    }
+  }, [hoveredHouse, onHouseHover]);
 
   return (
     <g id="houses">
@@ -37,24 +67,71 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
         const labelRadius = (outerRadius + innerRadius) / 2;
         const label = polarToCartesian(centerX, centerY, labelRadius, midAngle);
 
+        // Create arc path for hover area
+        const nextHouseAngle = longitudeToAngle(nextHouse.cusp);
+        const largeArcFlag = Math.abs(angle - nextHouseAngle) > 180 ? 1 : 0;
+
+        const outerStart = polarToCartesian(centerX, centerY, outerRadius, angle);
+        const outerEnd = polarToCartesian(centerX, centerY, outerRadius, nextHouseAngle);
+        const innerStart = polarToCartesian(centerX, centerY, innerRadius, angle);
+        const innerEnd = polarToCartesian(centerX, centerY, innerRadius, nextHouseAngle);
+
+        const hoverPath = `
+          M ${outerStart.x} ${outerStart.y}
+          A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${outerEnd.x} ${outerEnd.y}
+          L ${innerEnd.x} ${innerEnd.y}
+          A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${innerStart.x} ${innerStart.y}
+          Z
+        `;
+
         // Special styling for angular houses (1, 4, 7, 10)
-        const isAngular = house.number === 1 || house.number === 4 || house.number === 7 || house.number === 10;
+        const isAngular = isAngularHouse(house.number);
 
         return (
-          <g key={`house-${house.number}`}>
+          <g
+            key={`house-${house.number}`}
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={(e) => handleMouseEnter(house.number, e)}
+            onMouseLeave={handleMouseLeave}
+            onMouseMove={handleMouseMove}
+          >
             {/* House cusp line */}
             <motion.line
               x1={inner.x}
               y1={inner.y}
               x2={outer.x}
               y2={outer.y}
-              stroke={colorScheme.houses}
-              strokeWidth={isAngular ? 2 : 1}
-              opacity={isAngular ? 0.6 : 0.3}
+              stroke={hoveredHouse === house.number ? '#ffd700' : colorScheme.houses}
+              strokeWidth={hoveredHouse === house.number ? (isAngular ? 3 : 2) : (isAngular ? 2 : 1)}
+              opacity={hoveredHouse === house.number ? 0.8 : (isAngular ? 0.6 : 0.3)}
               strokeDasharray={isAngular ? 'none' : '3 3'}
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
               transition={{ duration: 1, delay: i * 0.05 }}
+            />
+
+            {/* House highlight area (when hovered) */}
+            {hoveredHouse === house.number && (
+              <motion.path
+                d={hoverPath}
+                fill={colorScheme.houses}
+                fillOpacity={0.1}
+                stroke={'#ffd700'}
+                strokeWidth={0.5}
+                strokeOpacity={0.3}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+
+            {/* Invisible hover area for better interaction */}
+            <path
+              d={hoverPath}
+              fill="transparent"
+              strokeWidth={0}
+              style={{ cursor: 'pointer' }}
             />
 
             {/* House number */}
@@ -63,13 +140,13 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
               y={label.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill={colorScheme.houses}
+              fill={hoveredHouse === house.number ? '#ffd700' : colorScheme.houses}
               fontSize={size * 0.025}
               fontWeight={isAngular ? 'bold' : 'normal'}
-              opacity={0.7}
+              opacity={hoveredHouse === house.number ? 1 : 0.7}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.7 }}
-              transition={{ delay: i * 0.05 + 0.5 }}
+              animate={{ opacity: hoveredHouse === house.number ? 1 : 0.7 }}
+              transition={{ delay: i * 0.05 + 0.5, duration: 0.2 }}
             >
               {house.number}
             </motion.text>

@@ -28,7 +28,7 @@ interface SessionData {
   awaiting?: 'BIRTH_DATE' | 'BIRTH_TIME' | 'CHART_NAME' | 'CHART_TYPE' | null;
   chartCreationFlow?: {
     step: number;
-    chartType: 'self' | 'other';
+    chartType: 'self' | 'other' | 'event';
     tempData: {
       lat?: number;
       lon?: number;
@@ -299,21 +299,63 @@ export class TelegramBotService {
       }
     });
 
+    // Generic event chart command
+    this.bot.command('event', async (ctx) => {
+      console.log('🎯 /event command received from user:', ctx.from.id);
+      try {
+        const telegramId = ctx.from.id;
+        let user = await this.userRepo.findByTelegramId(telegramId);
+
+        if (!user) {
+          user = await this.userRepo.create({
+            telegram_id: telegramId,
+            username: ctx.from.username,
+            metadata: {
+              first_name: ctx.from.first_name,
+              last_name: ctx.from.last_name,
+            }
+          });
+        }
+
+        // Initialize event chart creation flow
+        ctx.session.chartCreationFlow = {
+          step: 1,
+          chartType: 'event',
+          tempData: {}
+        };
+
+        await ctx.reply(
+          "🌟 Let's create an event chart!\n\n" +
+          "Event charts capture the cosmic energy of any significant moment - launches, meetings, decisions, or any moment you want to understand astrologically.\n\n" +
+          "First, I need the location where this event happened (or will happen).",
+          Markup.keyboard([
+            [Markup.button.locationRequest('📍 Share Location')],
+            [Markup.button.text('❌ Cancel')]
+          ]).resize()
+        );
+
+      } catch (error) {
+        console.error('❌ Error in /event command:', error);
+        await ctx.reply('Sorry, something went wrong. Please try again.');
+      }
+    });
+
     // Enhanced help command
     this.bot.command('help', async (ctx) => {
       try {
         await ctx.reply(
           "🤖 *Astro Scheduler Commands:*\n\n" +
-          "/start - Begin setup or restart bot\n" +
+          "/start - Begin setup or create your natal chart\n" +
           "/today - Get personalized daily reading\n" +
-          "/charts - View and manage your natal charts\n" +
+          "/charts - View and manage all your charts\n" +
+          "/event - Create an event chart for any moment\n" +
           "/help - Show this help message\n\n" +
-          "✨ I can create multiple natal charts (for yourself and others) and provide personalized daily insights based on current planetary transits!",
+          "✨ I can create natal charts (birth) and event charts (any significant moment) to provide astrological insights!",
           { parse_mode: 'Markdown' }
         );
       } catch (error) {
         console.error('Error in /help command:', error);
-        await ctx.reply('Available commands: /start, /today, /charts, /help');
+        await ctx.reply('Available commands: /start, /today, /charts, /event, /help');
       }
     });
 
@@ -336,7 +378,7 @@ export class TelegramBotService {
     );
   }
 
-  private async startChartCreation(ctx: BotContext, chartType: 'self' | 'other') {
+  private async startChartCreation(ctx: BotContext, chartType: 'self' | 'other' | 'event') {
     ctx.session.chartCreationFlow = {
       step: 1,
       chartType,
@@ -426,7 +468,7 @@ export class TelegramBotService {
         this.ephemeris.getMoonPhase(birthDateTime),
       ]);
 
-      // 4. Create natal chart input
+      // 4. Create chart input based on type
       const chartInput: CreateNatalChartInput = {
         user_id: user.id,
         name: tempData.chartName!,
@@ -456,13 +498,17 @@ export class TelegramBotService {
       }
 
       // 7. Success response
+      const chartTypeText = chartType === 'event' ? 'event chart' : 'natal chart';
+      const chartEmoji = chartType === 'event' ? '⭐' : '🎉';
+
       await ctx.reply(
-        `🎉 Chart "${tempData.chartName}" created successfully!\n\n` +
-        `📅 Birth: ${tempData.birthDate} at ${tempData.birthTime?.slice(0, 5)}\n` +
+        `${chartEmoji} ${chartTypeText} "${tempData.chartName}" created successfully!\n\n` +
+        `📅 ${chartType === 'event' ? 'Event' : 'Birth'}: ${tempData.birthDate} at ${tempData.birthTime?.slice(0, 5)}\n` +
         `📍 Location: ${tempData.placeName}\n\n` +
-        `You can now use /today for personalized daily insights!`,
+        `You can now view it in /charts or get insights with /today!`,
         Markup.inlineKeyboard([
           [Markup.button.callback('📊 Get Today\'s Reading', 'today')],
+          [Markup.button.callback('📋 View All Charts', 'charts')],
           [Markup.button.callback('🏠 Main Menu', 'main_menu')]
         ])
       );
@@ -745,9 +791,12 @@ export class TelegramBotService {
 
     console.log('🚀 Launching Telegram Bot...');
 
-    // For now, always use polling mode since we don't have HTTPS webhook setup
-    console.log('🔄 Using polling mode');
     try {
+      // Set bot commands with Telegram API
+      await this.setBotCommands();
+
+      // For now, always use polling mode since we don't have HTTPS webhook setup
+      console.log('🔄 Using polling mode');
       await this.bot.launch();
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
@@ -760,6 +809,23 @@ export class TelegramBotService {
     // Enable graceful stop
     process.once('SIGINT', () => this.bot.stop('SIGINT'));
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+  }
+
+  private async setBotCommands() {
+    try {
+      const commands = [
+        { command: 'start', description: 'Begin setup or create your natal chart' },
+        { command: 'today', description: 'Get personalized daily reading' },
+        { command: 'charts', description: 'View and manage all your charts' },
+        { command: 'event', description: 'Create an event chart for any moment' },
+        { command: 'help', description: 'Show help message' }
+      ];
+
+      await this.bot.telegram.setMyCommands(commands);
+      console.log('✅ Bot commands set with Telegram API');
+    } catch (error) {
+      console.error('❌ Failed to set bot commands:', error);
+    }
   }
 
   private async setupWebhook() {
@@ -785,6 +851,51 @@ export class TelegramBotService {
       console.error('Webhook error:', error);
       res.status(500).send('Webhook processing failed');
     }
+  }
+
+  private async generateEventChart(eventData: any) {
+    const user = eventData.user;
+    const tempData = eventData.tempData;
+
+    // Create DateTime object for the event moment
+    const eventDateTime: DateTime = {
+      date: new Date(`${tempData.birthDate}T${tempData.birthTime}`),
+      timezone: tempData.timezone!,
+      location: {
+        latitude: tempData.lat!,
+        longitude: tempData.lon!,
+      },
+    };
+
+    // Use the same calculation as natal chart but store as event type
+    const [planets, houses, aspects, lunarDay, moonPhase] = await Promise.all([
+      this.ephemeris.getPlanetsPositions(eventDateTime),
+      this.ephemeris.getHouses(eventDateTime, 'placidus'),
+      this.ephemeris.getAspects(eventDateTime, 8),
+      this.ephemeris.getLunarDay(eventDateTime),
+      this.ephemeris.getMoonPhase(eventDateTime),
+    ]);
+
+    const chartInput = {
+      user_id: user.id,
+      name: tempData.chartName || 'Event Chart',
+      birth_date: tempData.birthDate,
+      birth_time: tempData.birthTime,
+      birth_location: {
+        latitude: tempData.lat,
+        longitude: tempData.lon,
+        timezone: tempData.timezone,
+        placeName: tempData.placeName,
+      },
+      planets: planets.planets as any[],
+      houses: houses.houses as any[],
+      aspects: aspects.aspects as any[],
+      lunar_day: lunarDay,
+      moon_phase: moonPhase.toString(),
+      house_system: 'placidus',
+    };
+
+    return await this.natalRepo.create(chartInput);
   }
 
   public static setInstance(instance: TelegramBotService) {

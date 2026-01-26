@@ -177,20 +177,20 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    * Calculate lunar day (1-30) for given date/time
    */
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {
-    const response = await this.fetch<LunarDayResponse>('/api/v1/ephemeris/lunar-day', {
-      date: this.formatDate(dateTime.date),
+    const response = await this.fetch<any>('/api/v1/ephemeris/lunar-day', {
+      date: dateTime.date.toISOString().split('.')[0],
       timezone: dateTime.timezone,
     });
 
     return {
-      number: response.lunar_day,
-      symbol: response.moon_phase.emoji,
-      energy: this.getLunarEnergy(response.lunar_day),
-      lunarPhase: this.parseLunarPhase(response.moon_phase.name),
+      number: response.number,
+      symbol: response.symbol || '🌙',
+      energy: this.getLunarEnergy(response.number),
+      lunarPhase: this.parseLunarPhase(response.lunar_phase),
       characteristics: {
-        spiritual: response.general_description,
-        practical: response.recommendations.recommended.join(', '),
-        avoided: response.recommendations.not_recommended,
+        spiritual: `Lunar Day ${response.number}: ${response.symbol}`,
+        practical: `Energy: ${response.energy}`,
+        avoided: [],
       },
     };
   }

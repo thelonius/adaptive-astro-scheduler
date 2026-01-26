@@ -46,7 +46,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/adaptive_astro
       REDIS_URL: redis://redis:6379
       EPHEMERIS_MODE: api
-      EPHEMERIS_API_URL: http://176.123.166.252:3000
+      EPHEMERIS_API_URL: http://176.123.166.252:8000
       TELEGRAM_BOT_TOKEN: "8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
       TELEGRAM_WEBHOOK_URL: "http://176.123.166.252:3000/webhook/telegram"
       PGUSER: postgres
