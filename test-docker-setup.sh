@@ -31,7 +31,7 @@ fi
 # Test database connection
 echo ""
 echo "🗄️  Testing Database Connection..."
-DB_TEST=$(docker-compose -f docker-compose.dev.yml exec -T postgres psql -U astro_user -d adaptive_astro -c "SELECT current_timestamp;" 2>/dev/null)
+DB_TEST=$(docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d adaptive_astro -c "SELECT current_timestamp;" 2>/dev/null)
 if [[ $DB_TEST == *"current_timestamp"* ]]; then
     echo "✅ Database Connection: PASSED"
 else
