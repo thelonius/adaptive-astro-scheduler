@@ -36,7 +36,7 @@ export interface UseNatalChartReturn {
   clearChart: () => void;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../config';
 
 export function useNatalChart(): UseNatalChartReturn {
   const [data, setData] = useState<NatalChartData | null>(null);

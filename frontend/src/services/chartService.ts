@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ChartData, SavedChart, GeocodeResult, ChartCalculationResult } from '../types/chart';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from '../config';
 
 // Chart Management API
 export class ChartService {
