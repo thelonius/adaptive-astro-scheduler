@@ -28,6 +28,8 @@ RUN npm run build
 
 # Build frontend
 WORKDIR /app/frontend
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Production image - serve with nginx

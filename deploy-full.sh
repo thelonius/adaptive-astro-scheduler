@@ -30,8 +30,11 @@ ssh -i $SSH_KEY $USER@$SERVER_IP << EOF
     mkdir -p docker/postgres-data
     mkdir -p docker/redis-data
 
-    # Build and start
-    docker-compose -f docker/docker-compose.yml up -d --build
+    # Stop existing containers
+    docker-compose -f docker/docker-compose.yml down
+
+    # Build and start with forced recreation
+    docker-compose -f docker/docker-compose.yml up -d --build --force-recreate
 
     # Prune old images to save space
     docker image prune -f
