@@ -6,8 +6,11 @@ import ZodiacWheelDemo from './pages/ZodiacWheelDemo';
 import NatalChart from './pages/NatalChart';
 import ChartLibrary from './pages/ChartLibrary';
 import DayExplorer from './pages/DayExplorer';
+import { DynamicThemeProvider } from './theme/DynamicThemeProvider';
 
 function Home() {
+  // ... existing Home component ...
+
   return (
     <Container maxW="container.md" py={20}>
       <VStack spacing={8}>
@@ -103,14 +106,16 @@ function Home() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/day-explorer" element={<DayExplorer />} />
-      <Route path="/chart-library" element={<ChartLibrary />} />
-      <Route path="/natal-chart" element={<NatalChart />} />
-      <Route path="/zodiac-wheel-test" element={<ZodiacWheelTest />} />
-      <Route path="/zodiac-wheel-demo" element={<ZodiacWheelDemo />} />
-    </Routes>
+    <DynamicThemeProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/day-explorer" element={<DayExplorer />} />
+        <Route path="/chart-library" element={<ChartLibrary />} />
+        <Route path="/natal-chart" element={<NatalChart />} />
+        <Route path="/zodiac-wheel-test" element={<ZodiacWheelTest />} />
+        <Route path="/zodiac-wheel-demo" element={<ZodiacWheelDemo />} />
+      </Routes>
+    </DynamicThemeProvider>
   );
 }
 

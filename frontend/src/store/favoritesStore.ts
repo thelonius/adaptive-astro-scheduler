@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export interface FavoriteDay {
     date: string;        // ISO date string (YYYY-MM-DD)
+    title?: string;      // User-provided title for the day
     note?: string;       // Optional user note
     createdAt: string;   // ISO timestamp
     summary?: {
@@ -16,8 +17,9 @@ interface FavoritesStore {
     favorites: FavoriteDay[];
 
     // Actions
-    addFavorite: (date: string, note?: string, summary?: FavoriteDay['summary']) => void;
+    addFavorite: (date: string, title?: string, note?: string, summary?: FavoriteDay['summary']) => void;
     removeFavorite: (date: string) => void;
+    updateTitle: (date: string, title: string) => void;
     updateNote: (date: string, note: string) => void;
     updateSummary: (date: string, summary: FavoriteDay['summary']) => void;
     isFavorite: (date: string) => boolean;
@@ -30,7 +32,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
         (set, get) => ({
             favorites: [],
 
-            addFavorite: (date: string, note?: string, summary?: FavoriteDay['summary']) => {
+            addFavorite: (date: string, title?: string, note?: string, summary?: FavoriteDay['summary']) => {
                 const existing = get().favorites.find(f => f.date === date);
                 if (existing) return; // Already exists
 
@@ -39,6 +41,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
                         ...state.favorites,
                         {
                             date,
+                            title: title || `Event ${date}`,
                             note,
                             summary,
                             createdAt: new Date().toISOString(),
@@ -50,6 +53,14 @@ export const useFavoritesStore = create<FavoritesStore>()(
             removeFavorite: (date: string) => {
                 set(state => ({
                     favorites: state.favorites.filter(f => f.date !== date),
+                }));
+            },
+
+            updateTitle: (date: string, title: string) => {
+                set(state => ({
+                    favorites: state.favorites.map(f =>
+                        f.date === date ? { ...f, title } : f
+                    ),
                 }));
             },
 

@@ -20,6 +20,7 @@
     "@telegram-apps/sdk": "^1.0.0",
     "axios": "^1.6.5",
     "chart.js": "^4.4.1",
+    "chroma-js": "^3.2.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.18.0",
     "react": "^18.2.0",
@@ -29,6 +30,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@types/chroma-js": "^3.1.2",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.15.0",

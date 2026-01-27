@@ -57,11 +57,11 @@ export class TelegramBotService {
 
   constructor() {
     if (!TOKEN) {
-       // Placeholder if no token, prevents crash but won't work
-       this.bot = new Telegraf('dummy');
-       this.userRepo = new UserRepository();
-       this.natalRepo = new NatalChartRepository();
-       return;
+      // Placeholder if no token, prevents crash but won't work
+      this.bot = new Telegraf('dummy');
+      this.userRepo = new UserRepository();
+      this.natalRepo = new NatalChartRepository();
+      return;
     }
 
     console.log('🔧 Initializing Telegram Bot Service...');
@@ -145,7 +145,7 @@ export class TelegramBotService {
       console.log('📍 Location message received from user:', ctx.from.id);
       console.log('📍 Location data:', ctx.message.location);
       console.log('📍 Session state:', ctx.session?.chartCreationFlow ? 'Flow exists' : 'No flow found');
-      
+
       if (!ctx.session.chartCreationFlow) {
         console.log('❌ No chart creation flow - asking user to restart');
         await ctx.reply('Please start with /start or use "Add New Chart" first.');
@@ -155,7 +155,7 @@ export class TelegramBotService {
       const { latitude, longitude } = ctx.message.location;
       ctx.session.chartCreationFlow.tempData.lat = latitude;
       ctx.session.chartCreationFlow.tempData.lon = longitude;
-      
+
       console.log('📍 Processing location:', { latitude, longitude });
 
       try {
@@ -166,12 +166,12 @@ export class TelegramBotService {
           `This helps ensure accurate timezone and location data for your chart.`,
           Markup.removeKeyboard()
         );
-        
+
         // Set up to await city name
         ctx.session.awaiting = 'CITY_NAME';
         ctx.session.chartCreationFlow.step = 1.5; // Between location and birth date
         console.log('✅ Location received, waiting for city confirmation');
-        
+
       } catch (error) {
         console.error('❌ Location processing error:', error);
         await ctx.reply("There was an error processing your location. Please try sharing it again.");
@@ -186,7 +186,7 @@ export class TelegramBotService {
 
       if (ctx.session.awaiting === 'CITY_NAME') {
         console.log('🏙️ City name received:', text);
-        
+
         if (!ctx.session.chartCreationFlow) {
           await ctx.reply('Please start with /start first.');
           return;
@@ -195,15 +195,15 @@ export class TelegramBotService {
         try {
           // Use city name with coordinates for timezone lookup
           const { lat, lon } = ctx.session.chartCreationFlow.tempData;
-          
+
           console.log('🏙️ Looking up timezone for city:', text, 'at coordinates:', lat, lon);
-          
+
           // Try timezone lookup with coordinates
           const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
-            latitude: lat, 
+            latitude: lat,
             longitude: lon
           });
-          
+
           const timezone = tzResponse.data.timezone;
           console.log('🏙️ Timezone found:', timezone);
 
@@ -218,7 +218,7 @@ export class TelegramBotService {
             `Now, please enter the birth date (YYYY-MM-DD):`
           );
           console.log('✅ City and timezone processed successfully');
-          
+
         } catch (error) {
           console.error('❌ Timezone lookup failed:', error);
           await ctx.reply(
@@ -347,6 +347,7 @@ export class TelegramBotService {
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
+              ...charts.map(c => [{ text: `🔍 View Details: ${c.name}`, callback_data: `details_${c.id}` }]),
               [{ text: '➕ Add New Chart', callback_data: 'add_chart' }],
               [{ text: '🏠 Main Menu', callback_data: 'main_menu' }]
             ]
@@ -487,8 +488,11 @@ export class TelegramBotService {
     ]);
 
     await ctx.reply(
-      `Select a chart:`,
-      Markup.inlineKeyboard(keyboard)
+      `Select a chart to ${action === 'today' ? 'get daily reading' : 'manage'}:`,
+      Markup.inlineKeyboard([
+        ...keyboard,
+        [Markup.button.callback('🏠 Main Menu', 'main_menu')]
+      ])
     );
   }
 
@@ -619,7 +623,8 @@ export class TelegramBotService {
             inline_keyboard: [
               [
                 { text: '🔮 View Transits', callback_data: `transits_${chartId}` },
-                { text: '📊 Activities', callback_data: `activities_${chartId}` }
+                { text: '📊 Activities', callback_data: `activities_${chartId}` },
+                { text: '🔍 Natal Details', callback_data: `details_${chartId}` }
               ],
               [
                 { text: '🔄 Refresh', callback_data: `today_${chartId}` },
@@ -698,7 +703,7 @@ export class TelegramBotService {
         const orb = transit.orb?.toFixed(1) || '0.0';
         const exactness = transit.isExact ? ' ⚡ EXACT' : transit.isApplying ? ' ↗️ Applying' : ' ↘️ Separating';
         const strength = transit.orb <= 1 ? '🔥' : transit.orb <= 3 ? '🌟' : '✨';
-        
+
         transitText += `${strength} *${transit.transitingPlanet}* ${this.getAspectSymbol(transit.aspectType)} *${transit.natalPlanet}*\n`;
         transitText += `   Orb: ${orb}°${exactness}\n`;
         if (transit.interpretation) {
@@ -710,16 +715,16 @@ export class TelegramBotService {
 
     // All Active Transits (Minor Aspects)
     if (transits.transits && transits.transits.length > 0) {
-      const minorTransits = transits.transits.filter((t: any) => 
+      const minorTransits = transits.transits.filter((t: any) =>
         !['conjunction', 'square', 'trine', 'opposition'].includes(t.aspectType)
       );
-      
+
       if (minorTransits.length > 0) {
         transitText += `🔮 *Minor Aspects:*\n`;
         minorTransits.slice(0, 8).forEach((transit: any) => {
           const orb = transit.orb?.toFixed(1) || '0.0';
           const exactness = transit.isExact ? ' ⚡' : transit.isApplying ? ' ↗️' : ' ↘️';
-          
+
           transitText += `• ${transit.transitingPlanet} ${this.getAspectSymbol(transit.aspectType)} ${transit.natalPlanet} (${orb}°)${exactness}\n`;
         });
         transitText += `\n`;
@@ -804,6 +809,60 @@ export class TelegramBotService {
     }
   }
 
+  private async showChartDetails(ctx: BotContext, chartId: string) {
+    try {
+      const chart = await this.natalRepo.findById(chartId);
+      if (!chart) {
+        await ctx.answerCbQuery('Chart not found');
+        return;
+      }
+
+      let text = `🔍 *Natal Chart: ${chart.name}*\n`;
+      text += `📅 ${chart.birth_date.toISOString().split('T')[0]} at ${chart.birth_time.slice(0, 5)}\n`;
+      text += `📍 ${chart.birth_location.placeName || 'Location'}\n\n`;
+
+      text += `🪐 *Planetary Positions:*\n`;
+      if (Array.isArray(chart.planets)) {
+        chart.planets.forEach((p: any) => {
+          const name = p.name || p.planet || 'Unknown';
+          const sign = p.zodiac_sign?.name || p.sign || 'Unknown';
+          const deg = typeof p.longitude === 'number' ? Math.floor(p.longitude % 30) : p.degree;
+          const min = typeof p.longitude === 'number' ? Math.floor((p.longitude % 1) * 60) : (p.minute || 0);
+          const retro = p.is_retrograde ? ' ℞' : '';
+
+          text += `• *${name}*: ${sign} ${deg}°${min}'${retro}\n`;
+        });
+      }
+
+      text += `\n🏠 *Houses:*\n`;
+      if (Array.isArray(chart.houses)) {
+        // Show major houses if they exist or just the list
+        chart.houses.forEach((h: any) => {
+          const num = h.number || h.house;
+          const sign = h.cusp_sign?.name || h.sign || 'Unknown';
+          const deg = typeof h.cusp_longitude === 'number' ? Math.floor(h.cusp_longitude % 30) : (h.degree || 0);
+
+          text += `H${num}: ${sign} ${deg}°\n`;
+        });
+      }
+
+      await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔮 Get Today\'s Reading', callback_data: `today_${chartId}` }],
+            [{ text: '⬅️ Back to Charts', callback_data: 'charts' }]
+          ]
+        }
+      });
+      await ctx.answerCbQuery();
+
+    } catch (error) {
+      console.error('Error showing chart details:', error);
+      await ctx.answerCbQuery('Error loading chart details');
+    }
+  }
+
   private async showActivityRecommendations(ctx: BotContext, chartId: string) {
     try {
       const natalChart = await this.natalRepo.findById(chartId);
@@ -867,6 +926,24 @@ export class TelegramBotService {
 
           case 'activities':
             await this.showActivityRecommendations(ctx, data);
+            break;
+
+          case 'details':
+            await this.showChartDetails(ctx, data);
+            break;
+
+          case 'manage':
+            // Show options for a specific chart
+            await ctx.reply(`Manage *${data}*`, {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '🔍 View Details', callback_data: `details_${data}` }],
+                  [{ text: '📊 Get Reading', callback_data: `today_${data}` }],
+                  [{ text: '🏠 Menu', callback_data: 'main_menu' }]
+                ]
+              }
+            });
             break;
 
           default:
@@ -945,43 +1022,43 @@ export class TelegramBotService {
       // Clear any existing webhooks first to avoid conflicts
       console.log('🧹 Clearing webhooks to ensure clean polling start...');
       await this.bot.telegram.deleteWebhook();
-      
+
       // Wait a moment for webhook cleanup
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Set bot commands with Telegram API
       await this.setBotCommands();
 
       // Add debug logging for bot startup
       console.log('🔧 Bot instance created with token:', TOKEN ? 'Present' : 'Missing');
-      
+
       // For now, always use polling mode since we don't have HTTPS webhook setup
       console.log('🔄 Using polling mode with timeout handling...');
-      
+
       // Try a custom implementation with manual getUpdates and shorter timeout
       console.log('🔄 Starting custom polling with shorter timeout intervals...');
-      
+
       // Important: Initialize middleware first before custom polling
       console.log('🔧 Initializing bot middleware before polling...');
       await this.bot.telegram.deleteWebhook(); // Ensure no webhook conflicts
-      
+
       await this.startCustomPolling();
-      
+
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
       console.log('🎯 Enhanced Telegram bot with natal chart management is LIVE!');
-      
+
       // Test bot connectivity immediately after launch
       console.log('🔍 Testing bot connectivity...');
       const me = await this.bot.telegram.getMe();
       console.log('✅ Bot connected successfully:', me.username);
-      
+
     } catch (err: any) {
       console.error('❌ Failed to launch Telegram Bot:', err);
       console.error('Bot token valid:', TOKEN ? 'Yes' : 'No');
       console.error('Error details:', err?.message || 'Unknown error');
       if (err?.stack) console.error('Stack trace:', err.stack);
-      
+
       // Try to recover with a different approach
       console.log('🔄 Attempting recovery with manual polling setup...');
       try {
@@ -998,11 +1075,11 @@ export class TelegramBotService {
 
   private async startCustomPolling() {
     console.log('🔧 Starting custom polling implementation...');
-    
+
     let offset = 0;
     const pollTimeout = 10; // 10 second timeout instead of default 30
     const limit = 10;
-    
+
     const poll = async () => {
       try {
         console.log('🔍 Polling for updates...');
@@ -1014,9 +1091,9 @@ export class TelegramBotService {
         }, {
           timeout: (pollTimeout + 5) * 1000 // Add 5 seconds buffer for network timeout
         });
-        
+
         const updates = response.data.result;
-        
+
         if (updates.length > 0) {
           console.log(`📨 Received ${updates.length} updates`);
           for (const update of updates) {
@@ -1031,16 +1108,16 @@ export class TelegramBotService {
             }
           }
         }
-        
+
       } catch (error: any) {
         console.error('❌ Polling error:', error.message);
         // Don't stop polling on errors, just log and continue
       }
-      
+
       // Schedule next poll
       setTimeout(poll, 1000); // 1 second delay between polls
     };
-    
+
     // Start initial poll
     poll();
     console.log('✅ Custom polling started successfully');
@@ -1048,20 +1125,20 @@ export class TelegramBotService {
 
   private async setupManualPolling() {
     console.log('🔧 Setting up manual polling as fallback...');
-    
+
     try {
       console.log('🔄 Attempting custom polling restart...');
       await this.bot.telegram.deleteWebhook();
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       // Try custom polling method
       await this.startCustomPolling();
-      
+
       console.log('✅ Manual restart successful!');
-      
+
     } catch (manualErr: any) {
       console.error('❌ Manual restart also failed:', manualErr?.message);
-      
+
       // Last resort: log the error and continue with other services
       console.log('⚠️ Bot will be unavailable, but other services will continue');
     }

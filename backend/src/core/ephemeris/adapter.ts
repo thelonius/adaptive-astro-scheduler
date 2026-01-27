@@ -187,6 +187,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       symbol: response.symbol || '🌙',
       energy: this.getLunarEnergy(response.number),
       lunarPhase: this.parseLunarPhase(response.lunar_phase),
+      colorPalette: response.color_palette,
       characteristics: {
         spiritual: `Lunar Day ${response.number}: ${response.symbol}`,
         practical: `Energy: ${response.energy}`,

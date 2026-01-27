@@ -202,6 +202,13 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
+        <defs>
+          <radialGradient id="cluster-field-gradient">
+            <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+            <stop offset="40%" stopColor="white" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+        </defs>
         {/* Zodiac circle (signs and degrees) */}
         <ZodiacCircle
           size={config.size}

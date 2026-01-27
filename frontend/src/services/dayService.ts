@@ -12,6 +12,10 @@ export interface LunarDayData {
     symbol: string;
     energy: string;
     description: string;
+    colorPalette?: {
+        base_colors: string[];
+        gradient: string[];
+    };
     recommendations: {
         good: string[];
         avoid: string[];

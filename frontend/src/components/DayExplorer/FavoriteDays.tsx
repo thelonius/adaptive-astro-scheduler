@@ -30,9 +30,10 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
     onSelectDate,
     currentDate,
 }) => {
-    const { favorites, removeFavorite, updateNote } = useFavoritesStore();
+    const { favorites, removeFavorite, updateNote, updateTitle } = useFavoritesStore();
     const [editingDate, setEditingDate] = useState<string | null>(null);
     const [noteInput, setNoteInput] = useState('');
+    const [titleInput, setTitleInput] = useState('');
     const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
 
     const cardBg = useColorModeValue('white', 'gray.800');
@@ -77,20 +78,22 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
         return phases[phase.toLowerCase()] || '🌙';
     };
 
-    const handleEditNote = (fav: FavoriteDay) => {
+    const handleEdit = (fav: FavoriteDay) => {
         setEditingDate(fav.date);
+        setTitleInput(fav.title || '');
         setNoteInput(fav.note || '');
     };
 
-    const handleSaveNote = (date: string) => {
+    const handleSave = (date: string) => {
+        updateTitle(date, titleInput);
         updateNote(date, noteInput);
         setEditingDate(null);
-        setNoteInput('');
     };
 
     const handleCancelEdit = () => {
         setEditingDate(null);
         setNoteInput('');
+        setTitleInput('');
     };
 
     if (favorites.length === 0) {
@@ -98,12 +101,12 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
             <Card bg={cardBg} borderRadius="xl" border="1px solid" borderColor={borderColor}>
                 <CardBody>
                     <VStack py={4} spacing={2}>
-                        <Text fontSize="2xl">⭐</Text>
+                        <Text fontSize="2xl">📚</Text>
                         <Text color={mutedColor} textAlign="center">
-                            No favorite days yet
+                            Your Event Library is empty
                         </Text>
                         <Text fontSize="sm" color={mutedColor} textAlign="center">
-                            Click the star button to save days you want to remember
+                            Click the star button on any day to save it as a library item
                         </Text>
                     </VStack>
                 </CardBody>
@@ -122,7 +125,7 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                 transition="background 0.2s"
             >
                 <HStack justify="space-between">
-                    <Heading size="md">⭐ Favorite Days ({favorites.length})</Heading>
+                    <Heading size="md">📚 Event Library ({favorites.length})</Heading>
                     <Text fontSize="lg">{isOpen ? '▼' : '▶'}</Text>
                 </HStack>
             </CardHeader>
@@ -150,18 +153,21 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                         cursor="pointer"
                                         onClick={() => onSelectDate(new Date(fav.date))}
                                     >
-                                        <HStack justify="space-between">
-                                            <HStack spacing={3}>
-                                                <Text fontSize="xl">
+                                        <HStack justify="space-between" align="start">
+                                            <HStack spacing={3} align="start">
+                                                <Text fontSize="xl" mt={1}>
                                                     {getMoonPhaseEmoji(fav.summary?.moonPhase)}
                                                 </Text>
                                                 <VStack align="start" spacing={0}>
-                                                    <Text fontWeight="medium">
+                                                    <Text fontWeight="bold" color="purple.600">
+                                                        {fav.title || 'Untitled Event'}
+                                                    </Text>
+                                                    <Text fontSize="sm" color={mutedColor}>
                                                         {formatDate(fav.date)}
                                                     </Text>
                                                     {fav.summary && (
-                                                        <HStack spacing={2}>
-                                                            <Badge size="sm" colorScheme="purple">
+                                                        <HStack spacing={2} mt={1}>
+                                                            <Badge size="sm" colorScheme="purple" variant="outline">
                                                                 Day {fav.summary.lunarDay}
                                                             </Badge>
                                                             <Text fontSize="xs" color={mutedColor} textTransform="capitalize">
@@ -174,17 +180,17 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
 
                                             <HStack spacing={1}>
                                                 <IconButton
-                                                    aria-label="Edit note"
+                                                    aria-label="Edit item"
                                                     icon={<Text>✏️</Text>}
                                                     size="sm"
                                                     variant="ghost"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleEditNote(fav);
+                                                        handleEdit(fav);
                                                     }}
                                                 />
                                                 <IconButton
-                                                    aria-label="Remove from favorites"
+                                                    aria-label="Remove item"
                                                     icon={<Text>🗑️</Text>}
                                                     size="sm"
                                                     variant="ghost"
@@ -197,29 +203,37 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                             </HStack>
                                         </HStack>
 
-                                        {/* Note display or edit */}
+                                        {/* Edit Mode */}
                                         {editingDate === fav.date ? (
-                                            <Box mt={2} onClick={(e) => e.stopPropagation()}>
-                                                <Input
-                                                    value={noteInput}
-                                                    onChange={(e) => setNoteInput(e.target.value)}
-                                                    placeholder="Add a note..."
-                                                    size="sm"
-                                                    mb={2}
-                                                    autoFocus
-                                                />
-                                                <HStack spacing={2}>
-                                                    <Button size="xs" colorScheme="purple" onClick={() => handleSaveNote(fav.date)}>
-                                                        Save
-                                                    </Button>
-                                                    <Button size="xs" variant="ghost" onClick={handleCancelEdit}>
-                                                        Cancel
-                                                    </Button>
-                                                </HStack>
+                                            <Box mt={3} p={2} bg={cardBg} borderRadius="md" border="1px solid" borderColor="purple.200" onClick={(e) => e.stopPropagation()}>
+                                                <VStack align="stretch" spacing={2}>
+                                                    <Input
+                                                        value={titleInput}
+                                                        onChange={(e) => setTitleInput(e.target.value)}
+                                                        placeholder="Event Title (e.g. Project Launch)"
+                                                        size="sm"
+                                                        fontWeight="bold"
+                                                        autoFocus
+                                                    />
+                                                    <Input
+                                                        value={noteInput}
+                                                        onChange={(e) => setNoteInput(e.target.value)}
+                                                        placeholder="Add description or notes..."
+                                                        size="sm"
+                                                    />
+                                                    <HStack spacing={2} justify="flex-end">
+                                                        <Button size="xs" colorScheme="purple" onClick={() => handleSave(fav.date)}>
+                                                            Save Changes
+                                                        </Button>
+                                                        <Button size="xs" variant="ghost" onClick={handleCancelEdit}>
+                                                            Cancel
+                                                        </Button>
+                                                    </HStack>
+                                                </VStack>
                                             </Box>
                                         ) : fav.note ? (
-                                            <Text fontSize="sm" color={mutedColor} mt={2} pl={9}>
-                                                📝 {fav.note}
+                                            <Text fontSize="sm" color={mutedColor} mt={2} pl={9} borderLeft="2px solid" borderColor="purple.100">
+                                                {fav.note}
                                             </Text>
                                         ) : null}
                                     </Box>

@@ -60,7 +60,6 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
 
     // Create combined text showing all planets in cluster
     const planetSymbols = planets.map(pos => getPlanetSymbol(pos.planet.name)).join(' ');
-    const planetNames = planets.map(pos => pos.planet.name).join(', ');
 
     // Get cluster type colors
     const getClusterGlow = () => {
@@ -72,6 +71,19 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
         default: return 'rgba(255,255,255,0.1)';
       }
     };
+
+    // Helper for cluster color
+    const getClusterColor = (type: string | undefined) => {
+      switch (type) {
+        case 'tight': return '#ff6464';
+        case 'moderate': return '#ffa500';
+        case 'loose': return '#ffff00';
+        default: return '#ffffff';
+      }
+    };
+
+    const clusterColor = getClusterColor(analysis?.clusterType);
+    const gradientId = `cluster-gradient-${index}`;
 
     const handleClusterMouseEnter = (e: React.MouseEvent) => {
       if (onClusterHover) {
@@ -99,50 +111,49 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
 
     return (
       <g key={`cluster-label-${index}`}
-         style={{ cursor: 'pointer' }}
-         onMouseEnter={handleClusterMouseEnter}
-         onMouseLeave={handleClusterMouseLeave}
-         onClick={handleClusterClick}
+        style={{ cursor: 'pointer' }}
+        onMouseEnter={handleClusterMouseEnter}
+        onMouseLeave={handleClusterMouseLeave}
+        onClick={handleClusterClick}
       >
-        {/* Enhanced cluster background with glow effect */}
-        <motion.rect
-          x={labelX - 35}
-          y={labelY - 18}
-          width={70}
-          height={36}
-          rx={10}
-          fill={getClusterGlow()}
-          stroke={analysis?.clusterType === 'tight' ? '#ff6464' :
-                 analysis?.clusterType === 'moderate' ? '#ffa500' : '#ffff00'}
-          strokeWidth={analysis ? 1.5 : 1}
-          strokeOpacity={0.6}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: index * 0.1 + 0.5, duration: 0.4 }}
-        />
+        <defs>
+          <radialGradient id={gradientId}>
+            <stop offset="0%" stopColor={clusterColor} stopOpacity="0.4" />
+            <stop offset="50%" stopColor={clusterColor} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={clusterColor} stopOpacity="0" />
+          </radialGradient>
+        </defs>
 
-        {/* Cluster strength indicator */}
-        {analysis && analysis.strength > 0.6 && (
-          <motion.circle
-            cx={labelX + 25}
-            cy={labelY - 12}
-            r={3}
-            fill={analysis.clusterType === 'tight' ? '#ff4444' : '#ffa500'}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: index * 0.1 + 0.8 }}
-          />
-        )}
+        {/* Draw the gradient field "blobs" for each planet in the cluster */}
+        <g style={{ mixBlendMode: 'screen' }}>
+          {planets.map((p, i) => (
+            <motion.circle
+              key={`field-${i}`}
+              cx={p.x}
+              cy={p.y}
+              r={size * 0.08} // Large radius for the field
+              fill={`url(#${gradientId})`}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.8, delay: i * 0.1 }}
+            />
+          ))}
+        </g>
 
-        {/* Combined planet symbols */}
+        {/* Combined planet symbols centered on the label position 
+            Note: labelX/Y comes from the cluster centroid calculation in utils 
+        */}
         <motion.text
           x={labelX}
-          y={labelY - 3}
+          y={labelY}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="#ffffff"
           fontSize={size * 0.018}
           fontWeight="bold"
+          paintOrder="stroke"
+          stroke="#000"
+          strokeWidth="3px"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: index * 0.1 + 0.6 }}
@@ -150,56 +161,24 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
           {planetSymbols}
         </motion.text>
 
-        {/* Enhanced planet count indicator with type */}
+        {/* Count indicator */}
         <motion.text
           x={labelX}
-          y={labelY + 8}
+          y={labelY + 12}
           textAnchor="middle"
           dominantBaseline="middle"
           fill={analysis?.clusterType === 'tight' ? '#ff9999' :
-               analysis?.clusterType === 'moderate' ? '#ffcc99' : '#cccccc'}
+            analysis?.clusterType === 'moderate' ? '#ffcc99' : '#cccccc'}
           fontSize={size * 0.012}
           fontWeight={analysis?.clusterType === 'tight' ? 'bold' : 'normal'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
           transition={{ delay: index * 0.1 + 0.7 }}
+          style={{ textShadow: '0 0 2px black' }}
         >
           {planets.length} {analysis?.clusterType === 'tight' ? '★' :
-                          analysis?.clusterType === 'moderate' ? '◆' : '●'}
-          {analysis?.sign?.slice(0, 3) || ''}
+            analysis?.clusterType === 'moderate' ? '◆' : '●'}
         </motion.text>
-
-        {/* Enhanced connection line to cluster center */}
-        <motion.line
-          x1={labelX}
-          y1={labelY + 18}
-          x2={planets[0].x + (planets[planets.length - 1].x - planets[0].x) / 2}
-          y2={planets[0].y + (planets[planets.length - 1].y - planets[0].y) / 2}
-          stroke={analysis?.clusterType === 'tight' ? 'rgba(255,100,100,0.5)' :
-                 analysis?.clusterType === 'moderate' ? 'rgba(255,165,0,0.4)' :
-                 'rgba(255,255,255,0.3)'}
-          strokeWidth={analysis?.clusterType === 'tight' ? 2 : 1}
-          strokeDasharray={analysis?.clusterType === 'tight' ? 'none' : '3,3'}
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: analysis?.strength || 0.3 }}
-          transition={{ delay: index * 0.1 + 0.8, duration: 0.6 }}
-        />
-
-        {/* Add connecting arc for tight clusters */}
-        {analysis?.clusterType === 'tight' && planets.length >= 3 && (
-          <motion.path
-            d={`M ${planets[0].x},${planets[0].y}
-                Q ${planets[Math.floor(planets.length/2)].x},${planets[Math.floor(planets.length/2)].y - 20}
-                ${planets[planets.length-1].x},${planets[planets.length-1].y}`}
-            fill="none"
-            stroke="rgba(255,100,100,0.4)"
-            strokeWidth={1.5}
-            strokeDasharray="2,2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.6 }}
-            transition={{ delay: index * 0.1 + 1.0, duration: 0.8 }}
-          />
-        )}
       </g>
     );
   };

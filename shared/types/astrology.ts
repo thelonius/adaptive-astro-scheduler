@@ -77,6 +77,10 @@ export interface LunarDay {
   energy: LunarEnergyType;
   lunarPhase: LunarPhaseType;
   moonPhase?: MoonPhase;      // Additional phase details
+  colorPalette?: {
+    base_colors: string[];
+    gradient: string[];
+  };
   characteristics: {
     spiritual: string;
     practical: string;

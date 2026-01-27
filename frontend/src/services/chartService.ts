@@ -96,15 +96,15 @@ export class GeocodingService {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          
+
           // Reverse geocode to get city/country info
           try {
             const response = await axios.get(
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
             );
-            
+
             const address = response.data.address || {};
-            
+
             resolve({
               latitude,
               longitude,
