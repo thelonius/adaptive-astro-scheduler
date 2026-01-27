@@ -169,8 +169,8 @@ export class EphemerisAdapter implements IEphemerisCalculator {
       timezone: dateTime.timezone,
     });
 
-    // Convert percentage (0-100) to decimal (0-1)
-    return response.illumination / 100;
+    // The API already returns a value between 0.0 and 1.0
+    return response.illumination;
   }
 
   /**
