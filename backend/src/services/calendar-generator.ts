@@ -17,7 +17,7 @@ import { LunarDayEntity } from '../core/entities/lunar-day';
  * and basic recommendations
  */
 export class CalendarGenerator {
-  constructor(private ephemeris: IEphemerisCalculator) {}
+  constructor(private ephemeris: IEphemerisCalculator) { }
 
   /**
    * Generate a single calendar day
@@ -49,23 +49,44 @@ export class CalendarGenerator {
     // Generate basic recommendations from lunar day
     const recommendations = this.generateRecommendations(lunarDayEntity, moonPhase);
 
-    // Convert API planet data to CelestialBody objects
+    // Convert API planet data to Transits object
     const transits = this.convertPlanetApiDataToTransits(planetsData);
 
     // Get Moon's zodiac sign from planets data
-    const moonPlanet = planetsData.planets.find(p => p.name === 'Moon');
+    const moonPlanet = (planetsData?.planets && Array.isArray(planetsData.planets))
+      ? planetsData.planets.find(p => p.name === 'Moon')
+      : null;
     const moonSign = moonPlanet ? this.getZodiacSignFromName(moonPlanet.zodiacSign) : this.getPlaceholderZodiacSign();
+
+    // Determine moon phase details for frontend compatibility
+    const phaseName = lunarDay.lunarPhase === 'New' && moonPhase > 0.05 ? 'Waxing Crescent' :
+      lunarDay.lunarPhase === 'Full' && moonPhase < 0.95 ? 'Waning Gibbous' :
+        lunarDay.lunarPhase;
 
     const calendarDay: CalendarDay = {
       date: dateTime,
       lunarDay,
       lunarPhase: moonPhase,
+      moonPhase: {
+        phase: phaseName,
+        illumination: moonPhase,
+        age: lunarDay.number, // Approximate age is the lunar day number
+      },
       moonSign,
       dayOfWeek,
       seasonalPhase,
       transits,
       voidOfCourseMoon: voidMoonData.isVoidOfCourse ? this.convertVoidMoonApiData(voidMoonData) : null,
-      retrogradesActive: retrogradesData.retrogradePlanets.map(r => r.name) as any, // TODO: Fix type definition
+      retrogradesActive: (retrogradesData?.retrogradePlanets && Array.isArray(retrogradesData.retrogradePlanets) && planetsData?.planets)
+        ? retrogradesData.retrogradePlanets
+          .map(retro => {
+            const apiPlanet = planetsData.planets.find((p: any) =>
+              p.name.toLowerCase() === retro.name.toLowerCase()
+            );
+            return apiPlanet ? this.convertPlanetApiDataToCelestialBody(apiPlanet) : null;
+          })
+          .filter(Boolean) as CelestialBody[]
+        : [], // Return empty array if retrograde data is invalid
       eclipseWindow: false, // TODO: Calculate when ephemeris supports it
       recommendations,
     };
@@ -300,6 +321,17 @@ export class CalendarGenerator {
    */
   private convertPlanetApiDataToTransits(planetsData: any): any {
     const transits: any = {};
+
+    // Add null check for planets data
+    if (!planetsData || !planetsData.planets || !Array.isArray(planetsData.planets)) {
+      console.error('❌ Invalid planets data received:', planetsData);
+      // Return placeholder transits for all planets
+      const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+      planetNames.forEach(planetName => {
+        transits[planetName] = this.getPlaceholderCelestialBody(planetName);
+      });
+      return transits;
+    }
 
     const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
 

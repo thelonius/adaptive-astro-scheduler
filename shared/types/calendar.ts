@@ -14,6 +14,11 @@ export interface CalendarDay {
   // Lunar data
   lunarDay: LunarDay;
   lunarPhase: number;          // 0.0 - 1.0 (illumination)
+  moonPhase: {
+    phase: string;
+    illumination: number;
+    age: number;
+  };
   moonSign: ZodiacSign;
 
   // Basic temporal info

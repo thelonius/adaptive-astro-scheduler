@@ -63,12 +63,20 @@ export interface ZodiacSign {
   dateRange: [number, number]; // Approximate day range
 }
 
+// Moon Phase Details
+export interface MoonPhase {
+  phase: string;
+  illumination: number; // 0.0 - 1.0
+  age: number;          // days
+}
+
 // Lunar Day (1-30)
 export interface LunarDay {
   number: number;             // 1-30
   symbol: string;
   energy: LunarEnergyType;
   lunarPhase: LunarPhaseType;
+  moonPhase?: MoonPhase;      // Additional phase details
   characteristics: {
     spiritual: string;
     practical: string;
