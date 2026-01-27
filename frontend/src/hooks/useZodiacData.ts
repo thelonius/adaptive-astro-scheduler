@@ -12,6 +12,7 @@ interface UseZodiacDataOptions {
   includeHouses?: boolean;
   aspectOrb?: number;
   enabled?: boolean;
+  date?: Date | string;
 }
 
 interface UseZodiacDataResult {
@@ -33,6 +34,7 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
     includeHouses = false,
     aspectOrb = 8,
     enabled = true,
+    date: dateProp,
   } = options;
 
   const [data, setData] = useState<ZodiacWheelData | null>(null);
@@ -52,9 +54,31 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
     }
 
     abortControllerRef.current = new AbortController();
-    const now = new Date();
-    const date = now.toISOString().split('T')[0];
-    const time = now.toTimeString().split(' ')[0];
+
+    // Determine the date/time to use
+    // If dateProp is provided, use it. Otherwise use current time
+    let queryDate: string;
+    let queryTime: string;
+    let targetDate: Date;
+
+    if (dateProp) {
+      targetDate = typeof dateProp === 'string' ? new Date(dateProp) : dateProp;
+      // Use local date components to match local time
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      queryDate = `${year}-${month}-${day}`;
+      queryTime = targetDate.toTimeString().split(' ')[0];
+    } else {
+      targetDate = new Date();
+      // Use local date components to match local time
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      queryDate = `${year}-${month}-${day}`;
+      queryTime = targetDate.toTimeString().split(' ')[0];
+    }
+
 
     try {
       setLoading(true);
@@ -63,18 +87,18 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
       // Fetch planets and aspects in parallel
       const [planetsResponse, aspectsResponse, housesResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/ephemeris/planets`, {
-          params: { date, time, latitude, longitude, timezone },
+          params: { date: queryDate, time: queryTime, latitude, longitude, timezone },
           signal: abortControllerRef.current.signal,
         }),
         axios.get(`${API_BASE_URL}/api/ephemeris/aspects`, {
-          params: { date, time, orb: aspectOrb },
+          params: { date: queryDate, time: queryTime, orb: aspectOrb },
           signal: abortControllerRef.current.signal,
         }),
         includeHouses
           ? axios.get(`${API_BASE_URL}/api/ephemeris/houses`, {
-              params: { date, time, latitude, longitude, system: 'placidus' },
-              signal: abortControllerRef.current.signal,
-            })
+            params: { date: queryDate, time: queryTime, latitude, longitude, system: 'placidus' },
+            signal: abortControllerRef.current.signal,
+          })
           : Promise.resolve(null),
       ]);
 
@@ -110,9 +134,9 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
         planets,
         aspects,
         houses,
-        timestamp: now,
+        timestamp: targetDate,
       });
-      setLastUpdate(now);
+      setLastUpdate(new Date());
     } catch (err) {
       if (axios.isCancel(err)) {
         // Request was cancelled, ignore
@@ -124,7 +148,7 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
     } finally {
       setLoading(false);
     }
-  }, [enabled, latitude, longitude, timezone, aspectOrb, includeHouses]);
+  }, [enabled, latitude, longitude, timezone, aspectOrb, includeHouses, dateProp]);
 
   const refresh = useCallback(async () => {
     await fetchData();

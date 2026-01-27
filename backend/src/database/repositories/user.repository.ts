@@ -72,3 +72,6 @@ export class UserRepository {
     return result.rows[0] || null;
   }
 }
+
+// Export singleton instance
+export const userRepository = new UserRepository();

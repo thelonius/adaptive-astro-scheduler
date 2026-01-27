@@ -4,6 +4,8 @@ import { Box, Container, Heading, VStack, HStack, Button } from '@chakra-ui/reac
 import ZodiacWheelTest from './pages/ZodiacWheelTest';
 import ZodiacWheelDemo from './pages/ZodiacWheelDemo';
 import NatalChart from './pages/NatalChart';
+import ChartLibrary from './pages/ChartLibrary';
+import DayExplorer from './pages/DayExplorer';
 
 function Home() {
   return (
@@ -15,6 +17,26 @@ function Home() {
         </Heading>
 
         <VStack spacing={4} mt={8} width="100%">
+          <Button
+            as={Link}
+            to="/day-explorer"
+            size="lg"
+            colorScheme="teal"
+            width="100%"
+          >
+            🔮 Day Explorer (Analyze Any Day)
+          </Button>
+
+          <Button
+            as={Link}
+            to="/chart-library"
+            size="lg"
+            colorScheme="purple"
+            width="100%"
+          >
+            📚 Chart Library (Save & Manage Charts)
+          </Button>
+
           <Button
             as={Link}
             to="/natal-chart"
@@ -52,6 +74,13 @@ function Home() {
           </Heading>
           <VStack align="stretch" spacing={2} fontSize="sm">
             <HStack>
+              <Box>🔮</Box>
+              <Box>
+                <strong>Day Explorer:</strong> Analyze any day, navigate through dates,
+                and save favorites
+              </Box>
+            </HStack>
+            <HStack>
               <Box>📋</Box>
               <Box>
                 <strong>Test Page:</strong> Comprehensive testing with automated tests, manual
@@ -76,6 +105,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/day-explorer" element={<DayExplorer />} />
+      <Route path="/chart-library" element={<ChartLibrary />} />
       <Route path="/natal-chart" element={<NatalChart />} />
       <Route path="/zodiac-wheel-test" element={<ZodiacWheelTest />} />
       <Route path="/zodiac-wheel-demo" element={<ZodiacWheelDemo />} />

@@ -25,7 +25,7 @@ if (!TOKEN) {
 
 // Define session interface
 interface SessionData {
-  awaiting?: 'BIRTH_DATE' | 'BIRTH_TIME' | 'CHART_NAME' | 'CHART_TYPE' | null;
+  awaiting?: 'BIRTH_DATE' | 'BIRTH_TIME' | 'CHART_NAME' | 'CHART_TYPE' | 'CITY_NAME' | null;
   chartCreationFlow?: {
     step: number;
     chartType: 'self' | 'other' | 'event';
@@ -100,10 +100,12 @@ export class TelegramBotService {
       console.log('🎯 /start command received from user:', ctx.from.id);
       try {
         const telegramId = ctx.from.id;
+        console.log('🔄 Processing /start for user:', telegramId);
 
         // Initialize or find user
         let user = await this.userRepo.findByTelegramId(telegramId);
         if (!user) {
+          console.log('📝 Creating new user for telegram ID:', telegramId);
           user = await this.userRepo.create({
             telegram_id: telegramId,
             username: ctx.from.username,
@@ -116,22 +118,36 @@ export class TelegramBotService {
 
         // Check if user has any charts
         const charts = await this.natalRepo.findByUserId(user.id);
+        console.log(`📊 User has ${charts.length} charts`);
 
         if (charts.length > 0) {
+          console.log('📋 Showing main menu to user');
           await this.showMainMenu(ctx, charts);
         } else {
+          console.log('🆕 Starting chart creation for new user');
           await this.startChartCreation(ctx, 'self');
         }
+        console.log('✅ /start command completed successfully');
 
       } catch (error) {
         console.error('❌ Error in /start command:', error);
-        await ctx.reply('Hello! I\'m your Astro Scheduler bot. Something went wrong, but you can try again!');
+        try {
+          await ctx.reply('Hello! I\'m your Astro Scheduler bot. Something went wrong, but you can try again!');
+          console.log('✅ Error message sent to user');
+        } catch (replyError) {
+          console.error('❌ Failed to send error message:', replyError);
+        }
       }
     });
 
     // Enhanced Location Handler for chart creation
     this.bot.on('location', async (ctx) => {
+      console.log('📍 Location message received from user:', ctx.from.id);
+      console.log('📍 Location data:', ctx.message.location);
+      console.log('📍 Session state:', ctx.session?.chartCreationFlow ? 'Flow exists' : 'No flow found');
+      
       if (!ctx.session.chartCreationFlow) {
+        console.log('❌ No chart creation flow - asking user to restart');
         await ctx.reply('Please start with /start or use "Add New Chart" first.');
         return;
       }
@@ -139,28 +155,26 @@ export class TelegramBotService {
       const { latitude, longitude } = ctx.message.location;
       ctx.session.chartCreationFlow.tempData.lat = latitude;
       ctx.session.chartCreationFlow.tempData.lon = longitude;
+      
+      console.log('📍 Processing location:', { latitude, longitude });
 
       try {
-        const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
-          latitude, longitude
-        });
-
-        const timezone = tzResponse.data.timezone;
-        const placeName = tzResponse.data.place_name || `${latitude}, ${longitude}`;
-
-        ctx.session.chartCreationFlow.tempData.timezone = timezone;
-        ctx.session.chartCreationFlow.tempData.placeName = placeName;
-        ctx.session.chartCreationFlow.step = 2;
-        ctx.session.awaiting = 'BIRTH_DATE';
-
+        // Instead of automatically calling timezone API, ask user to confirm city
         await ctx.reply(
-          `Got it! 📍\nLocation: ${placeName}\nTimezone: ${timezone}\n\n` +
-          `Now, please enter the birth date (YYYY-MM-DD):`,
+          `📍 Location received: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n\n` +
+          `Please type the name of your city (e.g., "New York", "London", "Tokyo"):\n\n` +
+          `This helps ensure accurate timezone and location data for your chart.`,
           Markup.removeKeyboard()
         );
+        
+        // Set up to await city name
+        ctx.session.awaiting = 'CITY_NAME';
+        ctx.session.chartCreationFlow.step = 1.5; // Between location and birth date
+        console.log('✅ Location received, waiting for city confirmation');
+        
       } catch (error) {
-        console.error('Timezone Error:', error);
-        await ctx.reply("I couldn't detect the timezone for that location. Please try sharing the location again.");
+        console.error('❌ Location processing error:', error);
+        await ctx.reply("There was an error processing your location. Please try sharing it again.");
       }
     });
 
@@ -169,6 +183,51 @@ export class TelegramBotService {
       if (!ctx.session.awaiting) return;
 
       const text = ctx.message.text.trim();
+
+      if (ctx.session.awaiting === 'CITY_NAME') {
+        console.log('🏙️ City name received:', text);
+        
+        if (!ctx.session.chartCreationFlow) {
+          await ctx.reply('Please start with /start first.');
+          return;
+        }
+
+        try {
+          // Use city name with coordinates for timezone lookup
+          const { lat, lon } = ctx.session.chartCreationFlow.tempData;
+          
+          console.log('🏙️ Looking up timezone for city:', text, 'at coordinates:', lat, lon);
+          
+          // Try timezone lookup with coordinates
+          const tzResponse = await axios.post(`${EPHEMERIS_API_URL}/api/v1/geo/timezone`, {
+            latitude: lat, 
+            longitude: lon
+          });
+          
+          const timezone = tzResponse.data.timezone;
+          console.log('🏙️ Timezone found:', timezone);
+
+          // Store city name and timezone
+          ctx.session.chartCreationFlow.tempData.timezone = timezone;
+          ctx.session.chartCreationFlow.tempData.placeName = text;
+          ctx.session.chartCreationFlow.step = 2;
+          ctx.session.awaiting = 'BIRTH_DATE';
+
+          await ctx.reply(
+            `Perfect! 📍\nCity: ${text}\nTimezone: ${timezone}\n\n` +
+            `Now, please enter the birth date (YYYY-MM-DD):`
+          );
+          console.log('✅ City and timezone processed successfully');
+          
+        } catch (error) {
+          console.error('❌ Timezone lookup failed:', error);
+          await ctx.reply(
+            `I couldn't determine the timezone for "${text}". ` +
+            `Please try entering the city name again, or try a nearby major city.`
+          );
+        }
+        return;
+      }
 
       if (ctx.session.awaiting === 'BIRTH_DATE') {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -598,6 +657,9 @@ export class TelegramBotService {
 
     text += `🌙 *Lunar Day:* ${analytics.universalEnergy.lunarDay} (${analytics.universalEnergy.moonPhase})\n\n`;
 
+    // Add detailed transit information
+    text += this.formatTransitDetails(analytics.personalTransits);
+
     text += `*Personal Summary:*\n${analytics.personalSummary}\n\n`;
 
     if (analytics.recommendations.bestActivities.length > 0) {
@@ -624,6 +686,93 @@ export class TelegramBotService {
     }
 
     return text;
+  }
+
+  private formatTransitDetails(transits: any): string {
+    let transitText = `🌍 *Current Transits* (Maximum Detail)\n\n`;
+
+    // Major Aspects (Significant Transits)
+    if (transits.significantTransits && transits.significantTransits.length > 0) {
+      transitText += `⭐ *Major Aspects Active:*\n`;
+      transits.significantTransits.forEach((transit: any) => {
+        const orb = transit.orb?.toFixed(1) || '0.0';
+        const exactness = transit.isExact ? ' ⚡ EXACT' : transit.isApplying ? ' ↗️ Applying' : ' ↘️ Separating';
+        const strength = transit.orb <= 1 ? '🔥' : transit.orb <= 3 ? '🌟' : '✨';
+        
+        transitText += `${strength} *${transit.transitingPlanet}* ${this.getAspectSymbol(transit.aspectType)} *${transit.natalPlanet}*\n`;
+        transitText += `   Orb: ${orb}°${exactness}\n`;
+        if (transit.interpretation) {
+          transitText += `   _${transit.interpretation}_\n`;
+        }
+        transitText += `\n`;
+      });
+    }
+
+    // All Active Transits (Minor Aspects)
+    if (transits.transits && transits.transits.length > 0) {
+      const minorTransits = transits.transits.filter((t: any) => 
+        !['conjunction', 'square', 'trine', 'opposition'].includes(t.aspectType)
+      );
+      
+      if (minorTransits.length > 0) {
+        transitText += `🔮 *Minor Aspects:*\n`;
+        minorTransits.slice(0, 8).forEach((transit: any) => {
+          const orb = transit.orb?.toFixed(1) || '0.0';
+          const exactness = transit.isExact ? ' ⚡' : transit.isApplying ? ' ↗️' : ' ↘️';
+          
+          transitText += `• ${transit.transitingPlanet} ${this.getAspectSymbol(transit.aspectType)} ${transit.natalPlanet} (${orb}°)${exactness}\n`;
+        });
+        transitText += `\n`;
+      }
+    }
+
+    // House Transits
+    if (transits.houseTransits && transits.houseTransits.length > 0) {
+      transitText += `🏠 *House Transits:*\n`;
+      transits.houseTransits.slice(0, 6).forEach((hTransit: any) => {
+        transitText += `• *${hTransit.planet}* in ${this.getHouseName(hTransit.natalHouse)} House\n`;
+        if (hTransit.interpretation) {
+          transitText += `   _${hTransit.interpretation}_\n`;
+        }
+      });
+      transitText += `\n`;
+    }
+
+    // Retrograde Influences  
+    if (transits.retrogradeInfluences && transits.retrogradeInfluences.length > 0) {
+      transitText += `↩️ *Retrograde Influences:*\n`;
+      transits.retrogradeInfluences.forEach((retro: any) => {
+        transitText += `• *${retro.planet}* ℞ affecting: ${retro.affectedNatalPlanets.join(', ')}\n`;
+      });
+      transitText += `\n`;
+    }
+
+    // Transit Summary
+    if (transits.summary) {
+      transitText += `📝 *Transit Summary:*\n_${transits.summary}_\n\n`;
+    }
+
+    return transitText;
+  }
+
+  private getAspectSymbol(aspectType: string): string {
+    const symbols: { [key: string]: string } = {
+      'conjunction': '☌',
+      'sextile': '⚹',
+      'square': '□',
+      'trine': '△',
+      'quincunx': '⚻',
+      'opposition': '☍'
+    };
+    return symbols[aspectType] || aspectType;
+  }
+
+  private getHouseName(houseNumber: number): string {
+    const names = [
+      '', '1st', '2nd', '3rd', '4th', '5th', '6th',
+      '7th', '8th', '9th', '10th', '11th', '12th'
+    ];
+    return names[houseNumber] || `${houseNumber}th`;
   }
 
   private async showTransitDetails(ctx: BotContext, chartId: string) {
@@ -809,17 +958,14 @@ export class TelegramBotService {
       // For now, always use polling mode since we don't have HTTPS webhook setup
       console.log('🔄 Using polling mode with timeout handling...');
       
-      // Launch with explicit timeout and retry logic
-      const launchPromise = this.bot.launch({
-        dropPendingUpdates: true // Clear any pending updates
-      });
+      // Try a custom implementation with manual getUpdates and shorter timeout
+      console.log('🔄 Starting custom polling with shorter timeout intervals...');
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Bot launch timeout after 15 seconds')), 15000);
-      });
+      // Important: Initialize middleware first before custom polling
+      console.log('🔧 Initializing bot middleware before polling...');
+      await this.bot.telegram.deleteWebhook(); // Ensure no webhook conflicts
       
-      await Promise.race([launchPromise, timeoutPromise]);
+      await this.startCustomPolling();
       
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
@@ -850,19 +996,66 @@ export class TelegramBotService {
     process.once('SIGTERM', () => this.bot.stop());
   }
 
+  private async startCustomPolling() {
+    console.log('🔧 Starting custom polling implementation...');
+    
+    let offset = 0;
+    const pollTimeout = 10; // 10 second timeout instead of default 30
+    const limit = 10;
+    
+    const poll = async () => {
+      try {
+        console.log('🔍 Polling for updates...');
+        const response = await axios.post(`https://api.telegram.org/bot${TOKEN}/getUpdates`, {
+          offset: offset,
+          limit: limit,
+          timeout: pollTimeout,
+          allowed_updates: ['message', 'callback_query']
+        }, {
+          timeout: (pollTimeout + 5) * 1000 // Add 5 seconds buffer for network timeout
+        });
+        
+        const updates = response.data.result;
+        
+        if (updates.length > 0) {
+          console.log(`📨 Received ${updates.length} updates`);
+          for (const update of updates) {
+            try {
+              console.log('🔄 Processing update:', update.update_id);
+              await this.bot.handleUpdate(update);
+              console.log('✅ Update processed successfully');
+              offset = update.update_id + 1;
+            } catch (handleError: any) {
+              console.error('❌ Error handling update:', handleError?.message);
+              offset = update.update_id + 1; // Skip this update to avoid getting stuck
+            }
+          }
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Polling error:', error.message);
+        // Don't stop polling on errors, just log and continue
+      }
+      
+      // Schedule next poll
+      setTimeout(poll, 1000); // 1 second delay between polls
+    };
+    
+    // Start initial poll
+    poll();
+    console.log('✅ Custom polling started successfully');
+  }
+
   private async setupManualPolling() {
     console.log('🔧 Setting up manual polling as fallback...');
     
-    // Simplified approach: just try to restart the bot with a clean state
     try {
-      console.log('🔄 Attempting to restart bot with clean state...');
+      console.log('🔄 Attempting custom polling restart...');
       await this.bot.telegram.deleteWebhook();
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Try launching again without the timeout wrapper
-      await this.bot.launch({
-        dropPendingUpdates: true
-      });
+      // Try custom polling method
+      await this.startCustomPolling();
       
       console.log('✅ Manual restart successful!');
       

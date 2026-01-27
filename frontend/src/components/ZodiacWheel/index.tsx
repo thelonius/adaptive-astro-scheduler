@@ -23,6 +23,7 @@ interface ZodiacWheelProps {
   timezone?: string;
   useAdaptiveRefresh?: boolean;
   onDataUpdate?: (data: any) => void;
+  date?: Date | string;
 }
 
 export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
@@ -32,6 +33,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   timezone,
   useAdaptiveRefresh = true,
   onDataUpdate,
+  date,
 }) => {
   const config = useMemo(() => ({ ...DEFAULT_CONFIG, ...userConfig }), [userConfig]);
   const [hoveredPlanet, setHoveredPlanet] = useState<CelestialBody | null>(null);
@@ -56,6 +58,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     timezone,
     includeHouses: config.showHouses,
     aspectOrb: config.aspectOrb,
+    date,
   });
 
   // Notify parent of data updates

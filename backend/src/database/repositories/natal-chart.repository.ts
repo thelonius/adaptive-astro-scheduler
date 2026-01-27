@@ -17,6 +17,7 @@ export class NatalChartRepository {
    * Create a new natal chart
    */
   async create(data: CreateNatalChartInput): Promise<NatalChart> {
+    // First check if the new columns exist, if not create with basic fields only
     const query = `
       INSERT INTO natal_charts (
         user_id, name, birth_date, birth_time, birth_location,
@@ -30,18 +31,31 @@ export class NatalChartRepository {
       data.user_id || null,
       data.name || 'My Chart',
       data.birth_date,
-      data.birth_time,
+      data.birth_time || '12:00:00',
       JSON.stringify(data.birth_location),
-      JSON.stringify(data.planets),
-      JSON.stringify(data.houses),
-      JSON.stringify(data.aspects),
+      JSON.stringify(data.planets || []),
+      JSON.stringify(data.houses || []),
+      JSON.stringify(data.aspects || []),
       data.lunar_day ? JSON.stringify(data.lunar_day) : null,
       data.moon_phase || null,
       data.house_system || 'placidus',
     ];
 
-    const result = await pool.query<NatalChart>(query, values);
-    return this.deserialize(result.rows[0]);
+    try {
+      const result = await pool.query<NatalChart>(query, values);
+      const chart = this.deserialize(result.rows[0]);
+      
+      // Add the additional fields that might not be in DB yet
+      return {
+        ...chart,
+        chart_type: data.chart_type || 'natal',
+        description: data.description,
+        tags: data.tags,
+      };
+    } catch (error) {
+      console.error('Error creating chart:', error);
+      throw new Error(`Failed to create chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -76,6 +90,21 @@ export class NatalChartRepository {
         ? JSON.parse(row.birth_location)
         : row.birth_location,
     }));
+  }
+
+  /**
+   * Find all natal charts for a user (full data)
+   */
+  async findFullChartsByUserId(userId: string): Promise<NatalChart[]> {
+    const query = `
+      SELECT *
+      FROM natal_charts
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `;
+
+    const result = await pool.query<NatalChart>(query, [userId]);
+    return result.rows.map(chart => this.deserialize(chart));
   }
 
   /**

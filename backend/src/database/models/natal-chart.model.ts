@@ -16,12 +16,17 @@ export interface BirthLocation {
   longitude: number;
   timezone: string;
   placeName?: string;
+  city?: string;
+  country?: string;
 }
 
 export interface NatalChart {
   id: string;
   user_id: string | null; // null for guest/anonymous charts
   name: string;
+
+  // Chart Type
+  chart_type?: 'natal' | 'event' | 'question';
 
   // Birth Data
   birth_date: Date;
@@ -38,6 +43,12 @@ export interface NatalChart {
   // Metadata
   house_system: string;
   calculation_date: Date;
+  
+  // Additional metadata
+  description?: string;
+  tags?: string[];
+  
+  // Timestamps
   created_at: Date;
   updated_at: Date;
 }
@@ -45,15 +56,20 @@ export interface NatalChart {
 export interface CreateNatalChartInput {
   user_id?: string | null;
   name?: string;
+  chart_type?: 'natal' | 'event' | 'question';
   birth_date: Date | string;
-  birth_time: string;
+  birth_time?: string;
   birth_location: BirthLocation;
-  planets: CelestialBody[];
-  houses: House[];
-  aspects: Aspect[];
+  planets?: CelestialBody[];
+  houses?: House[];
+  aspects?: Aspect[];
   lunar_day?: LunarDay | null;
   moon_phase?: string | null;
   house_system?: string;
+  description?: string;
+  tags?: string[];
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface UpdateNatalChartInput {

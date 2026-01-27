@@ -6,6 +6,7 @@ import natalChartRoutes from './api/routes/natal-chart.routes';
 import analyticsRoutes from './api/routes/analytics.routes';
 import aspectAnalysisRoutes from './api/routes/aspect-analysis.routes';
 import customLayersRoutes from './api/routes/custom-layers.routes';
+import { createChartRoutes } from './api/routes/chart.routes';
 
 /**
  * Create and configure Express application
@@ -51,6 +52,13 @@ export function createApp(): Express {
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/aspects', aspectAnalysisRoutes);
   app.use('/api/custom-layers', customLayersRoutes);
+  
+  // Chart management routes (requires repositories)
+  const chartRoutes = createChartRoutes(
+    require('./database/repositories').natalChartRepository,
+    require('./database/repositories').userRepository
+  );
+  app.use('/api/charts', chartRoutes);
 
   // Telegram Bot Webhook
   app.post('/webhook/telegram', (req, res) => {
