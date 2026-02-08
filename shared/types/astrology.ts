@@ -312,3 +312,92 @@ export interface AspectPattern {
   rarity: PatternRarity;       // How rare this pattern is
   element?: string;            // For Grand Trine/Cross (Fire, Earth, Air, Water)
 }
+
+// ============================================================================
+// Celestial Events Types
+// ============================================================================
+
+/**
+ * Celestial Event Types
+ * Various astronomical events that can be detected
+ */
+export type CelestialEventType =
+  | 'lunar-phase'          // New Moon, Full Moon, Quarters
+  | 'lunar-eclipse'        // Total, Partial, Penumbral
+  | 'solar-eclipse'        // Total, Annular, Partial
+  | 'planetary-alignment'  // 3+ planets in narrow arc
+  | 'conjunction'          // Planets close together
+  | 'occultation'          // Moon/planet blocking another
+  | 'retrograde-start'     // Planet stations retrograde
+  | 'retrograde-end'       // Planet stations direct
+  | 'ingress'              // Planet enters new sign
+  | 'equinox'              // Spring/Autumn equinox
+  | 'solstice';            // Summer/Winter solstice
+
+/**
+ * Celestial Event
+ * Detected astronomical event with metadata
+ */
+export interface CelestialEvent {
+  id: string;                    // Unique identifier
+  type: CelestialEventType;      // Event type
+  name: string;                  // Display name
+  description: string;           // Detailed description
+  date: DateTime;                // Event date/time
+  endDate?: DateTime;            // For events with duration
+  planets?: string[];            // Involved planets
+  rarity: PatternRarity;         // How rare/significant
+  visibility?: 'visible' | 'not-visible' | 'telescope-only';
+  significance: string;          // Astrological meaning
+}
+
+
+// ============================================================================
+// Optimal Timing Engine Types
+// ============================================================================
+
+/**
+ * Intention Categories
+ * Types of intentions users might want to find optimal timing for
+ */
+export type IntentionCategory =
+  | 'drop-habits'
+  | 'start-project'
+  | 'make-decision'
+  | 'relationship'
+  | 'career-change'
+  | 'health-wellness'
+  | 'financial'
+  | 'creative'
+  | 'spiritual';
+
+/**
+ * Timing Window
+ * A scored period of time favorable for a specific intention
+ */
+export interface TimingWindow {
+  id: string;
+  date: DateTime;
+  score: number; // 0-100
+  events: CelestialEvent[];
+  summary: string;
+  explanation?: string;
+  warnings?: string[];
+  suggestions?: string[];
+  moonPhase?: string;
+  moonSign?: string;
+}
+
+/**
+ * Timing Rule
+ * Configuration for scoring events based on intention
+ */
+export interface TimingRule {
+  type: CelestialEventType;
+  phase?: string;        // For lunar phases or retrogrades
+  planet?: string;       // Specific planet involved
+  targetPlanet?: string; // Secondary planet involved
+  sign?: string;         // Specific zodiac sign
+  weight: number;        // Positive = favorable, Negative = unfavorable
+  condition?: 'exact-match' | 'contains';
+}

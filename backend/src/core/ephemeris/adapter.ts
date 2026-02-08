@@ -201,8 +201,8 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   private getZodiacSign(longitude: number): string {
     const signs = [
-      'Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
-      'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'
+      'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
     ];
     const index = Math.floor(longitude / 30);
     return signs[index % 12];

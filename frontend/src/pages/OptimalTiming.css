@@ -1,0 +1,131 @@
+.optimal-timing {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 40px 20px;
+    color: #fff;
+}
+
+.optimal-timing__header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.optimal-timing__header h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.optimal-timing__subtitle {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.optimal-timing__section {
+    max-width: 900px;
+    margin: 0 auto 48px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.optimal-timing__results {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.time-range-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.time-range-control label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.time-range-control select {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.loading-spinner {
+    font-size: 14px;
+    font-weight: normal;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-spinner::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.no-results {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 32px;
+    border-radius: 12px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .optimal-timing__header h1 {
+        font-size: 32px;
+    }
+
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

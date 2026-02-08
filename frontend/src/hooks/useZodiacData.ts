@@ -13,6 +13,7 @@ interface UseZodiacDataOptions {
   aspectOrb?: number;
   enabled?: boolean;
   date?: Date | string;
+  adaptive?: boolean;
 }
 
 interface UseZodiacDataResult {
@@ -189,15 +190,19 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
 
 // Hook for adaptive refresh rates based on celestial body speed
 export function useAdaptiveZodiacData(options: UseZodiacDataOptions = {}): UseZodiacDataResult {
-  const [refreshInterval, setRefreshInterval] = useState(1 * 60 * 1000);
+  const { adaptive = true, refreshInterval: userInterval } = options;
+  const [dynamicInterval, setDynamicInterval] = useState(1 * 60 * 1000);
+
+  // If adaptive is enabled, use dynamic interval, otherwise use user provided interval
+  const effectiveInterval = adaptive ? dynamicInterval : (userInterval || 1 * 60 * 1000);
 
   const result = useZodiacData({
     ...options,
-    refreshInterval,
+    refreshInterval: effectiveInterval,
   });
 
   useEffect(() => {
-    if (!result.data?.planets) return;
+    if (!adaptive || !result.data?.planets) return;
 
     // Calculate optimal refresh interval based on fastest moving planet
     const speeds = result.data.planets.map(p => Math.abs(p.speed));
@@ -218,8 +223,8 @@ export function useAdaptiveZodiacData(options: UseZodiacDataOptions = {}): UseZo
       interval = 1 * 60 * 1000;
     }
 
-    setRefreshInterval(interval);
-  }, [result.data?.planets]);
+    setDynamicInterval(interval);
+  }, [result.data?.planets, adaptive]);
 
   return result;
 }

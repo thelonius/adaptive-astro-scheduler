@@ -22,7 +22,7 @@ interface PlanetPosition {
  * - Stellium: 3+ planets within 8° (concentrated energy)
  */
 export class AspectPatternDetector {
-  constructor(private ephemeris: IEphemerisCalculator) {}
+  constructor(private ephemeris: IEphemerisCalculator) { }
 
   /**
    * Detect all patterns for a given date/time
@@ -420,9 +420,9 @@ export class AspectPatternDetector {
    */
   private getZodiacSign(longitude: number): string {
     const signs = [
-      'Овен', 'Телец', 'Близнецы', 'Рак',
-      'Лев', 'Дева', 'Весы', 'Скорпион',
-      'Стрелец', 'Козерог', 'Водолей', 'Рыбы'
+      'Aries', 'Taurus', 'Gemini', 'Cancer',
+      'Leo', 'Virgo', 'Libra', 'Scorpio',
+      'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
     ];
     return signs[Math.floor(longitude / 30)];
   }

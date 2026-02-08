@@ -6,20 +6,44 @@ import ZodiacWheelDemo from './pages/ZodiacWheelDemo';
 import NatalChart from './pages/NatalChart';
 import ChartLibrary from './pages/ChartLibrary';
 import DayExplorer from './pages/DayExplorer';
+import { OptimalTiming } from './pages/OptimalTiming';
+import { CelestialEvents } from './pages/CelestialEvents';
 import { DynamicThemeProvider } from './theme/DynamicThemeProvider';
 
+
 function Home() {
-  // ... existing Home component ...
+  // We'll use the existing chakra-ui components imported at the top
+  // No need to redeclare Link, etc since they are imported
 
   return (
     <Container maxW="container.md" py={20}>
       <VStack spacing={8}>
         <Heading size="2xl">Adaptive Astro-Scheduler</Heading>
         <Heading size="md" color="gray.600">
-          Zodiac Wheel Component
+          Cosmic Intelligence System
         </Heading>
 
         <VStack spacing={4} mt={8} width="100%">
+          <Button
+            as={Link}
+            to="/optimal-timing"
+            size="lg"
+            colorScheme="orange"
+            width="100%"
+          >
+            ⚡ Optimal Timing Engine (Find Best Times)
+          </Button>
+
+          <Button
+            as={Link}
+            to="/celestial-events"
+            size="lg"
+            colorScheme="pink"
+            width="100%"
+          >
+            ✨ Celestial Events (Eclipses & Alignments)
+          </Button>
+
           <Button
             as={Link}
             to="/day-explorer"
@@ -77,6 +101,13 @@ function Home() {
           </Heading>
           <VStack align="stretch" spacing={2} fontSize="sm">
             <HStack>
+              <Box>⚡</Box>
+              <Box>
+                <strong>Optimal Timing:</strong> Find the perfect cosmic window for your habits,
+                projects, and decisions.
+              </Box>
+            </HStack>
+            <HStack>
               <Box>🔮</Box>
               <Box>
                 <strong>Day Explorer:</strong> Analyze any day, navigate through dates,
@@ -109,6 +140,8 @@ function App() {
     <DynamicThemeProvider>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/optimal-timing" element={<OptimalTiming />} />
+        <Route path="/celestial-events" element={<CelestialEvents />} />
         <Route path="/day-explorer" element={<DayExplorer />} />
         <Route path="/chart-library" element={<ChartLibrary />} />
         <Route path="/natal-chart" element={<NatalChart />} />

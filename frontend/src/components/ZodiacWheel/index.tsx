@@ -12,7 +12,7 @@ import { ZodiacSignTooltip } from './ZodiacSignTooltip';
 import { HouseTooltip } from './HouseTooltip';
 import { ClusterTooltip } from './ClusterTooltip';
 import { calculatePlanetPositions, calculateAspectLines, sortPlanetsByOrbit } from './utils';
-import type { ZodiacWheelConfig } from './types';
+import type { ZodiacWheelConfig, ZodiacWheelData } from './types';
 import { DEFAULT_CONFIG } from './types';
 import { getHouseMeaning } from '../../constants/houses';
 
@@ -23,7 +23,9 @@ interface ZodiacWheelProps {
   timezone?: string;
   useAdaptiveRefresh?: boolean;
   onDataUpdate?: (data: any) => void;
+  onLoadingChange?: (loading: boolean) => void;
   date?: Date | string;
+  data?: ZodiacWheelData | null;
 }
 
 export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
@@ -33,7 +35,9 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   timezone,
   useAdaptiveRefresh = true,
   onDataUpdate,
+  onLoadingChange,
   date,
+  data: externalData,
 }) => {
   const config = useMemo(() => ({ ...DEFAULT_CONFIG, ...userConfig }), [userConfig]);
   const [hoveredPlanet, setHoveredPlanet] = useState<CelestialBody | null>(null);
@@ -48,10 +52,9 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   const [clickedClusterPosition, setClickedClusterPosition] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Choose between adaptive or fixed refresh rate
-  const hookToUse = useAdaptiveRefresh ? useAdaptiveZodiacData : useZodiacData;
-
-  const { data, loading, error, refresh, lastUpdate } = hookToUse({
+  // Always use the adaptive hook wrapper, passing the 'adaptive' flag to control behavior
+  // If external data is provided, disable internal fetching
+  const { data: internalData, loading: internalLoading, error, refresh, lastUpdate } = useAdaptiveZodiacData({
     refreshInterval: config.refreshInterval,
     latitude,
     longitude,
@@ -59,7 +62,19 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     includeHouses: config.showHouses,
     aspectOrb: config.aspectOrb,
     date,
+    adaptive: useAdaptiveRefresh,
+    enabled: !externalData, // Disable if external data provided
   });
+
+  const data = externalData || internalData;
+  const loading = externalData ? false : internalLoading; // Assume external data is loaded if provided (or handle externally)
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loading, onLoadingChange]);
 
   // Notify parent of data updates
   useEffect(() => {

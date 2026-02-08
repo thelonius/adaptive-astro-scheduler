@@ -24,7 +24,7 @@ interface VoidPeriod {
 }
 
 export class VoidMoonCalculator {
-  constructor(private ephemeris: IEphemerisCalculator) {}
+  constructor(private ephemeris: IEphemerisCalculator) { }
 
   /**
    * Calculate if Moon is currently void of course
@@ -191,8 +191,8 @@ export class VoidMoonCalculator {
    */
   private getNextZodiacSign(currentSign: string): string {
     const zodiacSigns = [
-      'Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
-      'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'
+      'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
     ];
 
     const currentIndex = zodiacSigns.indexOf(currentSign);

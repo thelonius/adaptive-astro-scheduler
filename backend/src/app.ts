@@ -6,6 +6,8 @@ import natalChartRoutes from './api/routes/natal-chart.routes';
 import analyticsRoutes from './api/routes/analytics.routes';
 import aspectAnalysisRoutes from './api/routes/aspect-analysis.routes';
 import customLayersRoutes from './api/routes/custom-layers.routes';
+import celestialEventsRoutes from './api/routes/celestial-events.routes';
+import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
 import { createChartRoutes } from './api/routes/chart.routes';
 
 /**
@@ -52,7 +54,9 @@ export function createApp(): Express {
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/aspects', aspectAnalysisRoutes);
   app.use('/api/custom-layers', customLayersRoutes);
-  
+  app.use('/api/celestial-events', celestialEventsRoutes);
+  app.use('/api/optimal-timing', optimalTimingRoutes);
+
   // Chart management routes (requires repositories)
   const chartRoutes = createChartRoutes(
     require('./database/repositories').natalChartRepository,

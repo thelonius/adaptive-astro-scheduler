@@ -1,0 +1,214 @@
+.event-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.event-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.event-card__icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.event-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.event-card__date {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.event-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.event-card__rarity {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.event-card__countdown {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.event-card__expand {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  transition: color 0.2s;
+}
+
+.event-card__expand:hover {
+  color: #fff;
+}
+
+.event-card__details {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.event-card__description {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.event-card__planets {
+  margin-bottom: 16px;
+}
+
+.event-card__planets strong {
+  display: block;
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.event-card__planet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.event-card__planet {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.event-card__significance {
+  margin-bottom: 16px;
+}
+
+.event-card__significance strong {
+  display: block;
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.event-card__significance p {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.event-card__visibility {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.event-card__visibility strong {
+  color: #fff;
+}
+
+/* Event type specific colors */
+.event-card--lunar-eclipse {
+  border-left: 4px solid #8b5cf6;
+}
+
+.event-card--solar-eclipse {
+  border-left: 4px solid #f59e0b;
+}
+
+.event-card--planetary-alignment {
+  border-left: 4px solid #fbbf24;
+}
+
+.event-card--occultation {
+  border-left: 4px solid #94a3b8;
+}
+
+.event-card--retrograde-start {
+  border-left: 4px solid #ef4444;
+}
+
+.event-card--retrograde-end {
+  border-left: 4px solid #10b981;
+}
+
+.event-card--ingress {
+  border-left: 4px solid #3b82f6;
+}
+
+.event-card--lunar-phase {
+  border-left: 4px solid #60a5fa;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .event-card {
+    padding: 16px;
+  }
+
+  .event-card__header {
+    gap: 12px;
+  }
+
+  .event-card__icon {
+    font-size: 24px;
+  }
+
+  .event-card__title {
+    font-size: 16px;
+  }
+
+  .event-card__meta {
+    flex-direction: row;
+    gap: 8px;
+  }
+}
