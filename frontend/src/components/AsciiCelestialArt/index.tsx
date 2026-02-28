@@ -54,7 +54,7 @@ const getCelestialArt = (date: Date) => {
     }
 };
 
-export const AsciiCelestialArt: React.FC<AsciiCelestialArtProps> = ({
+const AsciiCelestialArtBase: React.FC<AsciiCelestialArtProps> = ({
     time,
     width = '100%',
     height = '300px'
@@ -165,3 +165,9 @@ export const AsciiCelestialArt: React.FC<AsciiCelestialArtProps> = ({
         </Box>
     );
 };
+
+export const AsciiCelestialArt = React.memo(AsciiCelestialArtBase, (prev, next) => {
+    return prev.time.getSeconds() === next.time.getSeconds() &&
+        prev.width === next.width &&
+        prev.height === next.height;
+});

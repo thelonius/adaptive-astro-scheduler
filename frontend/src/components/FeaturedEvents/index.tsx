@@ -43,7 +43,7 @@ interface FeaturedEventsCarouselProps {
     selectedEventId?: string;
 }
 
-export const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
+const FeaturedEventsCarouselBase: React.FC<FeaturedEventsCarouselProps> = ({
     onSelectEvent,
     selectedEventId,
 }) => {
@@ -202,3 +202,5 @@ export const FeaturedEventsCarousel: React.FC<FeaturedEventsCarouselProps> = ({
         </Card>
     );
 };
+
+export const FeaturedEventsCarousel = React.memo(FeaturedEventsCarouselBase);

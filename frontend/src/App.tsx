@@ -8,6 +8,7 @@ import ChartLibrary from './pages/ChartLibrary';
 import DayExplorer from './pages/DayExplorer';
 import { OptimalTiming } from './pages/OptimalTiming';
 import { CelestialEvents } from './pages/CelestialEvents';
+import { SchedulerLab } from './pages/SchedulerLab';
 import { DynamicThemeProvider } from './theme/DynamicThemeProvider';
 
 
@@ -32,6 +33,16 @@ function Home() {
             width="100%"
           >
             ⚡ Optimal Timing Engine (Find Best Times)
+          </Button>
+
+          <Button
+            as={Link}
+            to="/scheduler-lab"
+            size="lg"
+            colorScheme="cyan"
+            width="100%"
+          >
+            🔬 Scheduler Lab (Advanced Instruments)
           </Button>
 
           <Button
@@ -141,6 +152,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/optimal-timing" element={<OptimalTiming />} />
+        <Route path="/scheduler-lab" element={<SchedulerLab />} />
         <Route path="/celestial-events" element={<CelestialEvents />} />
         <Route path="/day-explorer" element={<DayExplorer />} />
         <Route path="/chart-library" element={<ChartLibrary />} />

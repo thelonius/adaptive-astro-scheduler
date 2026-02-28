@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -175,7 +175,7 @@ export const ZodiacWheelDemo: React.FC = () => {
     }
   }, [viewerTime, targetDate]);
 
-  const handleEventSelect = (event: FeaturedEvent) => {
+  const handleEventSelect = useCallback((event: FeaturedEvent) => {
     setSelectedEventId(event.id);
     setTargetDate(event.date);
     setViewerTime(event.date);
@@ -189,7 +189,7 @@ export const ZodiacWheelDemo: React.FC = () => {
     if (viewMode === '2d') {
       setViewMode('both');
     }
-  };
+  }, [viewMode]);
 
 
 
@@ -215,10 +215,10 @@ export const ZodiacWheelDemo: React.FC = () => {
                 />
               </Box>
 
-              {/* ASCII Celestial Art Widget - Reactive to time */}
-              <Box mt={6} borderRadius="lg" overflow="hidden" boxShadow="md">
+              {/* ASCII Celestial Art Widget - Disabled for now */}
+              {/* <Box mt={6} borderRadius="lg" overflow="hidden" boxShadow="md">
                 <AsciiCelestialArt time={viewerTime} height="120px" />
-              </Box>
+              </Box> */}
             </Box>
 
             {/* View Mode Toggle */}

@@ -228,22 +228,12 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                     name: planet.name,
                     position: position,
                     billboard: {
-                        image: createPlanetIcon(color),
-                        scale: isActive ? 2.0 : 1.5,
+                        image: createPlanetIcon(planet.name, color),
+                        scale: isActive ? 0.5 : 0.35,
                         verticalOrigin: Cesium.VerticalOrigin.CENTER,
                         color: Cesium.Color.WHITE,
                     },
-                    label: {
-                        text: planet.name,
-                        font: isActive ? 'bold 16px sans-serif' : '14px sans-serif',
-                        fillColor: isActive ? Cesium.Color.WHITE : Cesium.Color.LIGHTGRAY,
-                        outlineColor: Cesium.Color.BLACK,
-                        outlineWidth: 2,
-                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                        pixelOffset: new Cesium.Cartesian3(0, -35, 0),
-                        showBackground: true,
-                        backgroundColor: color.withAlpha(isActive ? 0.9 : 0.6),
-                    },
+
                 });
 
                 if (isActive) {
@@ -253,9 +243,9 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                         ellipse: {
                             semiMajorAxis: 3000000,
                             semiMinorAxis: 3000000,
-                            material: new Cesium.ColorMaterialProperty(color.withAlpha(0.15)),
+                            material: new Cesium.ColorMaterialProperty(color.withAlpha(0.05)),
                             outline: true,
-                            outlineColor: color.withAlpha(0.6),
+                            outlineColor: color.withAlpha(0.3),
                             outlineWidth: 2,
                         }
                     });
@@ -320,10 +310,37 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                 let newLongitude = planet.longitude + (planet.speed * elapsedDays);
                 newLongitude = ((newLongitude % 360) + 360) % 360;
 
-                const skyLongitude = newLongitude - earthRotationDeg - 180;
-                const skyLatitude = (Math.sin(newLongitude * Math.PI / 180) * 23.5);
+                // Accurate conversion from Ecliptic to Equatorial Coordinates
+                const rad = Math.PI / 180;
+                const lambda = newLongitude * rad;
+                const beta = ((planet as any).latitude || 0) * rad; // Real Ecliptic Latitude
+                const epsilon = 23.44 * rad; // Obliquity of the Ecliptic
 
-                const position = Cesium.Cartesian3.fromDegrees(skyLongitude, skyLatitude, 100000000);
+                // sin(Dec) = sin(Lat)*cos(Obl) + cos(Lat)*sin(Obl)*sin(Lon)
+                const sinDelta = Math.sin(beta) * Math.cos(epsilon) + Math.cos(beta) * Math.sin(epsilon) * Math.sin(lambda);
+                const delta = Math.asin(sinDelta); // Declination (Sky Latitude)
+
+                // tan(RA) = (sin(Lon)*cos(Obl) - tan(Lat)*sin(Obl)) / cos(Lon)
+                const y = Math.sin(lambda) * Math.cos(epsilon) - Math.tan(beta) * Math.sin(epsilon);
+                const x = Math.cos(lambda);
+                const alpha = Math.atan2(y, x); // Right Ascension
+
+                const raDeg = alpha * 180 / Math.PI;
+                const decDeg = delta * 180 / Math.PI;
+
+                // Adjust for Earth rotation (RA - EarthRotation)
+                // Sky view rotates relative to Earth
+                const skyLongitude = raDeg - earthRotationDeg - 180; // -180 to align view
+                const skyLatitude = decDeg;
+
+
+
+                // Physically Exact Distance (Linear Scale)
+                const AU = 149597870700.0; // Meters
+                const distAU = (planet as any).distanceAU || 1.0;
+                const distance = distAU * AU;
+
+                const position = Cesium.Cartesian3.fromDegrees(skyLongitude, skyLatitude, distance);
 
                 const planetEntity = entities.getById(`planet-${planet.name}`);
                 if (planetEntity) {
@@ -333,6 +350,11 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                 const haloEntity = entities.getById(`halo-${planet.name}`);
                 if (haloEntity) {
                     (haloEntity.position as any).setValue(position);
+                    // Scale halo radius to maintain constant angular size (e.g. ~1.5 degrees)
+                    // Radius = Distance * tan(0.75 deg) ~= Distance * 0.013
+                    const radius = distance * 0.015;
+                    (haloEntity.ellipse!.semiMajorAxis as any).setValue(radius);
+                    (haloEntity.ellipse!.semiMinorAxis as any).setValue(radius);
                 }
 
                 if (active.includes(planet.name)) {
@@ -810,21 +832,103 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
 };
 
 // Helper function to create planet icon
-function createPlanetIcon(color: any): string {
+function createPlanetIcon(name: string, color: any): string {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 128;
+    canvas.height = 128; // Large canvas for high-res icons
     const ctx = canvas.getContext('2d');
 
-    if (ctx) {
+    if (!ctx) return '';
+
+    // Clear canvas
+    ctx.clearRect(0, 0, 128, 128);
+
+    const centerX = 64;
+    const centerY = 64;
+    const radius = 42; // Sphere radius
+
+    // 1. Draw Background Features (e.g. Saturn Rings)
+    if (name === 'Saturn') {
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(Math.PI / 6); // Tilt 30 deg
+        ctx.scale(1, 0.3); // Flatten ellipse
+
+        // Ring Gradient
+        const ringGrad = ctx.createRadialGradient(0, 0, radius * 1.1, 0, 0, radius * 2.3);
+        ringGrad.addColorStop(0, 'rgba(0,0,0,0)'); // Gap
+        ringGrad.addColorStop(0.2, color.withAlpha(0.6).toCssColorString());
+        ringGrad.addColorStop(0.5, color.withAlpha(0.3).toCssColorString()); // Cassini hint
+        ringGrad.addColorStop(0.6, color.withAlpha(0.6).toCssColorString());
+        ringGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
         ctx.beginPath();
-        ctx.arc(16, 16, 12, 0, 2 * Math.PI);
-        ctx.fillStyle = color.toCssColorString();
+        ctx.arc(0, 0, radius * 2.3, 0, Math.PI * 2);
+        ctx.fillStyle = ringGrad;
         ctx.fill();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = color.toCssColorString();
-        ctx.fill();
+        ctx.restore();
     }
+
+    // 2. Main Sphere Gradient (3D Shading Effect)
+    // Light source from top-left
+    const sphereGrad = ctx.createRadialGradient(
+        centerX - radius / 2.5, centerY - radius / 2.5, radius / 10,
+        centerX, centerY, radius
+    );
+    try {
+        const highlight = color.brighten(0.6, new Cesium.Color()).toCssColorString();
+        const base = color.toCssColorString();
+        const shadow = color.darken(0.6, new Cesium.Color()).toCssColorString();
+
+        sphereGrad.addColorStop(0, highlight);
+        sphereGrad.addColorStop(0.4, base);
+        sphereGrad.addColorStop(1, shadow);
+    } catch (e) {
+        // Fallback if color manipulation fails
+        sphereGrad.addColorStop(0, 'white');
+        sphereGrad.addColorStop(1, color.toCssColorString());
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = sphereGrad;
+    ctx.fill();
+
+    // 3. Surface Details (Clipped to sphere)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.clip(); // Clip details to sphere
+
+    // Jupiter Bands
+    if (name === 'Jupiter') {
+        ctx.fillStyle = color.darken(0.3, new Cesium.Color()).withAlpha(0.3).toCssColorString();
+        ctx.fillRect(0, centerY - 12, 128, 6);
+        ctx.fillRect(0, centerY + 4, 128, 8);
+        ctx.fillRect(0, centerY + 20, 128, 3);
+    }
+
+    // Mars Patches
+    if (name === 'Mars') {
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.beginPath(); ctx.arc(centerX - 12, centerY + 10, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(centerX + 18, centerY - 12, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(centerX, centerY - 25, 6, 0, Math.PI * 2); ctx.fill(); // Polar cap hint? No just dark patch
+    }
+
+    // Moon Craters
+    if (name === 'Moon') {
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        const craters = [[-15, -10, 6], [10, 15, 8], [20, -5, 4], [-5, 20, 5]];
+        craters.forEach(([x, y, r]) => {
+            ctx.beginPath(); ctx.arc(centerX + x, centerY + y, r, 0, Math.PI * 2); ctx.fill();
+        });
+    }
+
+    // Earth-like features for others? 
+    // Just simple shading is fine.
+
+    ctx.restore();
 
     return canvas.toDataURL();
 }
