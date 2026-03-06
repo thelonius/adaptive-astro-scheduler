@@ -106,8 +106,8 @@ function Home() {
           </Button>
         </VStack>
 
-        <Box mt={8} p={6} bg="gray.50" borderRadius="lg" width="100%">
-          <Heading size="sm" mb={3}>
+        <Box mt={8} p={6} bg="var(--ag-surface)" border="1px solid" borderColor="var(--ag-border)" borderRadius="lg" width="100%">
+          <Heading size="sm" mb={3} color="var(--ag-text)">
             Quick Links:
           </Heading>
           <VStack align="stretch" spacing={2} fontSize="sm">

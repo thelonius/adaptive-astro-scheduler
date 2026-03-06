@@ -23,8 +23,8 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
     onDateChange,
     isLoading = false,
 }) => {
-    const bgColor = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
+    const bgColor = 'var(--ag-surface)';
+    const borderColor = 'var(--ag-border)';
 
     const goToPreviousDay = () => {
         const newDate = new Date(selectedDate);
@@ -92,7 +92,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
                     isDisabled={isLoading}
                     variant="ghost"
                     size="lg"
-                    _hover={{ bg: 'purple.50', transform: 'scale(1.1)' }}
+                    _hover={{ bg: 'var(--ag-surface-hover)', transform: 'scale(1.1)' }}
                     transition="all 0.2s"
                 />
 
@@ -101,7 +101,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
                     <Text
                         fontSize="xl"
                         fontWeight="bold"
-                        color={isToday(selectedDate) ? 'purple.500' : 'inherit'}
+                        color={isToday(selectedDate) ? 'var(--ag-day-primary)' : 'inherit'}
                     >
                         {formatDateDisplay(selectedDate)}
                     </Text>
@@ -114,8 +114,8 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
                         maxW="180px"
                         textAlign="center"
                         borderColor={borderColor}
-                        _hover={{ borderColor: 'purple.400' }}
-                        _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 1px var(--chakra-colors-purple-500)' }}
+                        _hover={{ borderColor: 'var(--ag-day-secondary)' }}
+                        _focus={{ borderColor: 'var(--ag-day-primary)', boxShadow: '0 0 0 1px var(--ag-day-primary)' }}
                     />
                 </Box>
 
@@ -127,7 +127,7 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
                     isDisabled={isLoading}
                     variant="ghost"
                     size="lg"
-                    _hover={{ bg: 'purple.50', transform: 'scale(1.1)' }}
+                    _hover={{ bg: 'var(--ag-surface-hover)', transform: 'scale(1.1)' }}
                     transition="all 0.2s"
                 />
             </HStack>
@@ -137,8 +137,8 @@ export const DateNavigator: React.FC<DateNavigatorProps> = ({
                 <HStack justify="center" mt={3}>
                     <Button
                         size="sm"
-                        colorScheme="purple"
-                        variant="outline"
+                        bg="var(--ag-day-primary)"
+                        color="var(--ag-surface)"
                         onClick={goToToday}
                         isDisabled={isLoading}
                         leftIcon={<Text>📅</Text>}

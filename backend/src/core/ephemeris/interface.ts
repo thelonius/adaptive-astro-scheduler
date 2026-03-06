@@ -12,6 +12,7 @@ import type {
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
   RetrogradesApiResponse,
+  DispositorChainsResponse,
 } from '@adaptive-astro/shared/types/astrology';
 
 /**
@@ -79,6 +80,13 @@ export interface IEphemerisCalculator {
    * @returns VoidOfCourseMoon data from API
    */
   getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse>;
+
+  /**
+   * Get dispositor chains — who rules the ruler?
+   * @param dateTime - Date and time
+   * @param system - 'traditional' | 'modern' (default: 'traditional')
+   */
+  getDispositorChains(dateTime: DateTime, system?: string): Promise<DispositorChainsResponse>;
 }
 
 /**

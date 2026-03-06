@@ -1,0 +1,224 @@
+.dispositor-chains {
+    border-radius: 12px;
+    border: 1px solid rgba(138, 43, 226, 0.25);
+    padding: 16px 20px;
+    backdrop-filter: blur(12px);
+}
+
+.chains-title {
+    background: linear-gradient(135deg, #c084fc, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Legend button ── */
+.legend-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(138, 43, 226, 0.5);
+    background: rgba(138, 43, 226, 0.12);
+    color: rgba(192, 132, 252, 0.9);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+    font-style: normal;
+}
+
+.legend-btn:hover {
+    background: rgba(138, 43, 226, 0.28);
+    border-color: rgba(192, 132, 252, 0.8);
+}
+
+/* ── Legend popover content ── */
+.legend-popover {
+    background: rgba(18, 13, 38, 0.97) !important;
+    border: 1px solid rgba(138, 43, 226, 0.35) !important;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ── Chain Row ── */
+.chain-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.2s ease;
+}
+
+.chain-row:hover {
+    background: rgba(138, 43, 226, 0.07);
+}
+
+/* ── Planet Node ── */
+.dispositor-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--planet-color, #777);
+    background: rgba(0, 0, 0, 0.35);
+    cursor: default;
+    user-select: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    min-width: 52px;
+}
+
+.dispositor-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--planet-color) 35%, transparent);
+}
+
+.dispositor-node.start-node {
+    border-width: 2px;
+    background: rgba(var(--planet-color), 0.12);
+}
+
+.dispositor-node.cycle-node {
+    border-style: dashed;
+}
+
+.dispositor-node.final-node {
+    border-color: gold;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.planet-glyph {
+    font-size: 16px;
+    line-height: 1;
+    color: var(--planet-color, #ccc);
+    font-family: 'Segoe UI Symbol', serif;
+}
+
+.planet-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 2px;
+}
+
+.planet-sign {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 1px;
+}
+
+.final-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 10px;
+    background: gold;
+    color: black;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cycle-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 9px;
+    background: rgba(138, 43, 226, 0.7);
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Arrows ── */
+.chain-arrow {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0 2px;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.chain-arrow.cycle-arrow {
+    color: rgba(138, 43, 226, 0.7);
+    font-size: 20px;
+    animation: cycle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cycle-pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ── Status Badge ── */
+.chain-status-badge {
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+.chain-status-badge.cycle {
+    background: rgba(138, 43, 226, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.chain-status-badge.linear {
+    background: rgba(255, 215, 0, 0.15);
+    color: gold;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+/* ── System Select ── */
+.system-select {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(138, 43, 226, 0.3) !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 12px !important;
+}
+
+/* ── Error ── */
+.chains-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .dispositor-node {
+        min-width: 44px;
+        padding: 4px 6px;
+    }
+
+    .planet-glyph {
+        font-size: 13px;
+    }
+}

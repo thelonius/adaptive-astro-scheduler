@@ -6,6 +6,7 @@ import type {
   PlanetsApiResponse,
   VoidMoonApiResponse,
   RetrogradesApiResponse,
+  AspectsApiResponse,
 } from '@adaptive-astro/shared/types';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
@@ -30,12 +31,14 @@ export class CalendarGenerator {
       planetsData,
       voidMoonData,
       retrogradesData,
+      aspectsData,
     ] = await Promise.all([
       this.ephemeris.getLunarDay(dateTime),
       this.ephemeris.getMoonPhase(dateTime),
       this.ephemeris.getPlanetsPositions(dateTime),
       this.ephemeris.getVoidOfCourseMoon(dateTime),
       this.ephemeris.getRetrogradePlanets(dateTime),
+      this.ephemeris.getAspects(dateTime).catch(() => null as AspectsApiResponse | null),
     ]);
 
     const lunarDayEntity = new LunarDayEntity(lunarDay);
@@ -70,24 +73,37 @@ export class CalendarGenerator {
       moonPhase: {
         phase: phaseName,
         illumination: moonPhase,
-        age: lunarDay.number, // Approximate age is the lunar day number
+        age: lunarDay.number,
       },
       moonSign,
       dayOfWeek,
       seasonalPhase,
       transits,
       voidOfCourseMoon: voidMoonData.isVoidOfCourse ? this.convertVoidMoonApiData(voidMoonData) : null,
-      retrogradesActive: (retrogradesData?.retrogradePlanets && Array.isArray(retrogradesData.retrogradePlanets) && planetsData?.planets)
-        ? retrogradesData.retrogradePlanets
-          .map(retro => {
-            const apiPlanet = planetsData.planets.find((p: any) =>
-              p.name.toLowerCase() === retro.name.toLowerCase()
-            );
-            return apiPlanet ? this.convertPlanetApiDataToCelestialBody(apiPlanet) : null;
-          })
-          .filter(Boolean) as CelestialBody[]
-        : [], // Return empty array if retrograde data is invalid
-      eclipseWindow: false, // TODO: Calculate when ephemeris supports it
+      // Build retrograde list directly from retrogrades API data
+      retrogradesActive: (retrogradesData?.retrogradePlanets && Array.isArray(retrogradesData.retrogradePlanets))
+        ? retrogradesData.retrogradePlanets.map(retro => {
+          // Try to enrich with full planet data from planetsData first
+          const apiPlanet = planetsData?.planets?.find((p: any) =>
+            p.name.toLowerCase() === retro.name.toLowerCase()
+          );
+          if (apiPlanet) {
+            return this.convertPlanetApiDataToCelestialBody(apiPlanet);
+          }
+          // Fallback: build CelestialBody from retro data
+          return {
+            name: retro.name as any,
+            longitude: (retro as any).longitude ?? 0,
+            latitude: 0,
+            zodiacSign: this.getZodiacSignFromName(retro.currentSign),
+            speed: (retro as any).speed ?? -0.1,
+            isRetrograde: true,
+            distanceAU: 1,
+          } as CelestialBody;
+        })
+        : [],
+      eclipseWindow: false,
+      aspects: aspectsData?.aspects ?? [],
       recommendations,
     };
 
@@ -358,10 +374,10 @@ export class CalendarGenerator {
       name: apiPlanet.name,
       longitude: apiPlanet.longitude,
       latitude: apiPlanet.latitude,
-      zodiacSign: this.getZodiacSignFromName(apiPlanet.zodiacSign),
+      zodiacSign: this.getZodiacSignFromName(apiPlanet.zodiac_sign || apiPlanet.zodiacSign),
       speed: apiPlanet.speed,
-      isRetrograde: apiPlanet.isRetrograde,
-      distanceAU: apiPlanet.distanceAU,
+      isRetrograde: apiPlanet.is_retrograde ?? apiPlanet.isRetrograde ?? false,
+      distanceAU: apiPlanet.distance_au ?? apiPlanet.distanceAU,
     };
   }
 

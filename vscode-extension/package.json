@@ -1,0 +1,171 @@
+{
+    "name": "antigravity-astro-theme",
+    "displayName": "Antigravity Astro Theme",
+    "description": "Dynamic VS Code theme that changes colors based on astrological schedule — weekday rulers, planetary hours, lunar day, and natal chart",
+    "version": "0.1.5",
+    "publisher": "antigravity",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Themes",
+        "Other"
+    ],
+    "keywords": [
+        "theme",
+        "astrology",
+        "dynamic",
+        "color",
+        "dark",
+        "light",
+        "planetary"
+    ],
+    "icon": "icon.png",
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "themes": [
+            {
+                "label": "Antigravity Dark (Cosmic)",
+                "uiTheme": "vs-dark",
+                "path": "./themes/antigravity-dark.json"
+            },
+            {
+                "label": "Antigravity Light (Solar)",
+                "uiTheme": "vs",
+                "path": "./themes/antigravity-light.json"
+            },
+            {
+                "label": "Antigravity Auto (Adaptive Dark)",
+                "uiTheme": "vs-dark",
+                "path": "./themes/antigravity-dark.json"
+            },
+            {
+                "label": "Antigravity Auto (Adaptive Light)",
+                "uiTheme": "vs",
+                "path": "./themes/antigravity-light.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "antigravity.applyDayTheme",
+                "title": "Antigravity: Apply Today's Astrological Theme",
+                "icon": "⭐"
+            },
+            {
+                "command": "antigravity.toggleMode",
+                "title": "Antigravity: Toggle Dark/Light Mode",
+                "icon": "🌙"
+            },
+            {
+                "command": "antigravity.showPlanetaryInfo",
+                "title": "Antigravity: Show Today's Planetary Info",
+                "icon": "🪐"
+            },
+            {
+                "command": "antigravity.startAutoUpdate",
+                "title": "Antigravity: Start Auto-Update (Hourly)",
+                "icon": "🔄"
+            },
+            {
+                "command": "antigravity.stopAutoUpdate",
+                "title": "Antigravity: Stop Auto-Update",
+                "icon": "⏹"
+            }
+        ],
+        "configuration": {
+            "title": "Antigravity Astro Theme",
+            "properties": {
+                "antigravity.autoUpdate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically update theme colors based on planetary hours"
+                },
+                "antigravity.updateInterval": {
+                    "type": "string",
+                    "enum": [
+                        "hourly",
+                        "daily",
+                        "onPlanetaryHour"
+                    ],
+                    "default": "onPlanetaryHour",
+                    "description": "How often to update the theme"
+                },
+                "antigravity.colorMode": {
+                    "type": "string",
+                    "enum": [
+                        "auto",
+                        "dark",
+                        "light"
+                    ],
+                    "default": "auto",
+                    "description": "Color mode: auto (sunrise/sunset based), dark, or light"
+                },
+                "antigravity.transitionDuration": {
+                    "type": "number",
+                    "default": 800,
+                    "description": "Theme transition duration in milliseconds (0 = instant)"
+                },
+                "antigravity.apiUrl": {
+                    "type": "string",
+                    "default": "http://localhost:3001",
+                    "description": "Antigravity backend API URL for natal chart data"
+                },
+                "antigravity.natalChartId": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Natal chart ID for personalized colors (from Antigravity app)"
+                },
+                "antigravity.showStatusBar": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show planetary info in status bar"
+                },
+                "antigravity.latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90,
+                    "description": "Your latitude for precise sunrise/sunset calculation (e.g. 55.75 for Moscow). Leave empty for fallback (7:00-19:00)."
+                },
+                "antigravity.longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180,
+                    "description": "Your longitude for precise sunrise/sunset calculation (e.g. 37.62 for Moscow)."
+                },
+                "antigravity.solarPolicy": {
+                    "type": "string",
+                    "enum": [
+                        "strict",
+                        "civil",
+                        "nautical"
+                    ],
+                    "enumDescriptions": [
+                        "Light theme only when Sun is above horizon (most precise)",
+                        "Light theme from civil dawn to civil dusk (Sun -6°, recommended)",
+                        "Light theme from nautical twilight (Sun -12°, widest)"
+                    ],
+                    "default": "civil",
+                    "description": "When to switch to light theme based on solar position"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "dev": "npm run compile && npm run watch"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.3.0"
+    },
+    "dependencies": {
+        "chroma-js": "^2.6.0",
+        "@types/chroma-js": "^2.4.4"
+    }
+}

@@ -8,6 +8,11 @@ export interface FindOptimalTimingParams {
     startDate: Date;
     endDate: Date;
     limit?: number;
+    location?: {
+        latitude: number;
+        longitude: number;
+        timezone: string;
+    };
 }
 
 export interface OptimalTimingResponse {

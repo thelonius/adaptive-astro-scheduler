@@ -32,9 +32,9 @@ export const ZodiacTimePicker: React.FC<ZodiacTimePickerProps> = ({
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const wheelRef = useRef<HTMLDivElement>(null);
-    const bgColor = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
-    const textColor = useColorModeValue('gray.800', 'white');
+    const bgColor = 'var(--ag-surface)';
+    const borderColor = 'var(--ag-border)';
+    const textColor = 'var(--ag-text)';
 
     const getAngleFromTime = (date: Date) => {
         const hours = date.getHours();

@@ -56,13 +56,9 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const bgGradient = useColorModeValue(
-    'linear(to-br, blue.50, purple.50, pink.50)',
-    'linear(to-br, blue.900, purple.900, pink.900)'
-  );
-
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const textColor = useColorModeValue('gray.700', 'gray.200');
+  const bgGradient = 'var(--ag-bg-gradient)';
+  const cardBg = 'var(--ag-surface)';
+  const textColor = 'var(--ag-text)';
 
   useEffect(() => {
     fetchLunarData();
@@ -200,8 +196,8 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
         bg={cardBg}
         shadow="xl"
         border="1px solid"
-        borderColor="purple.200"
-        _dark={{ borderColor: 'purple.600' }}
+        borderColor="var(--ag-border)"
+        _dark={{ borderColor: 'var(--ag-border-strong)' }}
         overflow="hidden"
       >
         <Box bgGradient={bgGradient} p={1} />
@@ -210,11 +206,11 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
           <HStack justify="space-between" align="center">
             <HStack>
               <Text fontSize="2xl">🌙</Text>
-              <Heading size="lg" color="purple.600" _dark={{ color: 'purple.300' }}>
+              <Heading size="lg" color="var(--ag-text-accent)">
                 Lunar Information
               </Heading>
             </HStack>
-            <Badge colorScheme="purple" variant="subtle">
+            <Badge bg="var(--ag-day-primary)" color="var(--ag-surface)" variant="solid">
               Live
             </Badge>
           </HStack>
@@ -229,9 +225,9 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
               animate={{ scale: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <Box textAlign="center" p={4} bg="purple.50" _dark={{ bg: 'purple.900' }} borderRadius="lg">
+              <Box textAlign="center" p={4} bg="var(--ag-day-glow)" borderRadius="lg">
                 <Text fontSize="4xl" mb={2}>{lunarData.lunarDay.symbol}</Text>
-                <Heading size="xl" color="purple.600" _dark={{ color: 'purple.300' }} mb={2}>
+                <Heading size="xl" color="var(--ag-text-accent)" mb={2}>
                   Lunar Day {lunarData.lunarDay.number}
                 </Heading>
                 <Badge
@@ -248,7 +244,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
             {/* Moon Phase & Illumination */}
             <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
               <GridItem>
-                <Card bg="blue.50" _dark={{ bg: 'blue.900' }} variant="filled">
+                <Card bg="var(--ag-day-glow)" variant="filled">
                   <CardBody textAlign="center">
                     <Text fontSize="3xl" mb={2}>
                       {getMoonPhaseEmoji(lunarData.moonPhase.phase)}
@@ -256,7 +252,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                     <Text fontWeight="bold" fontSize="lg" mb={2}>
                       {lunarData.moonPhase.phase}
                     </Text>
-                    <Text fontSize="sm" color="blue.600" _dark={{ color: 'blue.300' }}>
+                    <Text fontSize="sm" color="var(--ag-text-muted)">
                       Age: {lunarData.moonPhase.age.toFixed(1)} days
                     </Text>
                   </CardBody>
@@ -264,7 +260,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
               </GridItem>
 
               <GridItem>
-                <Card bg="yellow.50" _dark={{ bg: 'yellow.900' }} variant="filled">
+                <Card bg="var(--ag-day-glow)" variant="filled">
                   <CardBody>
                     <VStack spacing={3}>
                       <Text fontWeight="bold">Illumination</Text>
@@ -275,7 +271,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                         w="full"
                         borderRadius="full"
                       />
-                      <Text fontSize="lg" fontWeight="bold" color="yellow.600" _dark={{ color: 'yellow.300' }}>
+                      <Text fontSize="lg" fontWeight="bold" color="var(--ag-text-accent)">
                         {(lunarData.moonPhase.illumination * 100).toFixed(1)}%
                       </Text>
                     </VStack>
@@ -285,7 +281,7 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
             </Grid>
 
             {/* Day Change Times */}
-            <Card bg="green.50" _dark={{ bg: 'green.900' }} variant="filled">
+            <Card bg="var(--ag-day-glow)" variant="filled">
               <CardBody>
                 <VStack spacing={3}>
                   <HStack justify="space-between" w="full">
@@ -324,12 +320,12 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
                       <Text fontSize="xs" color={textColor}>
                         Until: {lunarData.voidMoon.voidEnd
                           ? new Date(lunarData.voidMoon.voidEnd).toLocaleString('ru-RU', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: timezone
-                            })
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: timezone
+                          })
                           : 'N/A'}
                       </Text>
                       <Text fontSize="xs" color={textColor}>
@@ -342,10 +338,10 @@ export const LunarSection: React.FC<LunarSectionProps> = ({
             </Card>
 
             {/* Lunar Day Characteristics */}
-            <Card bg="indigo.50" _dark={{ bg: 'indigo.900' }} variant="filled">
+            <Card bg="var(--ag-day-glow)" variant="filled">
               <CardBody>
                 <VStack align="stretch" spacing={4}>
-                  <Heading size="sm" color="indigo.600" _dark={{ color: 'indigo.300' }}>
+                  <Heading size="sm" color="var(--ag-text-accent)">
                     Day Characteristics
                   </Heading>
 

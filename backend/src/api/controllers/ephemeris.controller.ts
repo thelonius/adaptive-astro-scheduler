@@ -306,4 +306,45 @@ export class EphemerisController {
       });
     }
   }
+
+  /**
+   * GET /ephemeris/dispositors
+   *
+   * Get dispositor chains — who rules the ruler of each planet
+   *
+   * Query params:
+   * - date: ISO 8601 date string (default: today)
+   * - latitude: number (default: 55.7558)
+   * - longitude: number (default: 37.6173)
+   * - system: 'traditional' | 'modern' (default: 'traditional')
+   */
+  async getDispositorChains(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        date = new Date().toISOString().split('T')[0],
+        latitude = '55.7558',
+        longitude = '37.6173',
+        timezone = 'Europe/Moscow',
+        system = 'traditional',
+      } = req.query;
+
+      const dateTime: DateTime = {
+        date: new Date(`${date}T12:00:00`),
+        timezone: timezone as string,
+        location: {
+          latitude: parseFloat(latitude as string),
+          longitude: parseFloat(longitude as string),
+        },
+      };
+
+      const chains = await this.ephemeris.getDispositorChains(dateTime, system as string);
+      res.json(chains);
+    } catch (error) {
+      console.error('Error fetching dispositor chains:', error);
+      res.status(500).json({
+        error: 'Failed to fetch dispositor chains',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }

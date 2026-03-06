@@ -12,6 +12,7 @@ import type {
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
   RetrogradesApiResponse,
+  DispositorChainsResponse,
 } from '@adaptive-astro/shared/types/astrology';
 import { IEphemerisCalculator } from './interface';
 
@@ -92,7 +93,7 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
   constructor(
     private calculator: IEphemerisCalculator,
     private cache: ICacheService
-  ) {}
+  ) { }
 
   /**
    * Generate cache key from DateTime
@@ -230,6 +231,23 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     }
 
     const result = await this.calculator.getPlanetaryHours(dateTime);
+    await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
+
+    return result;
+  }
+
+  async getDispositorChains(
+    dateTime: DateTime,
+    system: string = 'traditional'
+  ): Promise<DispositorChainsResponse> {
+    const cacheKey = this.getCacheKey(`dispositors-${system}`, dateTime);
+    const cached = await this.cache.get<DispositorChainsResponse>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.calculator.getDispositorChains(dateTime, system);
     await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
 
     return result;

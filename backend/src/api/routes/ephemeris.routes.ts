@@ -50,4 +50,9 @@ router.get('/moon-phase', async (req, res) => {
   await ephemerisController.getMoonPhase(req, res);
 });
 
+// GET /api/ephemeris/dispositors - Get dispositor chains (who rules the ruler)
+router.get('/dispositors', async (req, res) => {
+  await ephemerisController.getDispositorChains(req, res);
+});
+
 export default router;

@@ -47,9 +47,9 @@ const FeaturedEventsCarouselBase: React.FC<FeaturedEventsCarouselProps> = ({
     onSelectEvent,
     selectedEventId,
 }) => {
-    const bgColor = useColorModeValue('gray.50', 'gray.700');
-    const selectedBorderColor = useColorModeValue('blue.500', 'blue.300');
-    const hoverBg = useColorModeValue('gray.100', 'gray.600');
+    const bgColor = 'var(--ag-surface)';
+    const selectedBorderColor = 'var(--ag-day-primary)';
+    const hoverBg = 'var(--ag-surface-hover)';
 
     // Sort events chronologically (timeline order)
     const sortedEvents = useMemo(() => {
@@ -90,7 +90,7 @@ const FeaturedEventsCarouselBase: React.FC<FeaturedEventsCarouselProps> = ({
                                     <Box
                                         w="20px"
                                         h="2px"
-                                        bg={selectedEventId === event.id ? 'blue.400' : 'gray.300'}
+                                        bg={selectedEventId === event.id ? 'var(--ag-day-primary)' : 'var(--ag-border-strong)'}
                                         transition="all 0.3s"
                                     />
                                 )}

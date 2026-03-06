@@ -36,9 +36,9 @@ export const DayAnalysis: React.FC<DayAnalysisProps> = ({
     error,
     selectedDate,
 }) => {
-    const cardBg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
-    const mutedColor = useColorModeValue('gray.600', 'gray.400');
+    const cardBg = 'var(--ag-surface)';
+    const borderColor = 'var(--ag-border)';
+    const mutedColor = 'var(--ag-text-muted)';
 
     const getMoonPhaseEmoji = (phase: string): string => {
         const phases: Record<string, string> = {
@@ -116,7 +116,7 @@ export const DayAnalysis: React.FC<DayAnalysisProps> = ({
                 borderColor={borderColor}
                 overflow="hidden"
             >
-                <CardHeader bg="purple.50" pb={2}>
+                <CardHeader bg="var(--ag-day-glow)" pb={2}>
                     <HStack justify="space-between">
                         <Heading size="md">
                             🌙 Lunar Day {data.lunarDay?.number || '—'}

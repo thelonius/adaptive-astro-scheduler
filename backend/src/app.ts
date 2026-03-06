@@ -8,6 +8,7 @@ import aspectAnalysisRoutes from './api/routes/aspect-analysis.routes';
 import customLayersRoutes from './api/routes/custom-layers.routes';
 import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
+import { travelRoutes } from './api/routes/travel.routes';
 import { createChartRoutes } from './api/routes/chart.routes';
 
 /**
@@ -56,6 +57,7 @@ export function createApp(): Express {
   app.use('/api/custom-layers', customLayersRoutes);
   app.use('/api/celestial-events', celestialEventsRoutes);
   app.use('/api/optimal-timing', optimalTimingRoutes);
+  app.use('/api/travel', travelRoutes);
 
   // Chart management routes (requires repositories)
   const chartRoutes = createChartRoutes(

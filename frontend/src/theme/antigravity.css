@@ -1,0 +1,298 @@
+/**
+ * Antigravity — Global CSS Design System
+ *
+ * Базовые CSS-переменные для тёмной и светлой тем.
+ * Динамические переменные --ag-day-* обновляются через natalDayColorEngine.ts
+ */
+
+/* ===================================================================
+   IMPORT
+   =================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ===================================================================
+   GLOBAL STYLES
+   =================================================================== */
+html,
+body,
+#root {
+    background-color: var(--ag-bg) !important;
+    background: var(--ag-bg) !important;
+    color: var(--ag-text) !important;
+    transition: background-color 0.4s ease, background 0.4s ease, color 0.4s ease;
+    min-height: 100vh;
+}
+
+/* ===================================================================
+   ROOT DEFAULTS — тёмная тема (базовая для космического приложения)
+   =================================================================== */
+:root {
+    /* --- Динамические цвета дня (обновляются JS) --- */
+    --ag-day-primary: #C0C0C0;
+    /* Луна (по умолчанию) */
+    --ag-day-secondary: #A8B8D0;
+    --ag-day-accent: #7B8FC0;
+    --ag-day-glow: rgba(192, 192, 192, 0.15);
+    --ag-day-glow-strong: rgba(192, 192, 192, 0.30);
+    --ag-bg-gradient: linear-gradient(135deg, #080c18 0%, rgba(192, 192, 192, 0.06) 100%);
+
+    /* --- Фоны --- */
+    --ag-bg: #080c18;
+    --ag-bg-subtle: #0d1320;
+    --ag-surface: #0f1626;
+    --ag-surface-hover: #151e30;
+    --ag-border: #1a2235;
+    --ag-border-strong: #243049;
+
+    /* --- Типография --- */
+    --ag-text: #e8edf7;
+    --ag-text-muted: #6b7fa8;
+    --ag-text-accent: var(--ag-day-primary);
+    --ag-font-body: 'Inter', system-ui, sans-serif;
+    --ag-font-heading: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+    /* --- Статичные цвета планет (тёмная тема) --- */
+    --ag-sun: #FFA500;
+    --ag-moon: #A8B8D0;
+    --ag-mercury: #00C4EF;
+    --ag-venus: #FF1493;
+    --ag-mars: #E03000;
+    --ag-jupiter: #8E44AD;
+    --ag-saturn: #4B5A9C;
+    --ag-uranus: #00FFFF;
+    --ag-neptune: #4169E1;
+    --ag-pluto: #9C00B0;
+
+    /* --- Аспекты --- */
+    --ag-aspect-conjunction: #FFD700;
+    --ag-aspect-sextile: #00CED1;
+    --ag-aspect-square: #FF4500;
+    --ag-aspect-trine: #32CD32;
+    --ag-aspect-opposition: #FF1493;
+    --ag-aspect-quincunx: #9370DB;
+
+    /* --- Spacing & Radius --- */
+    --ag-radius-sm: 6px;
+    --ag-radius-md: 12px;
+    --ag-radius-lg: 18px;
+    --ag-radius-xl: 24px;
+    --ag-radius-full: 9999px;
+
+    /* --- Переходы --- */
+    --ag-transition-fast: 0.15s ease;
+    --ag-transition-base: 0.25s ease;
+    --ag-transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* --- Тени --- */
+    --ag-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --ag-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --ag-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --ag-shadow-day: 0 0 24px var(--ag-day-glow), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ===================================================================
+   СВЕТЛАЯ ТЕМА
+   =================================================================== */
+[data-theme="light"] {
+    /* --- Динамические цвета дня (светлая версия устанавливается JS) --- */
+    --ag-day-primary: #6B7E9C;
+    --ag-day-secondary: #8A9EC0;
+    --ag-day-accent: #4A6090;
+    --ag-day-glow: rgba(107, 126, 156, 0.10);
+    --ag-day-glow-strong: rgba(107, 126, 156, 0.20);
+    --ag-bg-gradient: linear-gradient(135deg, #f0f4fc 0%, rgba(107, 126, 156, 0.05) 100%);
+
+    /* --- Фоны --- */
+    --ag-bg: #f0f4fc;
+    --ag-bg-subtle: #e8eef8;
+    --ag-surface: #ffffff;
+    --ag-surface-hover: #f8faff;
+    --ag-border: #dde3f0;
+    --ag-border-strong: #b8c5dc;
+
+    /* --- Типография --- */
+    --ag-text: #1a2035;
+    --ag-text-muted: #5a6a8a;
+    --ag-text-accent: var(--ag-day-primary);
+
+    /* --- Статичные цвета планет (светлая тема — темнее) --- */
+    --ag-sun: #E8950A;
+    --ag-moon: #6B7E9C;
+    --ag-mercury: #0086CC;
+    --ag-venus: #C2185B;
+    --ag-mars: #B71C1C;
+    --ag-jupiter: #5E2D91;
+    --ag-saturn: #2C3E80;
+    --ag-uranus: #006CAA;
+    --ag-neptune: #1A237E;
+    --ag-pluto: #4A004A;
+
+    /* --- Тени (светлее) --- */
+    --ag-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --ag-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10);
+    --ag-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --ag-shadow-day: 0 0 24px var(--ag-day-glow), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ===================================================================
+   BASE STYLES
+   =================================================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--ag-font-body);
+    background: var(--ag-bg);
+    background-image: var(--ag-bg-gradient);
+    background-attachment: fixed;
+    color: var(--ag-text);
+    min-height: 100vh;
+    transition:
+        background-color var(--ag-transition-slow),
+        color var(--ag-transition-base);
+}
+
+/* ===================================================================
+   UTILITY CLASSES (используй в компонентах без Chakra)
+   =================================================================== */
+
+/* Glassmorphism поверхность */
+.ag-glass {
+    background: color-mix(in srgb, var(--ag-surface) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--ag-border);
+    border-radius: var(--ag-radius-lg);
+}
+
+/* Планетарное свечение для карточек */
+.ag-glow-card {
+    box-shadow: var(--ag-shadow-day);
+    border: 1px solid color-mix(in srgb, var(--ag-day-primary) 20%, var(--ag-border));
+    transition: box-shadow var(--ag-transition-base);
+}
+
+.ag-glow-card:hover {
+    box-shadow:
+        0 0 32px var(--ag-day-glow-strong),
+        var(--ag-shadow-lg);
+}
+
+/* Акцентный текст дня */
+.ag-day-text {
+    color: var(--ag-day-primary);
+    font-weight: 600;
+}
+
+/* Градиентный текст */
+.ag-gradient-text {
+    background: linear-gradient(135deg, var(--ag-day-primary), var(--ag-day-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Планетарные цветные метки */
+.ag-planet-sun {
+    color: var(--ag-sun);
+}
+
+.ag-planet-moon {
+    color: var(--ag-moon);
+}
+
+.ag-planet-mercury {
+    color: var(--ag-mercury);
+}
+
+.ag-planet-venus {
+    color: var(--ag-venus);
+}
+
+.ag-planet-mars {
+    color: var(--ag-mars);
+}
+
+.ag-planet-jupiter {
+    color: var(--ag-jupiter);
+}
+
+.ag-planet-saturn {
+    color: var(--ag-saturn);
+}
+
+.ag-planet-uranus {
+    color: var(--ag-uranus);
+}
+
+.ag-planet-neptune {
+    color: var(--ag-neptune);
+}
+
+.ag-planet-pluto {
+    color: var(--ag-pluto);
+}
+
+/* Анимация пульса для активных элементов */
+@keyframes ag-pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px var(--ag-day-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--ag-day-glow-strong);
+    }
+}
+
+.ag-pulse {
+    animation: ag-pulse-glow 3s ease-in-out infinite;
+}
+
+/* Плавное появление */
+@keyframes ag-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ag-fade-in {
+    animation: ag-fade-in 0.4s ease forwards;
+}
+
+/* Scrollbar стилизация */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ag-bg-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ag-border-strong);
+    border-radius: var(--ag-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ag-day-primary);
+}

@@ -121,7 +121,7 @@ export class VoidMoonCalculator {
     const majorAspects = ['conjunction', 'sextile', 'square', 'trine', 'opposition'];
 
     // Filter to major aspects only
-    const relevantAspects = aspects.filter(a => majorAspects.includes(a.type));
+    const relevantAspects = aspects.filter(a => majorAspects.includes((a.aspect_type || a.type) ?? ''));
 
     if (relevantAspects.length === 0) {
       // If no aspects, void starts now
@@ -142,7 +142,7 @@ export class VoidMoonCalculator {
       // Approximate: assume aspect perfects within the next few hours
       // based on how tight the orb is
       const moonSpeed = 13; // Moon moves ~13 degrees per day
-      const hoursToExact = aspect.isApplying
+      const hoursToExact = (aspect.is_applying ?? aspect.isApplying)
         ? (aspect.orb / (moonSpeed / 24)) // approaching
         : -(aspect.orb / (moonSpeed / 24)); // separating (negative = past)
 
@@ -151,7 +151,7 @@ export class VoidMoonCalculator {
       return {
         aspect,
         time: aspectTime.getTime(),
-        description: `${aspect.planet1} ${this.getAspectSymbol(aspect.type)} ${aspect.planet2}`,
+        description: `${aspect.planet1} ${this.getAspectSymbol(aspect.aspect_type || aspect.type || '')} ${aspect.planet2}`,
       };
     });
 

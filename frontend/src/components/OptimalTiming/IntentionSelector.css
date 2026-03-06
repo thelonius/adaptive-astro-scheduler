@@ -10,9 +10,9 @@
     align-items: flex-start;
     gap: 16px;
     padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    background: var(--ag-surface);
+    border: 1px solid var(--ag-border);
+    border-radius: var(--ag-radius-md);
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
@@ -20,40 +20,42 @@
 }
 
 .intention-card:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--ag-surface-hover);
     transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--ag-border-strong);
+    box-shadow: var(--ag-shadow-md);
 }
 
 .intention-card--active {
-    background: rgba(102, 126, 234, 0.15);
-    border-color: #667eea;
-    box-shadow: 0 0 0 1px #667eea;
+    background: color-mix(in srgb, var(--ag-day-primary) 12%, var(--ag-surface));
+    border-color: var(--ag-day-primary);
+    box-shadow: 0 0 0 1px var(--ag-day-primary);
 }
 
 .intention-card__icon {
     font-size: 24px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--ag-bg-subtle);
     width: 48px;
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: var(--ag-radius-md);
     flex-shrink: 0;
+    border: 1px solid var(--ag-border);
 }
 
 .intention-card__content h3 {
     margin: 0 0 4px 0;
     font-size: 16px;
     font-weight: 600;
-    color: #fff;
+    color: var(--ag-text);
 }
 
 .intention-card__content p {
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--ag-text-muted);
     line-height: 1.4;
 }
 

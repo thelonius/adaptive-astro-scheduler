@@ -20,11 +20,13 @@ import {
     FormLabel,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { DateNavigator, DayAnalysis, FavoriteDays } from '../components/DayExplorer';
+import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { dayService, type CalendarDay } from '../services/dayService';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { useDynamicTheme } from '../theme/DynamicThemeProvider';
+import { LocationBar } from '../components/common/LocationBar';
+import { useLocationStore } from '../store/locationStore';
 
 const MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -41,11 +43,14 @@ const DayExplorer: React.FC = () => {
     });
 
     const [dayData, setDayData] = useState<CalendarDay | null>(null);
-    const { applyLunarTheme, backgroundColor } = useDynamicTheme();
+    const { applyNatalDayTheme } = useDynamicTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isFavorite, setIsFavorite] = useState(false);
     const toast = useToast();
+
+    // Геолокация пользователя из глобального store
+    const { location: userLocation } = useLocationStore();
 
     const [showAspects, setShowAspects] = useState(false);
     const [showHouses, setShowHouses] = useState(true);
@@ -76,11 +81,15 @@ const DayExplorer: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await dayService.getDay(selectedDate.toISOString());
+            const data = await dayService.getDay(
+                selectedDate.toISOString(),
+                { latitude: userLocation.latitude, longitude: userLocation.longitude },
+                userLocation.timezone
+            );
             setDayData(data);
 
             if (data.lunarDay) {
-                applyLunarTheme(data.lunarDay as any);
+                applyNatalDayTheme(selectedDate, null, null, data.lunarDay);
             }
         } catch (err) {
             console.error(err);
@@ -89,7 +98,7 @@ const DayExplorer: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedDate, applyLunarTheme]);
+    }, [selectedDate, applyNatalDayTheme, userLocation]);
 
     useEffect(() => {
         fetchDayData();
@@ -107,29 +116,40 @@ const DayExplorer: React.FC = () => {
     };
 
     return (
-        <Box bg={dayData ? backgroundColor : 'gray.50'} minH="100vh" py={6} transition="background-color 0.5s ease">
+        <Box bg="var(--ag-bg)" minH="100vh" py={6} transition="background-color var(--ag-transition-slow)">
             <Container maxW="container.lg">
                 <VStack spacing={8}>
                     {/* Header */}
-                    <VStack>
+                    <VStack spacing={3}>
                         <Heading size="xl">🔮 Day Explorer</Heading>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="purple"
-                            onClick={handleCopyLink}
-                            leftIcon={<span>🔗</span>}
-                        >
-                            Share Configuration
-                        </Button>
+                        <HStack spacing={3} wrap="wrap" justify="center">
+                            <LocationBar />
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="purple"
+                                onClick={handleCopyLink}
+                                leftIcon={<span>🔗</span>}
+                            >
+                                Share Configuration
+                            </Button>
+                        </HStack>
+                        {userLocation.city && (
+                            <Text fontSize="xs" color="gray.500">
+                                Calculations for {userLocation.city}, {userLocation.country}
+                                &nbsp;({userLocation.latitude.toFixed(2)}°N, {userLocation.longitude.toFixed(2)}°E)
+                            </Text>
+                        )}
                     </VStack>
 
                     {/* Digital Time Picker (on top of Date) */}
                     <Box
                         p={6}
-                        bg={useColorModeValue('white', 'gray.800')}
+                        bg="var(--ag-surface)"
+                        border="1px solid"
+                        borderColor="var(--ag-border)"
                         borderRadius="xl"
-                        boxShadow="sm"
+                        boxShadow="var(--ag-shadow-sm)"
                         display="flex"
                         flexDirection="column"
                         alignItems="center"
@@ -200,10 +220,12 @@ const DayExplorer: React.FC = () => {
 
                     {/* Chart Settings Control Panel */}
                     <Box
-                        bg={useColorModeValue('white', 'gray.800')}
+                        bg="var(--ag-surface)"
+                        border="1px solid"
+                        borderColor="var(--ag-border)"
                         p={4}
                         borderRadius="xl"
-                        boxShadow="sm"
+                        boxShadow="var(--ag-shadow-sm)"
                         width="100%"
                         maxW="md"
                     >
@@ -296,6 +318,7 @@ const DayExplorer: React.FC = () => {
                                 error={error}
                                 selectedDate={selectedDate}
                             />
+                            <DispositorChains date={selectedDate} />
                             <FavoriteDays
                                 currentDate={selectedDate}
                                 onSelectDate={handleDateChange}

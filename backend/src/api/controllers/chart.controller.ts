@@ -41,11 +41,11 @@ export class ChartController {
   async createChart(req: Request, res: Response) {
     try {
       const chartData = req.body as ChartCreateRequest;
-      
+
       // For now, we'll use a default user or create anonymous charts
       // In production, this would use authenticated user from JWT token
       const defaultUserId = '00000000-0000-0000-0000-000000000001';
-      
+
       let user = await this.userRepo.findById(defaultUserId);
       if (!user) {
         // Create a default user for web app charts
@@ -58,8 +58,10 @@ export class ChartController {
         });
       }
 
-      // Convert date/time to proper format
-      const birthDateTime = new Date(`${chartData.date}T${chartData.time}:00.000Z`);
+      // Convert date/time to proper format.
+      // Store in UTC but treating input as local time (timezone stored in location).
+      // We save the literal entered time by using ISO string without converting.
+      const birthDateTime = new Date(`${chartData.date}T${chartData.time}:00`);
 
       const natalChart = await this.natalRepo.create({
         user_id: user.id,
@@ -91,7 +93,7 @@ export class ChartController {
       res.status(201).json(response);
     } catch (error) {
       console.error('Error creating chart:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to create chart',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -105,7 +107,7 @@ export class ChartController {
     try {
       // For now, get charts for the default web user
       const defaultUserId = '00000000-0000-0000-0000-000000000001';
-      
+
       const user = await this.userRepo.findById(defaultUserId);
       if (!user) {
         res.json([]);
@@ -113,12 +115,13 @@ export class ChartController {
       }
 
       const charts = await this.natalRepo.findFullChartsByUserId(user.id);
-      
+
       const response = charts.map(chart => {
-        // Extract date and time from birth_date
         const birthDate = new Date(chart.birth_date);
-        const date = birthDate.toISOString().split('T')[0];
-        const time = birthDate.toTimeString().substring(0, 5);
+        // Use ISO string and split to avoid timezone offset issues
+        const isoStr = birthDate.toISOString();
+        const date = isoStr.split('T')[0];
+        const time = isoStr.split('T')[1].substring(0, 5);
 
         return {
           id: chart.id,
@@ -137,7 +140,7 @@ export class ChartController {
       res.json(response);
     } catch (error) {
       console.error('Error getting charts:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to get charts',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -178,7 +181,7 @@ export class ChartController {
       res.json(response);
     } catch (error) {
       console.error('Error getting chart:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to get chart',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -245,7 +248,7 @@ export class ChartController {
       res.json(response);
     } catch (error) {
       console.error('Error updating chart:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to update chart',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -258,7 +261,7 @@ export class ChartController {
   async deleteChart(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       const chart = await this.natalRepo.findById(id);
       if (!chart) {
         res.status(404).json({ error: 'Chart not found' });
@@ -269,7 +272,7 @@ export class ChartController {
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting chart:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to delete chart',
         details: error instanceof Error ? error.message : 'Unknown error'
       });

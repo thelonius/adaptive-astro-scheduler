@@ -49,7 +49,7 @@ export interface TransitAnalysis {
  * and generates personalized daily analytics
  */
 export class TransitCalculator {
-  constructor(private ephemeris: IEphemerisCalculator) {}
+  constructor(private ephemeris: IEphemerisCalculator) { }
 
   /**
    * Calculate all transits for a given date and natal chart
@@ -80,7 +80,7 @@ export class TransitCalculator {
     // Calculate planet-to-planet transits
     const transits = this.calculatePlanetTransits(
       currentPlanets.planets,
-      natalChart.planets
+      Object.values(natalChart.planets)
     );
 
     // Calculate house transits
@@ -98,7 +98,7 @@ export class TransitCalculator {
     // Find retrograde influences
     const retrogradeInfluences = this.findRetrogradeInfluences(
       currentPlanets.planets,
-      natalChart.planets
+      Object.values(natalChart.planets)
     );
 
     // Generate summary

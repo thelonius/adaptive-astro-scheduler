@@ -62,7 +62,7 @@ export function transformAspectData(
   return {
     body1,
     body2,
-    type: apiAspect.type,
+    type: (apiAspect.type ?? apiAspect.aspect_type as any) || 'conjunction',
     angle: apiAspect.angle,
     orb: apiAspect.orb,
     isExact: apiAspect.orb <= 1, // Consider exact if within 1 degree

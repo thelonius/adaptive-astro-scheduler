@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Card,
@@ -36,10 +36,19 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
     const [titleInput, setTitleInput] = useState('');
     const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
 
-    const cardBg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
-    const mutedColor = useColorModeValue('gray.600', 'gray.400');
-    const hoverBg = useColorModeValue('purple.50', 'gray.700');
+    // Automatically inject Nikita into favorites if not present
+    useEffect(() => {
+        const state = useFavoritesStore.getState();
+        if (!state.favorites.some(f => f.title?.toLowerCase() === 'никита' || f.title?.toLowerCase() === 'nikita')) {
+            state.addFavorite('1991-06-26', 'Никита', 'Время: 09:43');
+        }
+    }, []);
+
+    const cardBg = 'var(--ag-surface)';
+    const borderColor = 'var(--ag-border)';
+
+    const mutedColor = 'var(--ag-text-muted)';
+    const hoverBg = 'var(--ag-surface-hover)';
 
     const formatDate = (dateStr: string): string => {
         const date = new Date(dateStr);
@@ -146,8 +155,8 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                         p={3}
                                         borderRadius="lg"
                                         border="1px solid"
-                                        borderColor={isCurrentDate(fav.date) ? 'purple.400' : borderColor}
-                                        bg={isCurrentDate(fav.date) ? 'purple.50' : 'transparent'}
+                                        borderColor={isCurrentDate(fav.date) ? 'var(--ag-day-primary)' : borderColor}
+                                        bg={isCurrentDate(fav.date) ? 'var(--ag-day-glow)' : 'transparent'}
                                         _hover={{ bg: hoverBg, transform: 'translateX(4px)' }}
                                         transition="all 0.2s"
                                         cursor="pointer"
@@ -167,7 +176,7 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                                     </Text>
                                                     {fav.summary && (
                                                         <HStack spacing={2} mt={1}>
-                                                            <Badge size="sm" colorScheme="purple" variant="outline">
+                                                            <Badge size="sm" bg="var(--ag-day-primary)" color="var(--ag-surface)" variant="solid">
                                                                 Day {fav.summary.lunarDay}
                                                             </Badge>
                                                             <Text fontSize="xs" color={mutedColor} textTransform="capitalize">
@@ -205,7 +214,7 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
 
                                         {/* Edit Mode */}
                                         {editingDate === fav.date ? (
-                                            <Box mt={3} p={2} bg={cardBg} borderRadius="md" border="1px solid" borderColor="purple.200" onClick={(e) => e.stopPropagation()}>
+                                            <Box mt={3} p={2} bg={cardBg} borderRadius="md" border="1px solid" borderColor="var(--ag-day-primary)" onClick={(e) => e.stopPropagation()}>
                                                 <VStack align="stretch" spacing={2}>
                                                     <Input
                                                         value={titleInput}
@@ -222,7 +231,7 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                                         size="sm"
                                                     />
                                                     <HStack spacing={2} justify="flex-end">
-                                                        <Button size="xs" colorScheme="purple" onClick={() => handleSave(fav.date)}>
+                                                        <Button size="xs" bg="var(--ag-day-primary)" color="var(--ag-surface)" onClick={() => handleSave(fav.date)}>
                                                             Save Changes
                                                         </Button>
                                                         <Button size="xs" variant="ghost" onClick={handleCancelEdit}>
@@ -232,7 +241,7 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
                                                 </VStack>
                                             </Box>
                                         ) : fav.note ? (
-                                            <Text fontSize="sm" color={mutedColor} mt={2} pl={9} borderLeft="2px solid" borderColor="purple.100">
+                                            <Text fontSize="sm" color={mutedColor} mt={2} pl={9} borderLeft="2px solid" borderColor="var(--ag-day-primary)">
                                                 {fav.note}
                                             </Text>
                                         ) : null}

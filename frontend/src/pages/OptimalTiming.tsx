@@ -3,6 +3,8 @@ import { IntentionSelector } from '../components/OptimalTiming/IntentionSelector
 import { TimingWindowCard } from '../components/OptimalTiming/TimingWindowCard';
 import { optimalTimingService } from '../services/optimalTimingService';
 import type { IntentionCategory, TimingWindow } from '@adaptive-astro/shared/types/astrology';
+import { LocationBar } from '../components/common/LocationBar';
+import { useLocationStore } from '../store/locationStore';
 import './OptimalTiming.css';
 
 export const OptimalTiming: React.FC = () => {
@@ -11,6 +13,8 @@ export const OptimalTiming: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [monthsAhead, setMonthsAhead] = useState(3);
+
+    const { location: userLocation } = useLocationStore();
 
     useEffect(() => {
         if (!selectedIntention) return;
@@ -28,7 +32,12 @@ export const OptimalTiming: React.FC = () => {
                     intention: selectedIntention,
                     startDate,
                     endDate,
-                    limit: 20
+                    limit: 20,
+                    location: {
+                        latitude: userLocation.latitude,
+                        longitude: userLocation.longitude,
+                        timezone: userLocation.timezone,
+                    },
                 });
 
                 setWindows(response.windows);
@@ -41,15 +50,23 @@ export const OptimalTiming: React.FC = () => {
         };
 
         fetchTiming();
-    }, [selectedIntention, monthsAhead]);
+    }, [selectedIntention, monthsAhead, userLocation]);
 
     return (
         <div className="optimal-timing">
             <div className="optimal-timing__header">
-                <h1>Optimal Timing Engine</h1>
+                <div className="optimal-timing__header-top">
+                    <h1>Optimal Timing Engine</h1>
+                    <LocationBar />
+                </div>
                 <p className="optimal-timing__subtitle">
                     Discover favorable cosmic windows for your intentions
                 </p>
+                {userLocation.city && (
+                    <p className="optimal-timing__location-hint">
+                        📍 Calculations for <strong>{userLocation.city}</strong>, {userLocation.country}
+                    </p>
+                )}
             </div>
 
             <div className="optimal-timing__section">

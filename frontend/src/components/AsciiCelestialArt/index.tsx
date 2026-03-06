@@ -60,8 +60,8 @@ const AsciiCelestialArtBase: React.FC<AsciiCelestialArtProps> = ({
     height = '300px'
 }) => {
     const [frame, setFrame] = useState(0);
-    const bgColor = useColorModeValue('gray.900', 'black');
-    const textColor = useColorModeValue('green.400', 'green.300');
+    const bgColor = 'var(--ag-surface)';
+    const textColor = 'var(--ag-text-muted)';
 
     // Animation loop
     useEffect(() => {
@@ -136,7 +136,7 @@ const AsciiCelestialArtBase: React.FC<AsciiCelestialArtProps> = ({
             borderRadius="md"
             p={4}
             border="1px solid"
-            borderColor="green.800"
+            borderColor="var(--ag-border)"
             display="flex"
             alignItems="center"
             justifyContent="center"

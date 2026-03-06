@@ -14,6 +14,7 @@ import type {
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
   RetrogradesApiResponse,
+  DispositorChainsResponse,
   ZodiacSign,
   PlanetName,
   PlanetApiData,
@@ -227,6 +228,34 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
     return {
       date: dateTime.date.toISOString(),
       retrogradePlanets,
+    };
+  }
+
+  async getDispositorChains(dateTime: DateTime, system: string = 'traditional'): Promise<DispositorChainsResponse> {
+    // Mock: simple static chain
+    return {
+      datetime_utc: dateTime.date.toISOString(),
+      system: system as 'traditional' | 'modern',
+      full_map: {
+        Sun: { sign: 'Pisces', ruler: 'Jupiter' },
+        Moon: { sign: 'Libra', ruler: 'Venus' },
+        Mercury: { sign: 'Pisces', ruler: 'Jupiter' },
+        Venus: { sign: 'Aries', ruler: 'Mars' },
+        Mars: { sign: 'Pisces', ruler: 'Jupiter' },
+        Jupiter: { sign: 'Cancer', ruler: 'Moon' },
+        Saturn: { sign: 'Aries', ruler: 'Mars' },
+      },
+      final_dispositors: [],
+      mutual_receptions: [],
+      chains: {
+        Sun: {
+          chain: ['Sun', 'Jupiter', 'Moon', 'Venus', 'Mars', 'Jupiter'],
+          signs: ['Pisces', 'Cancer', 'Libra', 'Aries', 'Pisces'],
+          status: 'cycle',
+          final_dispositor: null,
+          cycle_nodes: ['Jupiter', 'Moon', 'Venus', 'Mars'],
+        },
+      },
     };
   }
 

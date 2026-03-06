@@ -6,6 +6,7 @@ import {
   VoidOfCourseMoon,
   Transit,
   PlanetaryHour,
+  AspectApiData,
 } from './astrology';
 
 export interface CalendarDay {
@@ -40,6 +41,7 @@ export interface CalendarDay {
   voidOfCourseMoon: VoidOfCourseMoon | null;
   retrogradesActive: CelestialBody[];
   eclipseWindow: boolean;
+  aspects?: AspectApiData[];   // Current sky aspects
 
   // Personal (if natal chart provided)
   personalTransits?: Transit[];

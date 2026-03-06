@@ -16,13 +16,12 @@ export class UserRepository {
 
   async create(data: CreateUserInput): Promise<User> {
     const query = `
-      INSERT INTO users (email, telegram_id, username, metadata)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO users (telegram_id, username, metadata)
+      VALUES ($1, $2, $3)
       RETURNING *
     `;
     const values = [
-      data.email || null,
-      data.telegram_id || null,
+      data.telegram_id ?? null,
       data.username || null,
       data.metadata || {},
     ];
@@ -53,8 +52,8 @@ export class UserRepository {
       values.push(data.is_active);
     }
     if (data.metadata !== undefined) {
-        updates.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${paramIndex++}`);
-        values.push(data.metadata);
+      updates.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${paramIndex++}`);
+      values.push(data.metadata);
     }
 
     if (updates.length === 0) return this.findById(id);

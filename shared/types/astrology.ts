@@ -166,10 +166,14 @@ export interface AspectsApiResponse {
 export interface AspectApiData {
   planet1: string;
   planet2: string;
-  type: AspectType;
+  // Python API uses snake_case; camelCase kept for backwards-compat
+  aspect_type?: string;       // Raw from Python API
+  type?: AspectType;          // Normalised camelCase alias
   angle: number;              // Actual angle
   orb: number;                // Distance from exact
-  isApplying: boolean;        // Moving toward exact or separating
+  is_exact?: boolean;         // Python API field
+  is_applying?: boolean;      // Python API field
+  isApplying?: boolean;       // camelCase alias
   interpretation: string;
 }
 
@@ -231,6 +235,46 @@ export interface RetrogradeApiData {
   retrogradeEnd: string;      // Date string
   currentSign: string;
 }
+
+// ============================================================================
+// Dispositor Chain Types
+// ============================================================================
+
+/** Карта «планета → знак → управитель» */
+export interface DispositorMap {
+  [planet: string]: {
+    sign: string;
+    ruler: string;
+  };
+}
+
+/** Цепочка управителей для одной планеты */
+export interface DispositorChainEntry {
+  /** Последовательность планет в цепочке */
+  chain: string[];
+  /** Знаки, через которые проходит цепочка */
+  signs: string[];
+  /** 'linear' — заканчивается у финального управителя; 'cycle' — зацикленная */
+  status: 'linear' | 'cycle';
+  /** Финальный управитель (null если цикл) */
+  final_dispositor: string | null;
+  /** Узлы цикла (если status='cycle') */
+  cycle_nodes: string[];
+}
+
+/** Ответ API /planning/dispositors */
+export interface DispositorChainsResponse {
+  datetime_utc: string;
+  system: 'traditional' | 'modern';
+  full_map: DispositorMap;
+  /** Планеты, которые управляют своим знаком (конечные управители) */
+  final_dispositors: string[];
+  /** Взаимные рецепции */
+  mutual_receptions: string[][];
+  /** Цепочки управителей по каждой планете */
+  chains: Record<string, DispositorChainEntry>;
+}
+
 
 // ============================================================================
 // Aspect Strength & Analysis Types

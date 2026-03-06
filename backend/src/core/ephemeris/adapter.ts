@@ -14,6 +14,7 @@ import type {
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
   RetrogradesApiResponse,
+  DispositorChainsResponse,
 } from '@adaptive-astro/shared/types/astrology';
 import { IEphemerisCalculator } from './interface';
 import { EphemerisError } from './errors';
@@ -266,13 +267,33 @@ export class EphemerisAdapter implements IEphemerisCalculator {
 
   /**
    * Get retrograde planets from API
+   * API returns either an array [{name, longitude, zodiac_sign, speed},...]
+   * or an object {date, retrogradePlanets: [...]} — handle both.
    */
   async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
     const params = {
       date: this.formatDate(dateTime.date),
     };
 
-    return this.fetch<RetrogradesApiResponse>('/api/v1/ephemeris/retrogrades', params);
+    const raw = await this.fetch<any>('/api/v1/ephemeris/retrogrades', params);
+
+    // API returns a plain array — normalize to our type
+    if (Array.isArray(raw)) {
+      return {
+        date: params.date,
+        retrogradePlanets: raw.map((p: any) => ({
+          name: p.name,
+          retrogradeStart: params.date, // Not provided by this endpoint — use query date as fallback
+          retrogradeEnd: params.date,
+          currentSign: p.zodiac_sign || p.zodiacSign || this.getZodiacSign(p.longitude),
+          longitude: p.longitude,
+          speed: p.speed,
+        })),
+      };
+    }
+
+    // Already in expected format
+    return raw as RetrogradesApiResponse;
   }
 
   /**
@@ -342,10 +363,28 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   }
 
   /**
-   * Format time for API (HH:MM:SS)
+   * Get dispositor chains from API
+   * Answers: who rules the ruler? (traditional rulership-based)
+   */
+  async getDispositorChains(
+    dateTime: DateTime,
+    system: string = 'traditional'
+  ): Promise<DispositorChainsResponse> {
+    const params = {
+      date: this.formatDate(dateTime.date),
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
+      system,
+    };
+
+    return this.fetch<DispositorChainsResponse>('/api/v1/planning/dispositors', params);
+  }
+
+  /**
+   * Format time for API (HH:MM:SS) in UTC
    */
   private formatTime(date: Date): string {
-    return date.toTimeString().split(' ')[0];
+    return date.toISOString().split('T')[1].split('.')[0];
   }
 
   /**

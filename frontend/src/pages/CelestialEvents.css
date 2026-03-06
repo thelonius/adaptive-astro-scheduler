@@ -1,7 +1,10 @@
 .celestial-events {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: var(--ag-bg);
+    background-image: var(--ag-bg-gradient);
+    background-attachment: fixed;
     padding: 40px 20px;
+    color: var(--ag-text);
 }
 
 .celestial-events__header {
@@ -13,7 +16,7 @@
     font-size: 48px;
     font-weight: 700;
     margin: 0 0 16px 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--ag-day-primary), var(--ag-day-accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -21,7 +24,7 @@
 
 .celestial-events__subtitle {
     font-size: 18px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ag-text-muted);
     margin: 0;
 }
 
@@ -29,10 +32,10 @@
     max-width: 900px;
     margin: 0 auto 24px;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--ag-surface);
     backdrop-filter: blur(10px);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--ag-radius-lg);
+    border: 1px solid var(--ag-border);
     display: flex;
     align-items: center;
     gap: 24px;
@@ -48,17 +51,17 @@
 .time-range__control label {
     font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--ag-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .time-range__control select {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: #fff;
+    background: var(--ag-bg-subtle);
+    border: 1px solid var(--ag-border-strong);
+    border-radius: var(--ag-radius-sm);
+    color: var(--ag-text);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -66,21 +69,21 @@
 }
 
 .time-range__control select:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--ag-surface-hover);
+    border-color: var(--ag-day-primary);
 }
 
 .time-range__control select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--ag-day-primary);
+    box-shadow: 0 0 0 3px var(--ag-day-glow);
 }
 
 .time-range__info {
     flex: 1;
     text-align: right;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--ag-text-muted);
     font-style: italic;
 }
 
@@ -88,16 +91,16 @@
     max-width: 900px;
     margin: 0 auto 32px;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--ag-surface);
     backdrop-filter: blur(10px);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--ag-radius-lg);
+    border: 1px solid var(--ag-border);
 }
 
 .celestial-events__filter-label {
     font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--ag-text-muted);
     margin-bottom: 16px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -115,10 +118,10 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid transparent;
-    border-radius: 24px;
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--ag-bg-subtle);
+    border: 2px solid var(--ag-border);
+    border-radius: var(--ag-radius-full);
+    color: var(--ag-text-muted);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -126,13 +129,14 @@
 }
 
 .filter-chip:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--ag-surface-hover);
+    border-color: var(--ag-border-strong);
+    color: var(--ag-text);
 }
 
 .filter-chip--active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, var(--ag-day-primary), var(--ag-day-accent));
+    border-color: var(--ag-day-primary);
     color: #fff;
 }
 
@@ -147,7 +151,7 @@
 .celestial-events__clear-filters {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--ag-text-muted);
     font-size: 14px;
     cursor: pointer;
     text-decoration: underline;
@@ -156,7 +160,7 @@
 }
 
 .celestial-events__clear-filters:hover {
-    color: #fff;
+    color: var(--ag-text);
 }
 
 .celestial-events__stats {
@@ -168,10 +172,10 @@
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--ag-surface);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border: 1px solid var(--ag-border);
+    border-radius: var(--ag-radius-lg);
     padding: 24px;
     text-align: center;
     transition: all 0.3s ease;
@@ -179,14 +183,14 @@
 
 .stat-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-color: var(--ag-day-primary);
+    box-shadow: var(--ag-shadow-day);
 }
 
 .stat-card__value {
     font-size: 36px;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--ag-day-primary), var(--ag-day-accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -195,7 +199,7 @@
 
 .stat-card__label {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--ag-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -206,7 +210,7 @@
     padding: 20px;
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 12px;
+    border-radius: var(--ag-radius-md);
     color: #fca5a5;
     text-align: center;
 }
