@@ -5,3 +5,7 @@ docker/redis-data
 venv
 __pycache__
 dist
+lunar-calendar-api/venv
+lunar-calendar-api/__pycache__
+.env
+.DS_Store
