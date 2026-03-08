@@ -224,14 +224,14 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
             <stop offset="100%" stopColor="white" stopOpacity="0" />
           </radialGradient>
         </defs>
-        {/* Compute rotation so ASC (house 1 cusp) sits at 9 o'clock (180° in SVG) */}
+        {/* Compute rotation so ASC (house 1 cusp) sits at 9 o'clock (left/east horizon)
+            Math: longitudeToAngle(L) = 270 - L (gives SVG screen degrees clockwise from 12 o'clock)
+            ASC without rotation is at screen angle: 270 - asc.cusp
+            We need it at 270° (9 o'clock). SVG rotate() rotates content clockwise.
+            So: (270 - asc.cusp) + R = 270  →  R = asc.cusp */}
         {(() => {
           const asc = data?.houses?.find(h => h.number === 1);
-          // rotationDeg: how many SVG degrees to rotate the whole chart
-          // ASC cusp longitude → SVG angle = 270 - asc.cusp
-          // We want that angle to land at 180° (left)
-          // rotationDeg = 180 - (270 - asc.cusp) = asc.cusp - 90
-          const rotationDeg = asc ? asc.cusp - 90 : 0;
+          const rotationDeg = asc ? asc.cusp : 0;
           return (
             <g transform={`rotate(${rotationDeg}, ${config.size / 2}, ${config.size / 2})`}>
               {/* Zodiac circle (signs and degrees) */}
