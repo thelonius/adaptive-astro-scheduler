@@ -224,49 +224,54 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
             <stop offset="100%" stopColor="white" stopOpacity="0" />
           </radialGradient>
         </defs>
-        {/* Zodiac circle (signs and degrees) */}
-        <ZodiacCircle
-          size={config.size}
-          colorScheme={config.colorScheme}
-          showDegrees={config.showDegrees}
-          onZodiacHover={handleZodiacHover}
-        />
+        {/* Compute rotation so ASC (house 1 cusp) sits at 9 o'clock (180° in SVG) */}
+        {(() => {
+          const asc = data?.houses?.find(h => h.number === 1);
+          // rotationDeg: how many SVG degrees to rotate the whole chart
+          // ASC cusp longitude → SVG angle = 270 - asc.cusp
+          // We want that angle to land at 180° (left)
+          // rotationDeg = 180 - (270 - asc.cusp) = asc.cusp - 90
+          const rotationDeg = asc ? asc.cusp - 90 : 0;
+          return (
+            <g transform={`rotate(${rotationDeg}, ${config.size / 2}, ${config.size / 2})`}>
+              {/* Zodiac circle (signs and degrees) */}
+              <ZodiacCircle
+                size={config.size}
+                colorScheme={config.colorScheme}
+                showDegrees={config.showDegrees}
+                onZodiacHover={handleZodiacHover}
+              />
 
-        {/* Houses overlay (optional) */}
-        {config.showHouses && data?.houses && (
-          <HousesOverlay
-            houses={data.houses}
-            size={config.size}
-            colorScheme={config.colorScheme}
-            onHouseHover={handleHouseHover}
-          />
-        )}
+              {/* Houses overlay (optional) */}
+              {config.showHouses && data?.houses && (
+                <HousesOverlay
+                  houses={data.houses}
+                  size={config.size}
+                  colorScheme={config.colorScheme}
+                  onHouseHover={handleHouseHover}
+                />
+              )}
 
-        {/* Aspect lines */}
-        {config.showAspects && aspectLines.length > 0 && (
-          <>
-            {console.log('Rendering AspectLines with', aspectLines.length, 'lines')}
-            <AspectLines lines={aspectLines} size={config.size} />
-          </>
-        )}
-        {config.showAspects && aspectLines.length === 0 && (
-          <>
-            {console.log('AspectLines: showAspects=true but no aspect lines calculated')}
-          </>
-        )}
+              {/* Planets */}
+              {planetPositions.length > 0 && (
+                <PlanetMarkers
+                  positions={planetPositions}
+                  colorScheme={config.colorScheme}
+                  showRetrogrades={config.showRetrogrades}
+                  onPlanetHover={setHoveredPlanet}
+                  onClusterHover={handleClusterHover}
+                  onClusterClick={handleClusterClick}
+                  size={config.size}
+                />
+              )}
 
-        {/* Planets */}
-        {planetPositions.length > 0 && (
-          <PlanetMarkers
-            positions={planetPositions}
-            colorScheme={config.colorScheme}
-            showRetrogrades={config.showRetrogrades}
-            onPlanetHover={setHoveredPlanet}
-            onClusterHover={handleClusterHover}
-            onClusterClick={handleClusterClick}
-            size={config.size}
-          />
-        )}
+              {/* Aspect lines — rendered inside rotation group to align with planets */}
+              {config.showAspects && aspectLines.length > 0 && (
+                <AspectLines lines={aspectLines} size={config.size} />
+              )}
+            </g>
+          );
+        })()}
       </motion.svg>
 
       {/* Tooltip */}
