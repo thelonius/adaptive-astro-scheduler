@@ -1,0 +1,62 @@
+{
+  "extension": {
+    "name": "Lunar Calendar",
+    "description": "Display daily lunar calendar color palettes with astronomical accuracy"
+  },
+  "popup": {
+    "title": "🌙 Lunar Calendar",
+    "loading": "Loading lunar data...",
+    "error": "Unable to connect to lunar calendar API",
+    "retry": "Retry",
+    "dayLabel": "Lunar Day",
+    "progressLabel": "Day Progress",
+    "copyFeedback": "Copied!",
+    "colorsLabel": {
+      "base": "Base Colors",
+      "gradient": "Gradient"
+    }
+  },
+  "moonPhases": {
+    "newMoon": "New Moon",
+    "waxingCrescent": "Waxing Crescent",
+    "firstQuarter": "First Quarter",
+    "waxingGibbous": "Waxing Gibbous",
+    "fullMoon": "Full Moon",
+    "waningGibbous": "Waning Gibbous",
+    "lastQuarter": "Last Quarter",
+    "waningCrescent": "Waning Crescent"
+  },
+  "newTab": {
+    "title": "Lunar Calendar - New Tab",
+    "todayIs": "Today is",
+    "lunarDay": "Lunar Day",
+    "moonPhase": "Moon Phase",
+    "illumination": "Illumination",
+    "timing": {
+      "started": "Started",
+      "duration": "Duration",
+      "remaining": "Remaining"
+    },
+    "health": {
+      "title": "Health & Wellness",
+      "affectedOrgans": "Affected Organs",
+      "bodyParts": "Body Parts",
+      "tips": "Health Tips"
+    },
+    "recommendations": {
+      "title": "Recommendations",
+      "recommended": "Recommended",
+      "notRecommended": "Not Recommended"
+    },
+    "planetary": {
+      "title": "Planetary Influence",
+      "dominant": "Dominant Planet",
+      "additional": "Additional Influences"
+    }
+  },
+  "common": {
+    "hours": "hours",
+    "minutes": "minutes",
+    "days": "days"
+  }
+}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lunar Calendar Debug - UTC vs Moscow Time</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .debug-card { background: rgba(0,0,0,0.8); padding: 20px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #FFD700; }
+        .time-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .highlight { color: #FFD700; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Lunar Calendar Debug - November 9, 2025</h1>
+
+    <div class="debug-card">
+        <h3>Current Time Analysis</h3>
+        <div id="current-times"></div>
+    </div>
+
+    <div class="debug-card">
+        <h3>JSON Timestamp Analysis</h3>
+        <div class="time-comparison">
+            <div>
+                <h4>19th Lunar Day End</h4>
+                <div id="day19-analysis"></div>
+            </div>
+            <div>
+                <h4>20th Lunar Day Start</h4>
+                <div id="day20-analysis"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-card">
+        <h3>Active Day Determination</h3>
+        <div id="active-analysis"></div>
+    </div>
+
+    <script>
+        // JSON timestamps (assuming UTC)
+        const day19End = "2025-11-09T05:16:31.600000";
+        const day20Start = "2025-11-09T05:16:31.600000";
+
+        // Your stated correct time: 19:07 Moscow time = 16:07 UTC
+        const correctDay19End = "2025-11-09T16:07:00.000000";
+
+        function analyzeTimestamp(isoString, label) {
+            const date = new Date(isoString);
+
+            // Get time in different formats
+            const utc = date.toISOString();
+            const moscowTime = date.toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const localTime = date.toLocaleString();
+
+            return `
+                <strong>${label}:</strong><br>
+                <strong>Original:</strong> ${isoString}<br>
+                <strong>UTC:</strong> ${utc}<br>
+                <strong>Moscow:</strong> ${moscowTime}<br>
+                <strong>Local:</strong> ${localTime}<br>
+            `;
+        }
+
+        function checkWhatShouldBeActive() {
+            const now = new Date();
+            const jsonEnd19 = new Date(day19End);
+            const jsonStart20 = new Date(day20Start);
+            const correctEnd19 = new Date(correctDay19End);
+
+            let result = "";
+
+            if (now < jsonEnd19) {
+                result += "<span class='highlight'>According to JSON timestamps:</span> Still in 19th day<br>";
+            } else {
+                result += "<span class='highlight'>According to JSON timestamps:</span> Should be in 20th day<br>";
+            }
+
+            if (now < correctEnd19) {
+                result += "<span class='highlight'>According to 19:07 Moscow end time:</span> Still in 19th day<br>";
+            } else {
+                result += "<span class='highlight'>According to 19:07 Moscow end time:</span> Should be in 20th day<br>";
+            }
+
+            // Calculate time remaining until correct end
+            const msUntilCorrectEnd = correctEnd19.getTime() - now.getTime();
+            const hoursRemaining = Math.floor(msUntilCorrectEnd / (1000 * 60 * 60));
+            const minutesRemaining = Math.floor((msUntilCorrectEnd % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (msUntilCorrectEnd > 0) {
+                result += `<br><strong>Time remaining in 19th day:</strong> ${hoursRemaining}h ${minutesRemaining}m`;
+            } else {
+                result += `<br><strong>19th day ended:</strong> ${Math.abs(hoursRemaining)}h ${Math.abs(minutesRemaining)}m ago`;
+            }
+
+            return result;
+        }
+
+        // Display current time
+        const now = new Date();
+        document.getElementById('current-times').innerHTML = `
+            <strong>Current Time:</strong><br>
+            <strong>UTC:</strong> ${now.toISOString()}<br>
+            <strong>Moscow:</strong> ${now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}<br>
+            <strong>Local:</strong> ${now.toLocaleString()}
+        `;
+
+        // Analyze timestamps
+        document.getElementById('day19-analysis').innerHTML =
+            analyzeTimestamp(day19End, "JSON End Time") + "<br>" +
+            analyzeTimestamp(correctDay19End, "Correct End Time (19:07 MSK)");
+
+        document.getElementById('day20-analysis').innerHTML =
+            analyzeTimestamp(day20Start, "JSON Start Time");
+
+        // Show active day analysis
+        document.getElementById('active-analysis').innerHTML = checkWhatShouldBeActive();
+
+        // Update every second
+        setInterval(() => {
+            const newNow = new Date();
+            document.getElementById('current-times').innerHTML = `
+                <strong>Current Time:</strong><br>
+                <strong>UTC:</strong> ${newNow.toISOString()}<br>
+                <strong>Moscow:</strong> ${newNow.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}<br>
+                <strong>Local:</strong> ${newNow.toLocaleString()}
+            `;
+
+            document.getElementById('active-analysis').innerHTML = checkWhatShouldBeActive();
+        }, 1000);
+    </script>
+</body>
+</html>

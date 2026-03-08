@@ -1,0 +1,75 @@
+{
+    "moon_phases": {
+        "New Moon": "Новолуние",
+        "Waxing Crescent": "Растущий Серп",
+        "First Quarter": "Первая Четверть",
+        "Waxing Gibbous": "Растущая Луна",
+        "Full Moon": "Полнолуние",
+        "Waning Gibbous": "Убывающая Луна",
+        "Last Quarter": "Последняя Четверть",
+        "Waning Crescent": "Убывающий Серп"
+    },
+    "health_organs": {
+        "heart": "сердце",
+        "lungs": "лёгкие",
+        "respiratory system": "дыхательная система",
+        "liver": "печень",
+        "kidneys": "почки",
+        "stomach": "желудок",
+        "spleen": "селезёнка",
+        "brain": "мозг",
+        "nervous system": "нервная система"
+    },
+    "health_body_parts": {
+        "head": "голова",
+        "chest": "грудь",
+        "bronchi": "бронхи",
+        "abdomen": "живот",
+        "back": "спина",
+        "limbs": "конечности",
+        "joints": "суставы"
+    },
+    "health_tips": {
+        "Fresh air essential": "Свежий воздух необходим",
+        "Breathing exercises": "Дыхательные упражнения",
+        "Avoid polluted areas": "Избегайте загрязнённых мест",
+        "Heart-healthy activities": "Полезные для сердца активности",
+        "Meditation recommended": "Рекомендуется медитация",
+        "Light physical exercise": "Лёгкие физические упражнения",
+        "Stay hydrated": "Поддерживайте водный баланс",
+        "Avoid heavy meals": "Избегайте тяжёлой пищи",
+        "Mental clarity practices": "Практики для ясности ума"
+    },
+    "recommendations": {
+        "Breathing practices": "Дыхательные практики",
+        "Pranayama": "Пранаяма",
+        "Outdoor activities": "Активности на свежем воздухе",
+        "Speaking truth": "Говорить правду",
+        "Honest conversations": "Честные разговоры",
+        "Meditation": "Медитация",
+        "Physical exercise": "Физические упражнения",
+        "Creative work": "Творческая работа",
+        "Family time": "Время с семьёй",
+        "Learning new skills": "Изучение новых навыков",
+        "Lying": "Ложь",
+        "Deception": "Обман",
+        "Staying indoors": "Оставаться дома",
+        "Poor air quality": "Плохое качество воздуха",
+        "Heavy physical work": "Тяжёлая физическая работа",
+        "Important decisions": "Важные решения",
+        "Conflicts": "Конфликты",
+        "Overeating": "Переедание"
+    },
+    "planets": {
+        "Sun": "Солнце",
+        "Moon": "Луна",
+        "Mars": "Марс",
+        "Mercury": "Меркурий",
+        "Jupiter": "Юпитер",
+        "Venus": "Венера",
+        "Saturn": "Сатурн",
+        "Uranus": "Уран",
+        "Neptune": "Нептун",
+        "Pluto": "Плутон"
+    }
+}

@@ -1,0 +1,25 @@
+FIREFOX EXTENSION RELOAD INSTRUCTIONS:
+
+After building changes, you need to reload the extension in Firefox:
+
+Method 1 - Temporary Extension (about:debugging):
+1. Open Firefox
+2. Go to: about:debugging#/runtime/this-firefox
+3. Click "Reload" button next to your extension
+
+Method 2 - Full Reload:
+1. Go to: about:debugging#/runtime/this-firefox
+2. Click "Remove" to uninstall
+3. Click "Load Temporary Add-on"
+4. Navigate to and select: firefox-extension/manifest.json
+
+Method 3 - Clear Cache and Reload:
+1. Close all Firefox tabs showing the extension
+2. Go to about:debugging#/runtime/this-firefox
+3. Click "Reload"
+4. Open a new tab to see changes
+
+Current changes:
+- Left moons now increase in size toward center
+- Reduced spacing between moons (overlapping effect)
+- Fixed opacity for left moons to match right side

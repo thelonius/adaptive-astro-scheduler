@@ -1,0 +1,92 @@
+{
+    "major": {
+        "conjunction": {
+            "angle": 0,
+            "symbol": "☌",
+            "orb": {
+                "default": 8,
+                "luminaries": 10
+            },
+            "nature": "neutral",
+            "description": "Fusion of energies, new beginnings"
+        },
+        "sextile": {
+            "angle": 60,
+            "symbol": "⚹",
+            "orb": {
+                "default": 4,
+                "luminaries": 6
+            },
+            "nature": "harmonious",
+            "description": "Opportunities, talent, easy flow"
+        },
+        "square": {
+            "angle": 90,
+            "symbol": "□",
+            "orb": {
+                "default": 7,
+                "luminaries": 8
+            },
+            "nature": "tense",
+            "description": "Tension, challenge, growth through friction"
+        },
+        "trine": {
+            "angle": 120,
+            "symbol": "△",
+            "orb": {
+                "default": 7,
+                "luminaries": 8
+            },
+            "nature": "harmonious",
+            "description": "Ease, natural talent, harmony"
+        },
+        "opposition": {
+            "angle": 180,
+            "symbol": "☍",
+            "orb": {
+                "default": 8,
+                "luminaries": 10
+            },
+            "nature": "tense",
+            "description": "Polarity, awareness, projection"
+        }
+    },
+    "minor": {
+        "semi-sextile": {
+            "angle": 30,
+            "symbol": "⚺",
+            "orb": {
+                "default": 2,
+                "luminaries": 3
+            },
+            "nature": "mildly_tense"
+        },
+        "quincunx": {
+            "angle": 150,
+            "symbol": "⚻",
+            "orb": {
+                "default": 3,
+                "luminaries": 4
+            },
+            "nature": "adjustment"
+        },
+        "semi-square": {
+            "angle": 45,
+            "symbol": "∠",
+            "orb": {
+                "default": 2,
+                "luminaries": 3
+            },
+            "nature": "tense"
+        },
+        "sesquiquadrate": {
+            "angle": 135,
+            "symbol": "⚼",
+            "orb": {
+                "default": 2,
+                "luminaries": 3
+            },
+            "nature": "tense"
+        }
+    }
+}

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  ephemeris-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.ephemeris
+    container_name: lunar-ephemeris-api
+    ports:
+      - "8000:8000"
+    environment:
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=false
+
+      # App Configuration
+      - PROJECT_NAME=Lunar Calendar & Ephemeris API
+      - VERSION=1.0.0
+      - API_V1_PREFIX=/api/v1
+
+      # Performance tuning
+      - PYTHONUNBUFFERED=1
+      - WORKERS=2  # 2-4 workers for production
+
+    volumes:
+      # Persist ephemeris cache to named volume
+      - ephemeris-cache:/tmp/skyfield-cache
+
+      # Optional: mount logs
+      - ./logs:/app/logs
+
+    restart: unless-stopped
+
+    # Resource limits (adjust based on your server)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # 1 CPU core
+          memory: 512M     # 512MB RAM
+        reservations:
+          cpus: '0.25'     # Minimum 0.25 core
+          memory: 128M     # Minimum 128MB RAM
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      - ephemeris-network
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ephemeris-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates
+    depends_on:
+      - ephemeris-api
+    restart: unless-stopped
+    networks:
+      - ephemeris-network
+
+volumes:
+  ephemeris-cache:
+    driver: local
+
+networks:
+  ephemeris-network:
+    driver: bridge

@@ -1,0 +1,540 @@
+import pytz
+import numpy as np
+from datetime import datetime, date, timedelta
+from typing import Tuple, Optional
+from app.models.lunar_day import MoonPhase, LunarDayTiming
+
+# Skyfield imports (modern successor to PyEphem)
+from skyfield.api import load, Topos
+from skyfield.almanac import find_discrete, moon_phases
+from skyfield.framelib import itrs
+
+
+class LunarCalculator:
+    """Calculate lunar day and moon phase for any given date using Skyfield."""
+
+    # Reference point: New Moon on January 6, 2000, 18:14 UTC (Julian day 2451550.26)
+    # This is a known new moon used as reference for calculations
+    REFERENCE_NEW_MOON = datetime(2000, 1, 6, 18, 14, 0)
+    LUNAR_MONTH = 29.53058867  # Average lunar month in days (synodic month)
+
+    def __init__(self, location: Optional[Topos] = None):
+        """
+        Initialize the lunar calculator.
+
+        Args:
+            location: Observer location as Skyfield Topos (defaults to Moscow)
+        """
+        # Initialize Skyfield
+        self.ts = load.timescale()
+        self.eph = load('de421.bsp')  # High precision ephemeris
+        self._earth = self.eph['earth']  # Store as private attribute
+        self._moon = self.eph['moon']
+        self._sun = self.eph['sun']
+
+        # Default location is Moscow
+        if location is None:
+            self.location = Topos(latitude_degrees=55.7558, longitude_degrees=37.6173, elevation_m=156)
+        else:
+            self.location = location
+
+    @property
+    def earth(self):
+        """Earth body for observations."""
+        return self._earth
+
+    @property
+    def moon(self):
+        """Moon body."""
+        return self._moon
+
+    @property
+    def sun(self):
+        """Sun body."""
+        return self._sun
+
+    def _find_new_moons_around_date(self, target_date: date) -> list:
+        """
+        Find new moons around a target date.
+
+        Args:
+            target_date: Date to search around
+
+        Returns:
+            List of new moon times
+        """
+        # Search 60 days before and after
+        start_date = target_date - timedelta(days=60)
+        end_date = target_date + timedelta(days=60)
+
+        t0 = self.ts.utc(start_date.year, start_date.month, start_date.day)
+        t1 = self.ts.utc(end_date.year, end_date.month, end_date.day)
+
+        times, phases = find_discrete(t0, t1, moon_phases(self.eph))
+
+        # Filter for new moons (phase = 0)
+        new_moons = [times[i] for i, phase in enumerate(phases) if phase == 0]
+        return new_moons
+
+    def _calculate_astronomical_lunar_day_boundaries(self, new_moon_time, lunar_day: int):
+        """
+        Calculate astronomically accurate lunar day boundaries.
+        Each lunar day represents ~1/30th of the lunar cycle with variable duration.
+
+        Args:
+            new_moon_time: The new moon datetime that starts the cycle
+            lunar_day: The lunar day number (1-30)
+
+        Returns:
+            tuple: (start_time, end_time) as datetime objects
+        """
+        # Convert new moon time to Skyfield time
+        if hasattr(new_moon_time, 'utc_datetime'):
+            new_moon_dt = new_moon_time.utc_datetime()
+        else:
+            new_moon_dt = new_moon_time
+
+        # Convert to Skyfield time
+        nm_time = self.ts.utc(new_moon_dt.year, new_moon_dt.month, new_moon_dt.day,
+                             new_moon_dt.hour, new_moon_dt.minute, new_moon_dt.second)
+
+        # Calculate moon's angular position at new moon
+        observer = self.earth + self.location
+        earth_moon_nm = observer.at(nm_time).observe(self.moon)
+        earth_sun_nm = observer.at(nm_time).observe(self.sun)
+
+        # Each lunar day represents 360°/30 = 12° of moon's orbital motion
+        target_angle_advance = (lunar_day - 1) * 12.0  # degrees
+        next_target_angle_advance = lunar_day * 12.0
+
+        # Search for when moon advances by target angles
+        start_time = self._find_time_when_moon_advances(nm_time, target_angle_advance)
+        end_time = self._find_time_when_moon_advances(nm_time, next_target_angle_advance)
+
+        return start_time.utc_datetime(), end_time.utc_datetime()
+
+    def _find_time_when_moon_advances(self, reference_time, target_angle_degrees):
+        """
+        Find the time when moon has advanced by target angle from reference time.
+
+        Args:
+            reference_time: Skyfield time object (reference point)
+            target_angle_degrees: Target angular advance in degrees
+
+        Returns:
+            Skyfield time when moon reaches target position
+        """
+        # Get reference moon position
+        observer = self.earth + self.location
+        ref_moon = observer.at(reference_time).observe(self.moon)
+        ref_sun = observer.at(reference_time).observe(self.sun)
+        ref_separation = ref_sun.separation_from(ref_moon).degrees
+
+        # Search for target separation (allowing for 360° wraparound)
+        target_separation = (ref_separation + target_angle_degrees) % 360
+
+        # Binary search for the target time (within ~30 days max)
+        search_start = reference_time
+        search_end = reference_time + timedelta(days=32)  # Full lunar cycle + buffer
+
+        # Convert to appropriate search range
+        for iteration in range(50):  # Max iterations to prevent infinite loop
+            search_mid = search_start + (search_end - search_start) * 0.5
+
+            mid_moon = observer.at(search_mid).observe(self.moon)
+            mid_sun = observer.at(search_mid).observe(self.sun)
+            mid_separation = mid_sun.separation_from(mid_moon).degrees
+
+            # Calculate angular difference considering 360° wraparound
+            angle_diff = abs(mid_separation - target_separation)
+            if angle_diff > 180:
+                angle_diff = 360 - angle_diff
+
+            # If we're close enough (within 0.1°), we found it
+            if angle_diff < 0.1:
+                return search_mid
+
+            # Determine which half to search next
+            # This is simplified - in reality, moon's motion is complex
+            if mid_separation < target_separation:
+                if target_separation - mid_separation < 180:
+                    search_start = search_mid
+                else:
+                    search_end = search_mid
+            else:
+                if mid_separation - target_separation < 180:
+                    search_end = search_mid
+                else:
+                    search_start = search_mid
+
+        # Fallback: if binary search fails, use approximate calculation
+        # Each degree takes roughly (29.53 days / 360°) = 0.082 days
+        days_per_degree = 29.53 / 360.0
+        approximate_days = target_angle_degrees * days_per_degree
+        return reference_time + timedelta(days=approximate_days)
+
+    def _format_duration(self, hours: float) -> str:
+        """
+        Format duration in hours to human-readable format.
+
+        Args:
+            hours: Duration in hours
+
+        Returns:
+            Human-readable duration string
+        """
+        if hours < 0:
+            return "0 minutes"
+
+        total_minutes = int(hours * 60)
+        days = total_minutes // (24 * 60)
+        remaining_minutes = total_minutes % (24 * 60)
+        hours_part = remaining_minutes // 60
+        minutes_part = remaining_minutes % 60
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
+        if hours_part > 0:
+            parts.append(f"{hours_part} hour{'s' if hours_part != 1 else ''}")
+        if minutes_part > 0 or not parts:  # Show minutes if it's the only unit or there are some
+            parts.append(f"{minutes_part} minute{'s' if minutes_part != 1 else ''}")
+
+        return " ".join(parts)
+
+    def calculate_lunar_day(self, target_date: date) -> int:
+        """
+        Calculate the lunar day for a given date.
+
+        Lunar day is numbered from 1 to 30, starting from the new moon.
+
+        Args:
+            target_date: Date to calculate lunar day for
+
+        Returns:
+            Lunar day number (1-30)
+        """
+        # Convert date to Skyfield time at noon UTC
+        target_time = self.ts.utc(target_date.year, target_date.month, target_date.day, 12)
+
+        # Find new moons around this date
+        new_moons = self._find_new_moons_around_date(target_date)
+
+        if not new_moons:
+            # Fallback calculation if no new moons found
+            reference_datetime = self.REFERENCE_NEW_MOON
+            target_datetime = datetime.combine(target_date, datetime.min.time()) + timedelta(hours=12)
+            days_since_reference = (target_datetime - reference_datetime).total_seconds() / 86400
+            cycles_passed = days_since_reference / self.LUNAR_MONTH
+            lunar_day = int((cycles_passed % 1) * 30) + 1
+            return min(max(lunar_day, 1), 30)
+
+        # Find the most recent new moon before or on target date
+        target_datetime = datetime.combine(target_date, datetime.min.time()) + timedelta(hours=12)
+        target_datetime = target_datetime.replace(tzinfo=pytz.UTC)  # Make timezone-aware
+
+        # Convert Skyfield times to timezone-aware datetime objects
+        new_moon_datetimes = [nm.utc_datetime().replace(tzinfo=pytz.UTC) for nm in new_moons]
+
+        # Find the new moon that starts the current lunar cycle
+        reference_new_moon = None
+        for nm_dt in new_moon_datetimes:
+            if nm_dt <= target_datetime:
+                reference_new_moon = nm_dt
+            else:
+                break
+
+        if reference_new_moon is None:
+            # Use the first new moon if target is before all new moons
+            reference_new_moon = new_moon_datetimes[0]
+
+        # Calculate days since the reference new moon
+        days_since_new_moon = (target_datetime - reference_new_moon).total_seconds() / 86400
+
+        # Lunar day is days since new moon + 1 (1-indexed)
+        lunar_day = int(days_since_new_moon) + 1
+
+        # Handle edge cases
+        if lunar_day < 1:
+            lunar_day = 1
+        elif lunar_day > 30:
+            lunar_day = 30
+
+        return lunar_day
+
+    def get_lunar_day_timing(self, target_date: date, lunar_day: int, timezone_str: str = "Europe/Moscow") -> LunarDayTiming:
+        """
+        Get the start and end times for a specific lunar day.
+
+        Args:
+            target_date: Date to get timing for
+            lunar_day: The lunar day number (1-30)
+            timezone_str: Timezone for local time conversion (default: Europe/Moscow)
+
+        Returns:
+            LunarDayTiming object with start/end times and duration
+        """
+        # Find new moons around this date
+        new_moons = self._find_new_moons_around_date(target_date)
+
+        if not new_moons:
+            # Fallback to mathematical calculation
+            reference_datetime = self.REFERENCE_NEW_MOON
+            target_datetime = datetime.combine(target_date, datetime.min.time()) + timedelta(hours=12)
+            days_since_reference = (target_datetime - reference_datetime).total_seconds() / 86400
+            cycles_passed = days_since_reference / self.LUNAR_MONTH
+            cycle_start = reference_datetime + timedelta(days=int(cycles_passed) * self.LUNAR_MONTH)
+            starts_at = cycle_start + timedelta(days=lunar_day - 1)
+            ends_at = starts_at + timedelta(days=1)  # Fallback to 24-hour days
+        else:
+            # Use precise astronomical lunar day calculations
+            target_datetime = datetime.combine(target_date, datetime.min.time()) + timedelta(hours=12)
+            target_datetime = target_datetime.replace(tzinfo=pytz.UTC)  # Make timezone-aware
+            new_moon_datetimes = [nm.utc_datetime().replace(tzinfo=pytz.UTC) for nm in new_moons]
+
+            # Find the appropriate new moon for this lunar cycle
+            reference_new_moon = None
+            for nm in new_moons:
+                nm_dt = nm.utc_datetime().replace(tzinfo=pytz.UTC)
+                if nm_dt <= target_datetime:
+                    reference_new_moon = nm
+                else:
+                    break
+
+            if reference_new_moon is None:
+                reference_new_moon = new_moons[0]
+
+            # Calculate astronomically accurate start and end times
+            starts_at, ends_at = self._calculate_astronomical_lunar_day_boundaries(reference_new_moon, lunar_day)
+
+            # Convert to timezone-naive for calculations
+            starts_at = starts_at.replace(tzinfo=None)
+            ends_at = ends_at.replace(tzinfo=None)
+
+        # Calculate duration
+        duration = (ends_at - starts_at).total_seconds() / 3600
+
+        # Check if this lunar day is currently active
+        now = datetime.utcnow()
+        is_current = starts_at <= now < ends_at
+
+        # Calculate time elapsed and remaining
+        time_elapsed_hours = None
+        time_remaining_hours = None
+        time_elapsed_readable = None
+        time_remaining_readable = None
+        progress_percentage = None
+
+        if is_current:
+            # Calculate time elapsed since start
+            elapsed_seconds = (now - starts_at).total_seconds()
+            time_elapsed_hours = elapsed_seconds / 3600
+
+            # Calculate time remaining until end
+            remaining_seconds = (ends_at - now).total_seconds()
+            time_remaining_hours = remaining_seconds / 3600
+
+            # Calculate progress percentage
+            total_seconds = (ends_at - starts_at).total_seconds()
+            progress_percentage = (elapsed_seconds / total_seconds) * 100
+
+            # Format human-readable durations
+            time_elapsed_readable = self._format_duration(time_elapsed_hours)
+            time_remaining_readable = self._format_duration(time_remaining_hours)
+        else:
+            # For non-current days, we can still calculate if it's in the past or future
+            if now < starts_at:
+                # Future lunar day - time until it starts
+                until_start_seconds = (starts_at - now).total_seconds()
+                time_remaining_hours = until_start_seconds / 3600
+                time_remaining_readable = f"Starts in {self._format_duration(time_remaining_hours)}"
+                time_elapsed_hours = 0.0
+                time_elapsed_readable = "Not started"
+                progress_percentage = 0.0
+            else:
+                # Past lunar day - has already ended
+                since_end_seconds = (now - ends_at).total_seconds()
+                time_elapsed_hours = duration + (since_end_seconds / 3600)
+                time_elapsed_readable = f"Ended {self._format_duration(since_end_seconds / 3600)} ago"
+                time_remaining_hours = 0.0
+                time_remaining_readable = "Completed"
+                progress_percentage = 100.0
+
+        # Convert to local timezone for human-readable display
+        local_tz = None
+        starts_at_local = None
+        ends_at_local = None
+
+        try:
+            if timezone_str and timezone_str != "UTC":
+                local_tz = pytz.timezone(timezone_str)
+
+                # Convert UTC times to local timezone
+                starts_at_utc = starts_at.replace(tzinfo=pytz.UTC)
+                ends_at_utc = ends_at.replace(tzinfo=pytz.UTC)
+
+                starts_at_local_dt = starts_at_utc.astimezone(local_tz)
+                ends_at_local_dt = ends_at_utc.astimezone(local_tz)
+
+                # Format as human-readable strings
+                starts_at_local = starts_at_local_dt.strftime("%A, %B %d, %Y at %I:%M:%S %p %Z")
+                ends_at_local = ends_at_local_dt.strftime("%A, %B %d, %Y at %I:%M:%S %p %Z")
+            else:
+                # For UTC, still provide a nice format
+                starts_at_local = starts_at.strftime("%A, %B %d, %Y at %H:%M:%S UTC")
+                ends_at_local = ends_at.strftime("%A, %B %d, %Y at %H:%M:%S UTC")
+                timezone_str = "UTC"
+
+        except Exception as e:
+            # Fallback to Moscow time if timezone conversion fails
+            try:
+                moscow_tz = pytz.timezone("Europe/Moscow")
+                starts_at_utc = starts_at.replace(tzinfo=pytz.UTC)
+                ends_at_utc = ends_at.replace(tzinfo=pytz.UTC)
+                starts_at_moscow = starts_at_utc.astimezone(moscow_tz)
+                ends_at_moscow = ends_at_utc.astimezone(moscow_tz)
+                starts_at_local = starts_at_moscow.strftime("%A, %B %d, %Y at %I:%M:%S %p %Z")
+                ends_at_local = ends_at_moscow.strftime("%A, %B %d, %Y at %I:%M:%S %p %Z")
+                timezone_str = "Europe/Moscow"
+            except:
+                # Final fallback to UTC
+                starts_at_local = starts_at.strftime("%A, %B %d, %Y at %H:%M:%S UTC")
+                ends_at_local = ends_at.strftime("%A, %B %d, %Y at %H:%M:%S UTC")
+                timezone_str = "UTC"
+
+        return LunarDayTiming(
+            starts_at=starts_at,
+            ends_at=ends_at,
+            duration_hours=round(duration, 2),
+            is_current=is_current,
+            starts_at_local=starts_at_local,
+            ends_at_local=ends_at_local,
+            timezone=timezone_str,
+            time_elapsed_hours=round(time_elapsed_hours, 2) if time_elapsed_hours is not None else None,
+            time_remaining_hours=round(time_remaining_hours, 2) if time_remaining_hours is not None else None,
+            time_elapsed_readable=time_elapsed_readable,
+            time_remaining_readable=time_remaining_readable,
+            progress_percentage=round(progress_percentage, 1) if progress_percentage is not None else None
+        )
+
+    def get_moon_phase(self, target_date: date) -> MoonPhase:
+        """
+        Get the moon phase for a given date using Skyfield.
+
+        Args:
+            target_date: Date to get moon phase for
+
+        Returns:
+            MoonPhase object with phase information
+        """
+        # Convert to Skyfield time at noon
+        target_time = self.ts.utc(target_date.year, target_date.month, target_date.day, 12)
+
+        # Calculate moon phase using correct Skyfield API
+        observer = self.earth + self.location
+        moon_pos = observer.at(target_time).observe(self.moon)
+        sun_pos = observer.at(target_time).observe(self.sun)
+
+        # Calculate phase angle (elongation)
+        elongation = sun_pos.separation_from(moon_pos)
+        elongation_degrees = elongation.degrees
+
+        # Calculate illumination percentage (0-100)
+        # For moon phases, we need the elongation from Earth's perspective
+        # Phase angle of 0° = 0% illuminated (new moon, sun and moon aligned)
+        # Phase angle of 180° = 100% illuminated (full moon, sun opposite moon)
+        # The formula should use (1 - cos) for proper phase calculation
+        illumination = (1 - np.cos(np.radians(elongation_degrees))) / 2 * 100
+
+        # Determine if waxing or waning by checking tomorrow's illumination
+        next_day_time = self.ts.utc(target_date.year, target_date.month, target_date.day + 1, 12)
+        next_moon_pos = observer.at(next_day_time).observe(self.moon)
+        next_sun_pos = observer.at(next_day_time).observe(self.sun)
+        next_elongation = next_sun_pos.separation_from(next_moon_pos)
+        next_illumination = (1 - np.cos(np.radians(next_elongation.degrees))) / 2 * 100
+
+        is_waxing = next_illumination > illumination
+
+        # Determine phase name and emoji
+        phase_name, emoji = self._get_phase_name_and_emoji(illumination, is_waxing)
+
+        return MoonPhase(
+            name=phase_name,
+            illumination=round(illumination, 2),
+            is_waxing=is_waxing,
+            emoji=emoji
+        )
+
+    def _get_phase_name_and_emoji(self, illumination: float, is_waxing: bool) -> Tuple[str, str]:
+        """
+        Determine phase name and emoji based on illumination percentage.
+
+        Args:
+            illumination: Moon illumination (0-100)
+            is_waxing: Whether moon is waxing
+
+        Returns:
+            Tuple of (phase_name, emoji)
+        """
+        if illumination < 1:
+            return ("New Moon", "🌑")
+        elif illumination < 45:
+            if is_waxing:
+                return ("Waxing Crescent", "🌒")
+            else:
+                return ("Waning Crescent", "🌘")
+        elif illumination < 55:
+            if is_waxing:
+                return ("First Quarter", "🌓")
+            else:
+                return ("Last Quarter", "🌗")
+        elif illumination < 99:
+            if is_waxing:
+                return ("Waxing Gibbous", "🌔")
+            else:
+                return ("Waning Gibbous", "🌖")
+        else:
+            return ("Full Moon", "🌕")
+
+    def get_next_phase_date(self, phase: str, after_date: Optional[date] = None) -> datetime:
+        """
+        Get the date of the next occurrence of a specific moon phase using Skyfield.
+
+        Args:
+            phase: Phase name ('new_moon', 'first_quarter', 'full_moon', 'last_quarter')
+            after_date: Date to search after (defaults to today)
+
+        Returns:
+            Datetime of the next phase occurrence
+        """
+        if after_date is None:
+            after_date = date.today()
+
+        # Search for the next 60 days
+        start_date = after_date
+        end_date = after_date + timedelta(days=60)
+
+        t0 = self.ts.utc(start_date.year, start_date.month, start_date.day)
+        t1 = self.ts.utc(end_date.year, end_date.month, end_date.day)
+
+        times, phases = find_discrete(t0, t1, moon_phases(self.eph))
+
+        # Map phase names to numbers
+        phase_map = {
+            'new_moon': 0,
+            'first_quarter': 1,
+            'full_moon': 2,
+            'last_quarter': 3,
+        }
+
+        if phase not in phase_map:
+            raise ValueError(f"Invalid phase: {phase}")
+
+        target_phase_num = phase_map[phase]
+
+        # Find the first occurrence of the target phase
+        for t, phase_num in zip(times, phases):
+            if phase_num == target_phase_num:
+                return t.utc_datetime().replace(tzinfo=None)
+
+        raise ValueError(f"No {phase} found in the next 60 days")

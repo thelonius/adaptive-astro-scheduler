@@ -1,0 +1,62 @@
+{
+  "extension": {
+    "name": "Лунный Календарь",
+    "description": "Отображение ежедневных цветовых палитр лунного календаря с астрономической точностью"
+  },
+  "popup": {
+    "title": "🌙 Лунный Календарь",
+    "loading": "Загрузка лунных данных...",
+    "error": "Не удается подключиться к API лунного календаря",
+    "retry": "Повторить",
+    "dayLabel": "Лунный День",
+    "progressLabel": "Прогресс Дня",
+    "copyFeedback": "Скопировано!",
+    "colorsLabel": {
+      "base": "Базовые Цвета",
+      "gradient": "Градиент"
+    }
+  },
+  "moonPhases": {
+    "newMoon": "Новолуние",
+    "waxingCrescent": "Растущий Серп",
+    "firstQuarter": "Первая Четверть",
+    "waxingGibbous": "Растущая Луна",
+    "fullMoon": "Полнолуние",
+    "waningGibbous": "Убывающая Луна",
+    "lastQuarter": "Последняя Четверть",
+    "waningCrescent": "Убывающий Серп"
+  },
+  "newTab": {
+    "title": "Лунный Календарь - Новая Вкладка",
+    "todayIs": "Сегодня",
+    "lunarDay": "Лунный День",
+    "moonPhase": "Фаза Луны",
+    "illumination": "Освещённость",
+    "timing": {
+      "started": "Начался",
+      "duration": "Продолжительность",
+      "remaining": "Осталось"
+    },
+    "health": {
+      "title": "Здоровье и Благополучие",
+      "affectedOrgans": "Затронутые Органы",
+      "bodyParts": "Части Тела",
+      "tips": "Советы по Здоровью"
+    },
+    "recommendations": {
+      "title": "Рекомендации",
+      "recommended": "Рекомендуется",
+      "notRecommended": "Не Рекомендуется"
+    },
+    "planetary": {
+      "title": "Планетарное Влияние",
+      "dominant": "Доминирующая Планета",
+      "additional": "Дополнительные Влияния"
+    }
+  },
+  "common": {
+    "hours": "часов",
+    "minutes": "минут",
+    "days": "дней"
+  }
+}

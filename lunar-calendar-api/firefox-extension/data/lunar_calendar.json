@@ -1,0 +1,2791 @@
+{
+  "generated_at": "2025-12-24",
+  "valid_from": "2025-11-24",
+  "valid_until": "2026-01-22",
+  "data": {
+    "2025-11-24": {
+      "lunar_day": 5,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 15.5,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#FFB6C1",
+          "#FF69B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-24T09:45:30.459394",
+        "ends_at": "2025-11-25T10:06:07.825847",
+        "duration_hours": 24.34
+      },
+      "recommendations": {
+        "do": [
+          "Travel",
+          "Movement",
+          "Learning",
+          "Active communication",
+          "Road trips"
+        ],
+        "avoid": [
+          "Staying home all day",
+          "Heavy meals",
+          "Sedentary activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "digestive system",
+          "esophagus"
+        ],
+        "body_parts": [
+          "stomach",
+          "abdomen"
+        ]
+      },
+      "description": "A day of movement and change. Favorable for journeys and new experiences.",
+      "planet": "Mercury"
+    },
+    "2025-11-25": {
+      "lunar_day": 6,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 23.15,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#87CEEB",
+          "#4682B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-25T10:06:07.825847",
+        "ends_at": "2025-11-26T10:19:30.727386",
+        "duration_hours": 24.22
+      },
+      "recommendations": {
+        "do": [
+          "Breathing practices",
+          "Pranayama",
+          "Outdoor activities",
+          "Speaking truth",
+          "Honest conversations"
+        ],
+        "avoid": [
+          "Lying",
+          "Deception",
+          "Staying indoors",
+          "Poor air quality"
+        ]
+      },
+      "health": {
+        "organs": [
+          "lungs",
+          "respiratory system"
+        ],
+        "body_parts": [
+          "chest",
+          "bronchi"
+        ]
+      },
+      "description": "A day of truth and breath. Focus on honesty and fresh air.",
+      "planet": "Venus"
+    },
+    "2025-11-26": {
+      "lunar_day": 7,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 32.01,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#DDA0DD",
+          "#BA55D3"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-26T10:19:30.727386",
+        "ends_at": "2025-11-27T10:28:52.431964",
+        "duration_hours": 24.16
+      },
+      "recommendations": {
+        "do": [
+          "Prayers",
+          "Spiritual practices",
+          "Mantras",
+          "Affirmations",
+          "Vocal work"
+        ],
+        "avoid": [
+          "Negative speech",
+          "Gossip",
+          "Harsh words",
+          "Silence (if avoiding truth)"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "cardiovascular system"
+        ],
+        "body_parts": [
+          "chest",
+          "heart area"
+        ]
+      },
+      "description": "A sacred day of words and prayers. What you say has power.",
+      "planet": "Sun"
+    },
+    "2025-11-27": {
+      "lunar_day": 8,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 41.83,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#F0E68C",
+          "#FFD700"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-27T10:28:52.431964",
+        "ends_at": "2025-11-28T10:36:07.429765",
+        "duration_hours": 24.12
+      },
+      "recommendations": {
+        "do": [
+          "Purification",
+          "Fasting",
+          "Detox",
+          "Energy work",
+          "Cleansing rituals"
+        ],
+        "avoid": [
+          "Overindulgence",
+          "Heavy foods",
+          "Alcohol",
+          "Toxic substances"
+        ]
+      },
+      "health": {
+        "organs": [
+          "liver",
+          "gallbladder"
+        ],
+        "body_parts": [
+          "right upper abdomen"
+        ]
+      },
+      "description": "A day of purification and transformation. Cleanse body and spirit.",
+      "planet": "Jupiter"
+    },
+    "2025-11-28": {
+      "lunar_day": 9,
+      "moon_phase": {
+        "name": "First Quarter",
+        "illumination": 52.3,
+        "is_waxing": true,
+        "emoji": "🌓"
+      },
+      "colors": {
+        "base": [
+          "#8B4513",
+          "#A0522D"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-28T10:36:07.429765",
+        "ends_at": "2025-11-29T10:42:29.372292",
+        "duration_hours": 24.11
+      },
+      "recommendations": {
+        "do": [
+          "Caution",
+          "Protection",
+          "Avoiding conflicts",
+          "Staying grounded",
+          "Defensive actions"
+        ],
+        "avoid": [
+          "Risky ventures",
+          "New projects",
+          "Confrontations",
+          "Unnecessary risks"
+        ]
+      },
+      "health": {
+        "organs": [
+          "intestines",
+          "digestive tract"
+        ],
+        "body_parts": [
+          "lower abdomen"
+        ]
+      },
+      "description": "A challenging day. Be cautious and protect yourself from negative influences.",
+      "planet": "Saturn"
+    },
+    "2025-11-29": {
+      "lunar_day": 10,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 63.02,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#F5DEB3",
+          "#DEB887"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-29T10:42:29.372292",
+        "ends_at": "2025-11-30T10:48:56.486346",
+        "duration_hours": 24.11
+      },
+      "recommendations": {
+        "do": [
+          "Family time",
+          "Home improvements",
+          "Tradition",
+          "Heritage",
+          "Ancestors work"
+        ],
+        "avoid": [
+          "Neglecting family",
+          "Breaking traditions",
+          "Spine-straining activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "spine",
+          "skeletal system"
+        ],
+        "body_parts": [
+          "back",
+          "spinal column"
+        ]
+      },
+      "description": "A day of family and traditions. Connect with your roots.",
+      "planet": "Moon"
+    },
+    "2025-11-30": {
+      "lunar_day": 11,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 73.46,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF6347",
+          "#DC143C"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-11-30T10:48:56.486346",
+        "ends_at": "2025-12-01T10:56:30.684687",
+        "duration_hours": 24.13
+      },
+      "recommendations": {
+        "do": [
+          "Power work",
+          "Kundalini",
+          "Sexual energy",
+          "Magic practices",
+          "Deep meditation"
+        ],
+        "avoid": [
+          "Scattered energy",
+          "Weakness",
+          "Giving up power",
+          "Superficial activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "kidneys"
+        ],
+        "body_parts": [
+          "lower back",
+          "pelvic area"
+        ]
+      },
+      "description": "A day of power and transformation. Work with deep energies.",
+      "planet": "Pluto"
+    },
+    "2025-12-01": {
+      "lunar_day": 12,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 83.01,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF1493",
+          "#FF69B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-01T10:56:30.684687",
+        "ends_at": "2025-12-02T11:06:40.337788",
+        "duration_hours": 24.17
+      },
+      "recommendations": {
+        "do": [
+          "Love",
+          "Compassion",
+          "Forgiveness",
+          "Charity",
+          "Helping others"
+        ],
+        "avoid": [
+          "Hatred",
+          "Revenge",
+          "Cruelty",
+          "Selfishness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "circulatory system"
+        ],
+        "body_parts": [
+          "chest",
+          "upper body"
+        ]
+      },
+      "description": "A day of love and compassion. Open your heart to others.",
+      "planet": "Venus"
+    },
+    "2025-12-02": {
+      "lunar_day": 13,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 90.97,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF8C00",
+          "#FFA500"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-02T11:06:40.337788",
+        "ends_at": "2025-12-03T11:22:00.982080",
+        "duration_hours": 24.26
+      },
+      "recommendations": {
+        "do": [
+          "Activity",
+          "Movement",
+          "Dancing",
+          "Celebration",
+          "Social events"
+        ],
+        "avoid": [
+          "Laziness",
+          "Isolation",
+          "Heavy foods",
+          "Sadness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "stomach",
+          "digestive fire"
+        ],
+        "body_parts": [
+          "solar plexus"
+        ]
+      },
+      "description": "A day of movement and joy. Dance and celebrate life.",
+      "planet": "Sun"
+    },
+    "2025-12-03": {
+      "lunar_day": 14,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 96.66,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#4169E1",
+          "#0000CD"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-03T11:22:00.982080",
+        "ends_at": "2025-12-04T11:47:33.913938",
+        "duration_hours": 24.43
+      },
+      "recommendations": {
+        "do": [
+          "Communication",
+          "Calling",
+          "Important talks",
+          "Negotiations",
+          "Speaking up"
+        ],
+        "avoid": [
+          "Silence when voice needed",
+          "Avoiding communication",
+          "Suppression"
+        ]
+      },
+      "health": {
+        "organs": [
+          "throat",
+          "communication center"
+        ],
+        "body_parts": [
+          "neck",
+          "shoulders"
+        ]
+      },
+      "description": "A day of communication. Speak your truth and make important calls.",
+      "planet": "Mercury"
+    },
+    "2025-12-04": {
+      "lunar_day": 15,
+      "moon_phase": {
+        "name": "Full Moon",
+        "illumination": 99.56,
+        "is_waxing": false,
+        "emoji": "🌕"
+      },
+      "colors": {
+        "base": [
+          "#8B008B",
+          "#9370DB"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-04T11:47:33.913938",
+        "ends_at": "2025-12-05T12:32:02.854682",
+        "duration_hours": 24.74
+      },
+      "recommendations": {
+        "do": [
+          "Dealing with temptations",
+          "Shadow work",
+          "Facing fears",
+          "Transformation"
+        ],
+        "avoid": [
+          "Giving in to vices",
+          "Excess",
+          "Avoidance",
+          "Denial"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "creative organs"
+        ],
+        "body_parts": [
+          "lower abdomen",
+          "sacral area"
+        ]
+      },
+      "description": "A challenging day of illusions and temptations. Face your shadows.",
+      "planet": "Moon"
+    },
+    "2025-12-05": {
+      "lunar_day": 15,
+      "moon_phase": {
+        "name": "Full Moon",
+        "illumination": 99.42,
+        "is_waxing": false,
+        "emoji": "🌕"
+      },
+      "colors": {
+        "base": [
+          "#8B008B",
+          "#9370DB"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-04T11:47:33.913938",
+        "ends_at": "2025-12-05T12:32:02.854682",
+        "duration_hours": 24.74
+      },
+      "recommendations": {
+        "do": [
+          "Dealing with temptations",
+          "Shadow work",
+          "Facing fears",
+          "Transformation"
+        ],
+        "avoid": [
+          "Giving in to vices",
+          "Excess",
+          "Avoidance",
+          "Denial"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "creative organs"
+        ],
+        "body_parts": [
+          "lower abdomen",
+          "sacral area"
+        ]
+      },
+      "description": "A challenging day of illusions and temptations. Face your shadows.",
+      "planet": "Moon"
+    },
+    "2025-12-06": {
+      "lunar_day": 16,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 96.3,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#E6E6FA",
+          "#D8BFD8"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-05T12:32:02.854682",
+        "ends_at": "2025-12-06T13:43:04.174236",
+        "duration_hours": 25.18
+      },
+      "recommendations": {
+        "do": [
+          "Peace",
+          "Harmony",
+          "Moderation",
+          "Balance",
+          "Equanimity"
+        ],
+        "avoid": [
+          "Extremes",
+          "Excess",
+          "Agitation",
+          "Conflict"
+        ]
+      },
+      "health": {
+        "organs": [
+          "nervous system",
+          "brain"
+        ],
+        "body_parts": [
+          "head",
+          "nerves"
+        ]
+      },
+      "description": "A day of harmony and balance. Find your center.",
+      "planet": "Venus"
+    },
+    "2025-12-07": {
+      "lunar_day": 17,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 90.58,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#20B2AA",
+          "#48D1CC"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-06T13:43:04.174236",
+        "ends_at": "2025-12-07T15:14:30.490163",
+        "duration_hours": 25.52
+      },
+      "recommendations": {
+        "do": [
+          "Intimacy",
+          "Deep connections",
+          "Relationships",
+          "Sexuality",
+          "Emotional bonding"
+        ],
+        "avoid": [
+          "Superficiality",
+          "Casual encounters",
+          "Emotional distance"
+        ]
+      },
+      "health": {
+        "organs": [
+          "kidneys",
+          "bladder"
+        ],
+        "body_parts": [
+          "lower back",
+          "urinary system"
+        ]
+      },
+      "description": "A day of intimacy and deep connection. Favorable for relationships.",
+      "planet": "Venus"
+    },
+    "2025-12-08": {
+      "lunar_day": 18,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 82.86,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#CD853F",
+          "#8B4513"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-07T15:14:30.490163",
+        "ends_at": "2025-12-08T16:51:20.535173",
+        "duration_hours": 25.61
+      },
+      "recommendations": {
+        "do": [
+          "Passivity",
+          "Observation",
+          "Patience",
+          "Letting go",
+          "Rest"
+        ],
+        "avoid": [
+          "Aggression",
+          "Forcing outcomes",
+          "Impatience",
+          "Holding on"
+        ]
+      },
+      "health": {
+        "organs": [
+          "colon",
+          "elimination system"
+        ],
+        "body_parts": [
+          "lower abdomen"
+        ]
+      },
+      "description": "A passive day. Observe, wait, and let things unfold naturally.",
+      "planet": "Saturn"
+    },
+    "2025-12-09": {
+      "lunar_day": 19,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 73.76,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#B22222",
+          "#8B0000"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-08T16:51:20.535173",
+        "ends_at": "2025-12-09T18:24:17.597258",
+        "duration_hours": 25.55
+      },
+      "recommendations": {
+        "do": [
+          "Caution",
+          "Avoiding trouble",
+          "Protection",
+          "Staying safe",
+          "Low profile"
+        ],
+        "avoid": [
+          "Risks",
+          "Adventures",
+          "Alcohol",
+          "New ventures",
+          "Conflicts"
+        ]
+      },
+      "health": {
+        "organs": [
+          "liver",
+          "blood"
+        ],
+        "body_parts": [
+          "right side of body"
+        ]
+      },
+      "description": "A dangerous day. Stay alert, avoid risks and conflicts.",
+      "planet": "Mars"
+    },
+    "2025-12-10": {
+      "lunar_day": 20,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 63.89,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#FFFACD",
+          "#FFFFE0"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-09T18:24:17.597258",
+        "ends_at": "2025-12-10T19:51:03.838100",
+        "duration_hours": 25.45
+      },
+      "recommendations": {
+        "do": [
+          "Spiritual growth",
+          "Meditation",
+          "Self-work",
+          "Ascension practices",
+          "Letting go"
+        ],
+        "avoid": [
+          "Materialism",
+          "Greed",
+          "Attachment",
+          "Resistance"
+        ]
+      },
+      "health": {
+        "organs": [
+          "upper spine",
+          "shoulders"
+        ],
+        "body_parts": [
+          "upper back",
+          "shoulder area"
+        ]
+      },
+      "description": "A day of spiritual ascension. Rise above material concerns.",
+      "planet": "Jupiter"
+    },
+    "2025-12-11": {
+      "lunar_day": 21,
+      "moon_phase": {
+        "name": "Last Quarter",
+        "illumination": 53.78,
+        "is_waxing": false,
+        "emoji": "🌗"
+      },
+      "colors": {
+        "base": [
+          "#00CED1",
+          "#00BFFF"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-10T19:51:03.838100",
+        "ends_at": "2025-12-11T21:12:38.187734",
+        "duration_hours": 25.36
+      },
+      "recommendations": {
+        "do": [
+          "Courage",
+          "Boldness",
+          "Action",
+          "Sports",
+          "Competition"
+        ],
+        "avoid": [
+          "Fear",
+          "Hesitation",
+          "Passivity",
+          "Weakness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "respiratory system",
+          "lungs"
+        ],
+        "body_parts": [
+          "chest",
+          "lungs"
+        ]
+      },
+      "description": "A day of courage and victory. Take bold action.",
+      "planet": "Mars"
+    },
+    "2025-12-12": {
+      "lunar_day": 22,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 43.83,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#32CD32",
+          "#228B22"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-11T21:12:38.187734",
+        "ends_at": "2025-12-12T22:30:59.329767",
+        "duration_hours": 25.31
+      },
+      "recommendations": {
+        "do": [
+          "Learning",
+          "Teaching",
+          "Knowledge",
+          "Wisdom",
+          "Study"
+        ],
+        "avoid": [
+          "Ignorance",
+          "Refusing to learn",
+          "Close-mindedness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "entire skeletal system"
+        ],
+        "body_parts": [
+          "bones",
+          "joints"
+        ]
+      },
+      "description": "A day of knowledge and wisdom. Learn and teach.",
+      "planet": "Mercury"
+    },
+    "2025-12-13": {
+      "lunar_day": 23,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 34.37,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#8B0000",
+          "#DC143C"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-12T22:30:59.329767",
+        "ends_at": "2025-12-13T23:48:09.492140",
+        "duration_hours": 25.29
+      },
+      "recommendations": {
+        "do": [
+          "Forgiveness",
+          "Repentance",
+          "Karmic work",
+          "Release",
+          "Transformation"
+        ],
+        "avoid": [
+          "Revenge",
+          "Holding grudges",
+          "Sexual excess",
+          "Violence"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive organs",
+          "sexual system"
+        ],
+        "body_parts": [
+          "pelvic area",
+          "genitals"
+        ]
+      },
+      "description": "A heavy day of karma and transformation. Forgive and release.",
+      "planet": "Pluto"
+    },
+    "2025-12-14": {
+      "lunar_day": 24,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 25.67,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#FFC0CB",
+          "#FFB6C1"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-13T23:48:09.492140",
+        "ends_at": "2025-12-15T01:05:50.087219",
+        "duration_hours": 25.29
+      },
+      "recommendations": {
+        "do": [
+          "Awakening",
+          "New awareness",
+          "Creativity",
+          "Inspiration",
+          "Art"
+        ],
+        "avoid": [
+          "Sleeping through opportunities",
+          "Ignoring signs",
+          "Suppressing creativity"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "chest"
+        ],
+        "body_parts": [
+          "chest area",
+          "breasts"
+        ]
+      },
+      "description": "A day of awakening and creativity. Express yourself artistically.",
+      "planet": "Venus"
+    },
+    "2025-12-15": {
+      "lunar_day": 25,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 17.95,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#4B0082",
+          "#483D8B"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-15T01:05:50.087219",
+        "ends_at": "2025-12-16T02:24:59.428789",
+        "duration_hours": 25.32
+      },
+      "recommendations": {
+        "do": [
+          "Introspection",
+          "Deep meditation",
+          "Third eye work",
+          "Visions",
+          "Intuition"
+        ],
+        "avoid": [
+          "External focus only",
+          "Ignoring inner voice",
+          "Eye strain"
+        ]
+      },
+      "health": {
+        "organs": [
+          "eyes",
+          "vision"
+        ],
+        "body_parts": [
+          "eyes",
+          "forehead"
+        ]
+      },
+      "description": "A day of inner vision and intuition. Look within.",
+      "planet": "Neptune"
+    },
+    "2025-12-16": {
+      "lunar_day": 26,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 11.41,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#696969",
+          "#808080"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-16T02:24:59.428789",
+        "ends_at": "2025-12-17T03:45:14.283260",
+        "duration_hours": 25.34
+      },
+      "recommendations": {
+        "do": [
+          "Rest",
+          "Recovery",
+          "Low-key activities",
+          "Contemplation",
+          "Solitude"
+        ],
+        "avoid": [
+          "Important decisions",
+          "New beginnings",
+          "Social events",
+          "Overwork"
+        ]
+      },
+      "health": {
+        "organs": [
+          "spine",
+          "central nervous system"
+        ],
+        "body_parts": [
+          "back",
+          "spine"
+        ]
+      },
+      "description": "A tired day. Rest and recover, avoid important activities.",
+      "planet": "Saturn"
+    },
+    "2025-12-17": {
+      "lunar_day": 27,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 6.22,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#FFD700",
+          "#FFA500"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-17T03:45:14.283260",
+        "ends_at": "2025-12-18T05:03:46.552128",
+        "duration_hours": 25.31
+      },
+      "recommendations": {
+        "do": [
+          "Travel",
+          "Pilgrimages",
+          "Spiritual journeys",
+          "Exploration",
+          "Adventure"
+        ],
+        "avoid": [
+          "Staying put",
+          "Routine",
+          "Stagnation",
+          "Refusing movement"
+        ]
+      },
+      "health": {
+        "organs": [
+          "circulatory system"
+        ],
+        "body_parts": [
+          "blood vessels",
+          "circulation"
+        ]
+      },
+      "description": "A day of journeys and exploration. Travel or explore spiritually.",
+      "planet": "Jupiter"
+    },
+    "2025-12-18": {
+      "lunar_day": 28,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 2.57,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#E0FFFF",
+          "#F0F8FF"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-18T05:03:46.552128",
+        "ends_at": "2025-12-19T06:14:31.040512",
+        "duration_hours": 25.18
+      },
+      "recommendations": {
+        "do": [
+          "Construction",
+          "Building",
+          "Real estate",
+          "Foundation work",
+          "Planning future"
+        ],
+        "avoid": [
+          "Destruction",
+          "Demolition",
+          "Tearing down",
+          "Giving up on plans"
+        ]
+      },
+      "health": {
+        "organs": [
+          "lymphatic system"
+        ],
+        "body_parts": [
+          "lymph nodes",
+          "immune system"
+        ]
+      },
+      "description": "A day of building and construction. Create solid foundations.",
+      "planet": "Saturn"
+    },
+    "2025-12-19": {
+      "lunar_day": 29,
+      "moon_phase": {
+        "name": "New Moon",
+        "illumination": 0.58,
+        "is_waxing": false,
+        "emoji": "🌑"
+      },
+      "colors": {
+        "base": [
+          "#2F4F4F",
+          "#696969"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-19T06:14:31.040512",
+        "ends_at": "2025-12-20T07:10:03.793588",
+        "duration_hours": 24.93
+      },
+      "recommendations": {
+        "do": [
+          "Completion",
+          "Finishing projects",
+          "Tying loose ends",
+          "Careful review"
+        ],
+        "avoid": [
+          "New beginnings",
+          "Major decisions",
+          "Risks",
+          "Adventures"
+        ]
+      },
+      "health": {
+        "organs": [
+          "all organs",
+          "entire body"
+        ],
+        "body_parts": [
+          "whole body"
+        ]
+      },
+      "description": "A heavy, difficult day. Complete what's necessary, avoid new ventures.",
+      "planet": "Saturn"
+    },
+    "2025-12-20": {
+      "lunar_day": 2,
+      "moon_phase": {
+        "name": "New Moon",
+        "illumination": 0.38,
+        "is_waxing": true,
+        "emoji": "🌑"
+      },
+      "colors": {
+        "base": [
+          "#E8F4F8",
+          "#D4E9F7"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-20T07:10:03.793588",
+        "ends_at": "2025-12-21T07:47:45.927606",
+        "duration_hours": 24.63
+      },
+      "recommendations": {
+        "do": [
+          "Planning",
+          "Learning new things",
+          "Gentle exercise",
+          "Dental care",
+          "Communication"
+        ],
+        "avoid": [
+          "Impulsive decisions",
+          "Overeating",
+          "Dental surgery",
+          "Arguments"
+        ]
+      },
+      "health": {
+        "organs": [
+          "mouth",
+          "teeth",
+          "esophagus"
+        ],
+        "body_parts": [
+          "jaw",
+          "oral cavity"
+        ]
+      },
+      "description": "A day for planning and preparation. Energy is building gradually.",
+      "planet": "Mercury"
+    },
+    "2025-12-21": {
+      "lunar_day": 3,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 2.02,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#FFE5B4",
+          "#FFD700"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-21T07:47:45.927606",
+        "ends_at": "2025-12-22T08:11:30.231528",
+        "duration_hours": 24.4
+      },
+      "recommendations": {
+        "do": [
+          "Physical activity",
+          "Combat sports",
+          "Assertive actions",
+          "Standing your ground",
+          "Competitions"
+        ],
+        "avoid": [
+          "Passive behavior",
+          "Ignoring problems",
+          "Postponing actions"
+        ]
+      },
+      "health": {
+        "organs": [
+          "ears",
+          "auditory system"
+        ],
+        "body_parts": [
+          "ears",
+          "hearing organs"
+        ]
+      },
+      "description": "A warrior's day. Time for active work and overcoming obstacles.",
+      "planet": "Mars"
+    },
+    "2025-12-22": {
+      "lunar_day": 4,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 5.52,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#98FB98",
+          "#7CFC00"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-22T08:11:30.231528",
+        "ends_at": "2025-12-23T08:26:37.628900",
+        "duration_hours": 24.25
+      },
+      "recommendations": {
+        "do": [
+          "Important decisions",
+          "Solitude",
+          "Meditation",
+          "Introspection",
+          "Strategic planning"
+        ],
+        "avoid": [
+          "Social gatherings",
+          "Starting conflicts",
+          "Impulsive actions"
+        ]
+      },
+      "health": {
+        "organs": [
+          "throat",
+          "thyroid",
+          "larynx"
+        ],
+        "body_parts": [
+          "neck",
+          "throat",
+          "vocal cords"
+        ]
+      },
+      "description": "A day of crossroads and important decisions. Time for solitary reflection.",
+      "planet": "Saturn"
+    },
+    "2025-12-23": {
+      "lunar_day": 5,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 10.84,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#FFB6C1",
+          "#FF69B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-23T08:26:37.628900",
+        "ends_at": "2025-12-24T08:36:53.276415",
+        "duration_hours": 24.17
+      },
+      "recommendations": {
+        "do": [
+          "Travel",
+          "Movement",
+          "Learning",
+          "Active communication",
+          "Road trips"
+        ],
+        "avoid": [
+          "Staying home all day",
+          "Heavy meals",
+          "Sedentary activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "digestive system",
+          "esophagus"
+        ],
+        "body_parts": [
+          "stomach",
+          "abdomen"
+        ]
+      },
+      "description": "A day of movement and change. Favorable for journeys and new experiences.",
+      "planet": "Mercury"
+    },
+    "2025-12-24": {
+      "lunar_day": 6,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 17.84,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#87CEEB",
+          "#4682B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-24T08:36:53.276415",
+        "ends_at": "2025-12-25T08:44:30.651846",
+        "duration_hours": 24.13
+      },
+      "recommendations": {
+        "do": [
+          "Breathing practices",
+          "Pranayama",
+          "Outdoor activities",
+          "Speaking truth",
+          "Honest conversations"
+        ],
+        "avoid": [
+          "Lying",
+          "Deception",
+          "Staying indoors",
+          "Poor air quality"
+        ]
+      },
+      "health": {
+        "organs": [
+          "lungs",
+          "respiratory system"
+        ],
+        "body_parts": [
+          "chest",
+          "bronchi"
+        ]
+      },
+      "description": "A day of truth and breath. Focus on honesty and fresh air.",
+      "planet": "Venus"
+    },
+    "2025-12-25": {
+      "lunar_day": 7,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 26.36,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#DDA0DD",
+          "#BA55D3"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-25T08:44:30.651846",
+        "ends_at": "2025-12-26T08:50:51.595988",
+        "duration_hours": 24.11
+      },
+      "recommendations": {
+        "do": [
+          "Prayers",
+          "Spiritual practices",
+          "Mantras",
+          "Affirmations",
+          "Vocal work"
+        ],
+        "avoid": [
+          "Negative speech",
+          "Gossip",
+          "Harsh words",
+          "Silence (if avoiding truth)"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "cardiovascular system"
+        ],
+        "body_parts": [
+          "chest",
+          "heart area"
+        ]
+      },
+      "description": "A sacred day of words and prayers. What you say has power.",
+      "planet": "Sun"
+    },
+    "2025-12-26": {
+      "lunar_day": 8,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 36.12,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#F0E68C",
+          "#FFD700"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-26T08:50:51.595988",
+        "ends_at": "2025-12-27T08:56:54.903774",
+        "duration_hours": 24.1
+      },
+      "recommendations": {
+        "do": [
+          "Purification",
+          "Fasting",
+          "Detox",
+          "Energy work",
+          "Cleansing rituals"
+        ],
+        "avoid": [
+          "Overindulgence",
+          "Heavy foods",
+          "Alcohol",
+          "Toxic substances"
+        ]
+      },
+      "health": {
+        "organs": [
+          "liver",
+          "gallbladder"
+        ],
+        "body_parts": [
+          "right upper abdomen"
+        ]
+      },
+      "description": "A day of purification and transformation. Cleanse body and spirit.",
+      "planet": "Jupiter"
+    },
+    "2025-12-27": {
+      "lunar_day": 9,
+      "moon_phase": {
+        "name": "First Quarter",
+        "illumination": 46.78,
+        "is_waxing": true,
+        "emoji": "🌓"
+      },
+      "colors": {
+        "base": [
+          "#8B4513",
+          "#A0522D"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-27T08:56:54.903774",
+        "ends_at": "2025-12-28T09:03:35.444712",
+        "duration_hours": 24.11
+      },
+      "recommendations": {
+        "do": [
+          "Caution",
+          "Protection",
+          "Avoiding conflicts",
+          "Staying grounded",
+          "Defensive actions"
+        ],
+        "avoid": [
+          "Risky ventures",
+          "New projects",
+          "Confrontations",
+          "Unnecessary risks"
+        ]
+      },
+      "health": {
+        "organs": [
+          "intestines",
+          "digestive tract"
+        ],
+        "body_parts": [
+          "lower abdomen"
+        ]
+      },
+      "description": "A challenging day. Be cautious and protect yourself from negative influences.",
+      "planet": "Saturn"
+    },
+    "2025-12-28": {
+      "lunar_day": 10,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 57.89,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#F5DEB3",
+          "#DEB887"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-28T09:03:35.444712",
+        "ends_at": "2025-12-29T09:12:02.413678",
+        "duration_hours": 24.14
+      },
+      "recommendations": {
+        "do": [
+          "Family time",
+          "Home improvements",
+          "Tradition",
+          "Heritage",
+          "Ancestors work"
+        ],
+        "avoid": [
+          "Neglecting family",
+          "Breaking traditions",
+          "Spine-straining activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "spine",
+          "skeletal system"
+        ],
+        "body_parts": [
+          "back",
+          "spinal column"
+        ]
+      },
+      "description": "A day of family and traditions. Connect with your roots.",
+      "planet": "Moon"
+    },
+    "2025-12-29": {
+      "lunar_day": 11,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 68.89,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF6347",
+          "#DC143C"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-29T09:12:02.413678",
+        "ends_at": "2025-12-30T09:24:07.482728",
+        "duration_hours": 24.2
+      },
+      "recommendations": {
+        "do": [
+          "Power work",
+          "Kundalini",
+          "Sexual energy",
+          "Magic practices",
+          "Deep meditation"
+        ],
+        "avoid": [
+          "Scattered energy",
+          "Weakness",
+          "Giving up power",
+          "Superficial activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "kidneys"
+        ],
+        "body_parts": [
+          "lower back",
+          "pelvic area"
+        ]
+      },
+      "description": "A day of power and transformation. Work with deep energies.",
+      "planet": "Pluto"
+    },
+    "2025-12-30": {
+      "lunar_day": 12,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 79.15,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF1493",
+          "#FF69B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-30T09:24:07.482728",
+        "ends_at": "2025-12-31T09:43:20.265934",
+        "duration_hours": 24.32
+      },
+      "recommendations": {
+        "do": [
+          "Love",
+          "Compassion",
+          "Forgiveness",
+          "Charity",
+          "Helping others"
+        ],
+        "avoid": [
+          "Hatred",
+          "Revenge",
+          "Cruelty",
+          "Selfishness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "circulatory system"
+        ],
+        "body_parts": [
+          "chest",
+          "upper body"
+        ]
+      },
+      "description": "A day of love and compassion. Open your heart to others.",
+      "planet": "Venus"
+    },
+    "2025-12-31": {
+      "lunar_day": 13,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 87.95,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#FF8C00",
+          "#FFA500"
+        ]
+      },
+      "timing": {
+        "starts_at": "2025-12-31T09:43:20.265934",
+        "ends_at": "2026-01-01T10:16:22.282422",
+        "duration_hours": 24.55
+      },
+      "recommendations": {
+        "do": [
+          "Activity",
+          "Movement",
+          "Dancing",
+          "Celebration",
+          "Social events"
+        ],
+        "avoid": [
+          "Laziness",
+          "Isolation",
+          "Heavy foods",
+          "Sadness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "stomach",
+          "digestive fire"
+        ],
+        "body_parts": [
+          "solar plexus"
+        ]
+      },
+      "description": "A day of movement and joy. Dance and celebrate life.",
+      "planet": "Sun"
+    },
+    "2026-01-01": {
+      "lunar_day": 14,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 94.65,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#4169E1",
+          "#0000CD"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-01T10:16:22.282422",
+        "ends_at": "2026-01-02T11:12:52.262868",
+        "duration_hours": 24.94
+      },
+      "recommendations": {
+        "do": [
+          "Communication",
+          "Calling",
+          "Important talks",
+          "Negotiations",
+          "Speaking up"
+        ],
+        "avoid": [
+          "Silence when voice needed",
+          "Avoiding communication",
+          "Suppression"
+        ]
+      },
+      "health": {
+        "organs": [
+          "throat",
+          "communication center"
+        ],
+        "body_parts": [
+          "neck",
+          "shoulders"
+        ]
+      },
+      "description": "A day of communication. Speak your truth and make important calls.",
+      "planet": "Mercury"
+    },
+    "2026-01-02": {
+      "lunar_day": 15,
+      "moon_phase": {
+        "name": "Waxing Gibbous",
+        "illumination": 98.72,
+        "is_waxing": true,
+        "emoji": "🌔"
+      },
+      "colors": {
+        "base": [
+          "#8B008B",
+          "#9370DB"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-02T11:12:52.262868",
+        "ends_at": "2026-01-03T12:35:45.075484",
+        "duration_hours": 25.38
+      },
+      "recommendations": {
+        "do": [
+          "Dealing with temptations",
+          "Shadow work",
+          "Facing fears",
+          "Transformation"
+        ],
+        "avoid": [
+          "Giving in to vices",
+          "Excess",
+          "Avoidance",
+          "Denial"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "creative organs"
+        ],
+        "body_parts": [
+          "lower abdomen",
+          "sacral area"
+        ]
+      },
+      "description": "A challenging day of illusions and temptations. Face your shadows.",
+      "planet": "Moon"
+    },
+    "2026-01-03": {
+      "lunar_day": 15,
+      "moon_phase": {
+        "name": "Full Moon",
+        "illumination": 99.9,
+        "is_waxing": false,
+        "emoji": "🌕"
+      },
+      "colors": {
+        "base": [
+          "#8B008B",
+          "#9370DB"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-02T11:12:52.262868",
+        "ends_at": "2026-01-03T12:35:45.075484",
+        "duration_hours": 25.38
+      },
+      "recommendations": {
+        "do": [
+          "Dealing with temptations",
+          "Shadow work",
+          "Facing fears",
+          "Transformation"
+        ],
+        "avoid": [
+          "Giving in to vices",
+          "Excess",
+          "Avoidance",
+          "Denial"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive system",
+          "creative organs"
+        ],
+        "body_parts": [
+          "lower abdomen",
+          "sacral area"
+        ]
+      },
+      "description": "A challenging day of illusions and temptations. Face your shadows.",
+      "planet": "Moon"
+    },
+    "2026-01-04": {
+      "lunar_day": 16,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 98.21,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#E6E6FA",
+          "#D8BFD8"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-03T12:35:45.075484",
+        "ends_at": "2026-01-04T14:13:05.429201",
+        "duration_hours": 25.62
+      },
+      "recommendations": {
+        "do": [
+          "Peace",
+          "Harmony",
+          "Moderation",
+          "Balance",
+          "Equanimity"
+        ],
+        "avoid": [
+          "Extremes",
+          "Excess",
+          "Agitation",
+          "Conflict"
+        ]
+      },
+      "health": {
+        "organs": [
+          "nervous system",
+          "brain"
+        ],
+        "body_parts": [
+          "head",
+          "nerves"
+        ]
+      },
+      "description": "A day of harmony and balance. Find your center.",
+      "planet": "Venus"
+    },
+    "2026-01-05": {
+      "lunar_day": 17,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 93.94,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#20B2AA",
+          "#48D1CC"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-04T14:13:05.429201",
+        "ends_at": "2026-01-05T15:51:09.331505",
+        "duration_hours": 25.63
+      },
+      "recommendations": {
+        "do": [
+          "Intimacy",
+          "Deep connections",
+          "Relationships",
+          "Sexuality",
+          "Emotional bonding"
+        ],
+        "avoid": [
+          "Superficiality",
+          "Casual encounters",
+          "Emotional distance"
+        ]
+      },
+      "health": {
+        "organs": [
+          "kidneys",
+          "bladder"
+        ],
+        "body_parts": [
+          "lower back",
+          "urinary system"
+        ]
+      },
+      "description": "A day of intimacy and deep connection. Favorable for relationships.",
+      "planet": "Venus"
+    },
+    "2026-01-06": {
+      "lunar_day": 18,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 87.58,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#CD853F",
+          "#8B4513"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-05T15:51:09.331505",
+        "ends_at": "2026-01-06T17:23:47.265752",
+        "duration_hours": 25.54
+      },
+      "recommendations": {
+        "do": [
+          "Passivity",
+          "Observation",
+          "Patience",
+          "Letting go",
+          "Rest"
+        ],
+        "avoid": [
+          "Aggression",
+          "Forcing outcomes",
+          "Impatience",
+          "Holding on"
+        ]
+      },
+      "health": {
+        "organs": [
+          "colon",
+          "elimination system"
+        ],
+        "body_parts": [
+          "lower abdomen"
+        ]
+      },
+      "description": "A passive day. Observe, wait, and let things unfold naturally.",
+      "planet": "Saturn"
+    },
+    "2026-01-07": {
+      "lunar_day": 19,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 79.67,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#B22222",
+          "#8B0000"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-06T17:23:47.265752",
+        "ends_at": "2026-01-07T18:50:17.933715",
+        "duration_hours": 25.44
+      },
+      "recommendations": {
+        "do": [
+          "Caution",
+          "Avoiding trouble",
+          "Protection",
+          "Staying safe",
+          "Low profile"
+        ],
+        "avoid": [
+          "Risks",
+          "Adventures",
+          "Alcohol",
+          "New ventures",
+          "Conflicts"
+        ]
+      },
+      "health": {
+        "organs": [
+          "liver",
+          "blood"
+        ],
+        "body_parts": [
+          "right side of body"
+        ]
+      },
+      "description": "A dangerous day. Stay alert, avoid risks and conflicts.",
+      "planet": "Mars"
+    },
+    "2026-01-08": {
+      "lunar_day": 20,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 70.74,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#FFFACD",
+          "#FFFFE0"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-07T18:50:17.933715",
+        "ends_at": "2026-01-08T20:12:12.073586",
+        "duration_hours": 25.37
+      },
+      "recommendations": {
+        "do": [
+          "Spiritual growth",
+          "Meditation",
+          "Self-work",
+          "Ascension practices",
+          "Letting go"
+        ],
+        "avoid": [
+          "Materialism",
+          "Greed",
+          "Attachment",
+          "Resistance"
+        ]
+      },
+      "health": {
+        "organs": [
+          "upper spine",
+          "shoulders"
+        ],
+        "body_parts": [
+          "upper back",
+          "shoulder area"
+        ]
+      },
+      "description": "A day of spiritual ascension. Rise above material concerns.",
+      "planet": "Jupiter"
+    },
+    "2026-01-09": {
+      "lunar_day": 21,
+      "moon_phase": {
+        "name": "Waning Gibbous",
+        "illumination": 61.27,
+        "is_waxing": false,
+        "emoji": "🌖"
+      },
+      "colors": {
+        "base": [
+          "#00CED1",
+          "#00BFFF"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-08T20:12:12.073586",
+        "ends_at": "2026-01-09T21:31:32.709483",
+        "duration_hours": 25.32
+      },
+      "recommendations": {
+        "do": [
+          "Courage",
+          "Boldness",
+          "Action",
+          "Sports",
+          "Competition"
+        ],
+        "avoid": [
+          "Fear",
+          "Hesitation",
+          "Passivity",
+          "Weakness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "respiratory system",
+          "lungs"
+        ],
+        "body_parts": [
+          "chest",
+          "lungs"
+        ]
+      },
+      "description": "A day of courage and victory. Take bold action.",
+      "planet": "Mars"
+    },
+    "2026-01-10": {
+      "lunar_day": 22,
+      "moon_phase": {
+        "name": "Last Quarter",
+        "illumination": 51.62,
+        "is_waxing": false,
+        "emoji": "🌗"
+      },
+      "colors": {
+        "base": [
+          "#32CD32",
+          "#228B22"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-09T21:31:32.709483",
+        "ends_at": "2026-01-10T22:50:13.900692",
+        "duration_hours": 25.31
+      },
+      "recommendations": {
+        "do": [
+          "Learning",
+          "Teaching",
+          "Knowledge",
+          "Wisdom",
+          "Study"
+        ],
+        "avoid": [
+          "Ignorance",
+          "Refusing to learn",
+          "Close-mindedness"
+        ]
+      },
+      "health": {
+        "organs": [
+          "entire skeletal system"
+        ],
+        "body_parts": [
+          "bones",
+          "joints"
+        ]
+      },
+      "description": "A day of knowledge and wisdom. Learn and teach.",
+      "planet": "Mercury"
+    },
+    "2026-01-11": {
+      "lunar_day": 23,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 42.13,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#8B0000",
+          "#DC143C"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-10T22:50:13.900692",
+        "ends_at": "2026-01-12T00:09:37.035468",
+        "duration_hours": 25.32
+      },
+      "recommendations": {
+        "do": [
+          "Forgiveness",
+          "Repentance",
+          "Karmic work",
+          "Release",
+          "Transformation"
+        ],
+        "avoid": [
+          "Revenge",
+          "Holding grudges",
+          "Sexual excess",
+          "Violence"
+        ]
+      },
+      "health": {
+        "organs": [
+          "reproductive organs",
+          "sexual system"
+        ],
+        "body_parts": [
+          "pelvic area",
+          "genitals"
+        ]
+      },
+      "description": "A heavy day of karma and transformation. Forgive and release.",
+      "planet": "Pluto"
+    },
+    "2026-01-12": {
+      "lunar_day": 24,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 33.05,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#FFC0CB",
+          "#FFB6C1"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-12T00:09:37.035468",
+        "ends_at": "2026-01-13T01:29:59.741194",
+        "duration_hours": 25.34
+      },
+      "recommendations": {
+        "do": [
+          "Awakening",
+          "New awareness",
+          "Creativity",
+          "Inspiration",
+          "Art"
+        ],
+        "avoid": [
+          "Sleeping through opportunities",
+          "Ignoring signs",
+          "Suppressing creativity"
+        ]
+      },
+      "health": {
+        "organs": [
+          "heart",
+          "chest"
+        ],
+        "body_parts": [
+          "chest area",
+          "breasts"
+        ]
+      },
+      "description": "A day of awakening and creativity. Express yourself artistically.",
+      "planet": "Venus"
+    },
+    "2026-01-13": {
+      "lunar_day": 25,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 24.62,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#4B0082",
+          "#483D8B"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-13T01:29:59.741194",
+        "ends_at": "2026-01-14T02:49:41.664080",
+        "duration_hours": 25.33
+      },
+      "recommendations": {
+        "do": [
+          "Introspection",
+          "Deep meditation",
+          "Third eye work",
+          "Visions",
+          "Intuition"
+        ],
+        "avoid": [
+          "External focus only",
+          "Ignoring inner voice",
+          "Eye strain"
+        ]
+      },
+      "health": {
+        "organs": [
+          "eyes",
+          "vision"
+        ],
+        "body_parts": [
+          "eyes",
+          "forehead"
+        ]
+      },
+      "description": "A day of inner vision and intuition. Look within.",
+      "planet": "Neptune"
+    },
+    "2026-01-14": {
+      "lunar_day": 26,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 17.08,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#696969",
+          "#808080"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-14T02:49:41.664080",
+        "ends_at": "2026-01-15T04:03:56.411191",
+        "duration_hours": 25.24
+      },
+      "recommendations": {
+        "do": [
+          "Rest",
+          "Recovery",
+          "Low-key activities",
+          "Contemplation",
+          "Solitude"
+        ],
+        "avoid": [
+          "Important decisions",
+          "New beginnings",
+          "Social events",
+          "Overwork"
+        ]
+      },
+      "health": {
+        "organs": [
+          "spine",
+          "central nervous system"
+        ],
+        "body_parts": [
+          "back",
+          "spine"
+        ]
+      },
+      "description": "A tired day. Rest and recover, avoid important activities.",
+      "planet": "Saturn"
+    },
+    "2026-01-15": {
+      "lunar_day": 27,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 10.64,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#FFD700",
+          "#FFA500"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-15T04:03:56.411191",
+        "ends_at": "2026-01-16T05:05:19.720764",
+        "duration_hours": 25.02
+      },
+      "recommendations": {
+        "do": [
+          "Travel",
+          "Pilgrimages",
+          "Spiritual journeys",
+          "Exploration",
+          "Adventure"
+        ],
+        "avoid": [
+          "Staying put",
+          "Routine",
+          "Stagnation",
+          "Refusing movement"
+        ]
+      },
+      "health": {
+        "organs": [
+          "circulatory system"
+        ],
+        "body_parts": [
+          "blood vessels",
+          "circulation"
+        ]
+      },
+      "description": "A day of journeys and exploration. Travel or explore spiritually.",
+      "planet": "Jupiter"
+    },
+    "2026-01-16": {
+      "lunar_day": 28,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 5.55,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#E0FFFF",
+          "#F0F8FF"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-16T05:05:19.720764",
+        "ends_at": "2026-01-17T05:48:53.418597",
+        "duration_hours": 24.73
+      },
+      "recommendations": {
+        "do": [
+          "Construction",
+          "Building",
+          "Real estate",
+          "Foundation work",
+          "Planning future"
+        ],
+        "avoid": [
+          "Destruction",
+          "Demolition",
+          "Tearing down",
+          "Giving up on plans"
+        ]
+      },
+      "health": {
+        "organs": [
+          "lymphatic system"
+        ],
+        "body_parts": [
+          "lymph nodes",
+          "immune system"
+        ]
+      },
+      "description": "A day of building and construction. Create solid foundations.",
+      "planet": "Saturn"
+    },
+    "2026-01-17": {
+      "lunar_day": 29,
+      "moon_phase": {
+        "name": "Waning Crescent",
+        "illumination": 2.02,
+        "is_waxing": false,
+        "emoji": "🌘"
+      },
+      "colors": {
+        "base": [
+          "#2F4F4F",
+          "#696969"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-17T05:48:53.418597",
+        "ends_at": "2026-01-18T06:16:39.721126",
+        "duration_hours": 24.46
+      },
+      "recommendations": {
+        "do": [
+          "Completion",
+          "Finishing projects",
+          "Tying loose ends",
+          "Careful review"
+        ],
+        "avoid": [
+          "New beginnings",
+          "Major decisions",
+          "Risks",
+          "Adventures"
+        ]
+      },
+      "health": {
+        "organs": [
+          "all organs",
+          "entire body"
+        ],
+        "body_parts": [
+          "whole body"
+        ]
+      },
+      "description": "A heavy, difficult day. Complete what's necessary, avoid new ventures.",
+      "planet": "Saturn"
+    },
+    "2026-01-18": {
+      "lunar_day": 30,
+      "moon_phase": {
+        "name": "New Moon",
+        "illumination": 0.28,
+        "is_waxing": true,
+        "emoji": "🌑"
+      },
+      "colors": {
+        "base": [
+          "#191970",
+          "#000080"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-18T06:16:39.721126",
+        "ends_at": "2026-01-19T06:34:06.048140",
+        "duration_hours": 24.29
+      },
+      "recommendations": {
+        "do": [
+          "Forgiveness",
+          "Release",
+          "Completion",
+          "Cleansing",
+          "Preparation for new cycle"
+        ],
+        "avoid": [
+          "Starting new things",
+          "Holding grudges",
+          "Clinging to past"
+        ]
+      },
+      "health": {
+        "organs": [
+          "soul",
+          "spirit"
+        ],
+        "body_parts": [
+          "energy body",
+          "aura"
+        ]
+      },
+      "description": "The final day of the lunar month. Release, forgive, and prepare for renewal.",
+      "planet": "Moon"
+    },
+    "2026-01-19": {
+      "lunar_day": 2,
+      "moon_phase": {
+        "name": "New Moon",
+        "illumination": 0.5,
+        "is_waxing": true,
+        "emoji": "🌑"
+      },
+      "colors": {
+        "base": [
+          "#E8F4F8",
+          "#D4E9F7"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-19T06:34:06.048140",
+        "ends_at": "2026-01-20T06:45:36.460730",
+        "duration_hours": 24.19
+      },
+      "recommendations": {
+        "do": [
+          "Planning",
+          "Learning new things",
+          "Gentle exercise",
+          "Dental care",
+          "Communication"
+        ],
+        "avoid": [
+          "Impulsive decisions",
+          "Overeating",
+          "Dental surgery",
+          "Arguments"
+        ]
+      },
+      "health": {
+        "organs": [
+          "mouth",
+          "teeth",
+          "esophagus"
+        ],
+        "body_parts": [
+          "jaw",
+          "oral cavity"
+        ]
+      },
+      "description": "A day for planning and preparation. Energy is building gradually.",
+      "planet": "Mercury"
+    },
+    "2026-01-20": {
+      "lunar_day": 3,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 2.78,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#FFE5B4",
+          "#FFD700"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-20T06:45:36.460730",
+        "ends_at": "2026-01-21T06:53:51.035758",
+        "duration_hours": 24.14
+      },
+      "recommendations": {
+        "do": [
+          "Physical activity",
+          "Combat sports",
+          "Assertive actions",
+          "Standing your ground",
+          "Competitions"
+        ],
+        "avoid": [
+          "Passive behavior",
+          "Ignoring problems",
+          "Postponing actions"
+        ]
+      },
+      "health": {
+        "organs": [
+          "ears",
+          "auditory system"
+        ],
+        "body_parts": [
+          "ears",
+          "hearing organs"
+        ]
+      },
+      "description": "A warrior's day. Time for active work and overcoming obstacles.",
+      "planet": "Mars"
+    },
+    "2026-01-21": {
+      "lunar_day": 4,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 7.15,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#98FB98",
+          "#7CFC00"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-21T06:53:51.035758",
+        "ends_at": "2026-01-22T07:00:24.743500",
+        "duration_hours": 24.11
+      },
+      "recommendations": {
+        "do": [
+          "Important decisions",
+          "Solitude",
+          "Meditation",
+          "Introspection",
+          "Strategic planning"
+        ],
+        "avoid": [
+          "Social gatherings",
+          "Starting conflicts",
+          "Impulsive actions"
+        ]
+      },
+      "health": {
+        "organs": [
+          "throat",
+          "thyroid",
+          "larynx"
+        ],
+        "body_parts": [
+          "neck",
+          "throat",
+          "vocal cords"
+        ]
+      },
+      "description": "A day of crossroads and important decisions. Time for solitary reflection.",
+      "planet": "Saturn"
+    },
+    "2026-01-22": {
+      "lunar_day": 5,
+      "moon_phase": {
+        "name": "Waxing Crescent",
+        "illumination": 13.53,
+        "is_waxing": true,
+        "emoji": "🌒"
+      },
+      "colors": {
+        "base": [
+          "#FFB6C1",
+          "#FF69B4"
+        ]
+      },
+      "timing": {
+        "starts_at": "2026-01-22T07:00:24.743500",
+        "ends_at": "2026-01-23T07:06:20.876672",
+        "duration_hours": 24.1
+      },
+      "recommendations": {
+        "do": [
+          "Travel",
+          "Movement",
+          "Learning",
+          "Active communication",
+          "Road trips"
+        ],
+        "avoid": [
+          "Staying home all day",
+          "Heavy meals",
+          "Sedentary activities"
+        ]
+      },
+      "health": {
+        "organs": [
+          "digestive system",
+          "esophagus"
+        ],
+        "body_parts": [
+          "stomach",
+          "abdomen"
+        ]
+      },
+      "description": "A day of movement and change. Favorable for journeys and new experiences.",
+      "planet": "Mercury"
+    }
+  }
+}

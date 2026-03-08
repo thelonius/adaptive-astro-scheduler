@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulate Background Script Logic</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .test-card { background: rgba(0,0,0,0.8); padding: 20px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #FFD700; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .day19 { background: rgba(178, 34, 34, 0.2); border-left: 4px solid #B22222; }
+        .day20 { background: rgba(255, 250, 205, 0.2); border-left: 4px solid #FFFACD; }
+    </style>
+</head>
+<body>
+    <h1>Background Script Logic Simulation</h1>
+
+    <div class="test-card">
+        <h3>Current Time</h3>
+        <div id="current-time"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Simulated findActive Logic</h3>
+        <div id="find-active-result"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Expected Extension Display</h3>
+        <div id="expected-display"></div>
+    </div>
+
+    <script>
+        // Simulated lunar calendar data (from JSON)
+        const lunarData = {
+            "2025-11-09": {
+                "lunar_day": 19,
+                "moon_phase": {
+                    "name": "Waning Gibbous",
+                    "illumination": 78.44,
+                    "is_waxing": false,
+                    "emoji": "🌖"
+                },
+                "colors": {
+                    "base": ["#B22222", "#8B0000"]
+                },
+                "timing": {
+                    "starts_at": "2025-11-08T05:39:05.200000",
+                    "ends_at": "2025-11-09T05:16:31.600000"
+                },
+                "planet": "Mars",
+                "description": "A dangerous day. Stay alert, avoid risks and conflicts."
+            },
+            "2025-11-10": {
+                "lunar_day": 20,
+                "moon_phase": {
+                    "name": "Waning Gibbous",
+                    "illumination": 68.43,
+                    "is_waxing": false,
+                    "emoji": "🌖"
+                },
+                "colors": {
+                    "base": ["#FFFACD", "#FFFFE0"]
+                },
+                "timing": {
+                    "starts_at": "2025-11-09T05:16:31.600000",
+                    "ends_at": "2025-11-10T04:53:58"
+                },
+                "planet": "Jupiter",
+                "description": "A day of spiritual ascension. Rise above material concerns."
+            }
+        };
+
+        // Simulate the findActive logic from background_static.js
+        function findActiveLunarDay() {
+            const now = new Date();
+            console.log('Searching for active lunar day at', now.toISOString());
+
+            // Search through all dates to find which lunar day is currently active
+            for (const [date, dayData] of Object.entries(lunarData)) {
+                const start = new Date(dayData.timing.starts_at);
+                const end = new Date(dayData.timing.ends_at);
+
+                console.log(`Checking day ${dayData.lunar_day}:`);
+                console.log(`  Start: ${start.toISOString()} (${start.toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})} Moscow)`);
+                console.log(`  End: ${end.toISOString()} (${end.toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})} Moscow)`);
+                console.log(`  Now: ${now.toISOString()} (${now.toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})} Moscow)`);
+                console.log(`  Is active: ${now >= start && now < end}`);
+
+                if (now >= start && now < end) {
+                    console.log(`Found active lunar day ${dayData.lunar_day} for date ${date}`);
+                    return { date, dayData };
+                }
+            }
+
+            console.warn('No active lunar day found');
+            return null;
+        }
+
+        // Russian translations
+        const moonPhases = {
+            'Waning Gibbous': 'Убывающая Луна'
+        };
+
+        const planets = {
+            'Mars': 'Марс',
+            'Jupiter': 'Юпитер'
+        };
+
+        function formatMoscowTime(isoString) {
+            return new Date(isoString).toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Update display
+        function updateDisplay() {
+            const now = new Date();
+
+            // Show current time
+            document.getElementById('current-time').innerHTML = `
+                <strong>Текущее время:</strong><br>
+                UTC: ${now.toISOString()}<br>
+                Москва: ${now.toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})}
+            `;
+
+            // Run findActive simulation
+            const activeResult = findActiveLunarDay();
+
+            if (activeResult) {
+                const { date, dayData } = activeResult;
+                const russianPhase = moonPhases[dayData.moon_phase.name] || dayData.moon_phase.name;
+                const russianPlanet = planets[dayData.planet] || dayData.planet;
+
+                document.getElementById('find-active-result').innerHTML = `
+                    <div class="result day${dayData.lunar_day}">
+                        <h4>Активный лунный день: ${dayData.lunar_day}</h4>
+                        <p><strong>Дата:</strong> ${date}</p>
+                        <p><strong>Фаза:</strong> ${russianPhase} ${dayData.moon_phase.emoji}</p>
+                        <p><strong>Планета:</strong> ${russianPlanet}</p>
+                        <p><strong>Начало:</strong> ${formatMoscowTime(dayData.timing.starts_at)}</p>
+                        <p><strong>Конец:</strong> ${formatMoscowTime(dayData.timing.ends_at)}</p>
+                        <p><strong>Описание:</strong> ${dayData.description}</p>
+                    </div>
+                `;
+
+                document.getElementById('expected-display').innerHTML = `
+                    <div class="result day${dayData.lunar_day}">
+                        <h4>Расширение должно показывать:</h4>
+                        <p><strong>Лунный день ${dayData.lunar_day}</strong></p>
+                        <p><strong>Цвета:</strong> ${dayData.colors.base.join(', ')}</p>
+                        <p><strong>Освещённость:</strong> ${dayData.moon_phase.illumination}%</p>
+                        <p><strong>Планета:</strong> ${russianPlanet}</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('find-active-result').innerHTML = `
+                    <div class="result" style="background: rgba(231, 76, 60, 0.2);">
+                        <h4>Ошибка: Активный лунный день не найден</h4>
+                    </div>
+                `;
+            }
+        }
+
+        // Initial update
+        updateDisplay();
+
+        // Update every 30 seconds
+        setInterval(updateDisplay, 30000);
+    </script>
+</body>
+</html>

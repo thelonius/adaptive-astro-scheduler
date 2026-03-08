@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development files
+examples.py
+test_*.py
+debug_*.py
+fix_*.py
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Data files (except requirements)
+*.json
+*.csv
+de421.bsp
+
+# Environment
+.env
+.env.*
+!.env.example

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lunar Day Timezone Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .test-card { background: rgba(0,0,0,0.8); padding: 20px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #FFD700; }
+    </style>
+</head>
+<body>
+    <h1>Lunar Day Timezone Test - November 9, 2025</h1>
+
+    <div class="test-card">
+        <h3>Current Time Information</h3>
+        <div id="current-time"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>19th Lunar Day Timing</h3>
+        <div id="lunar-19"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>20th Lunar Day Timing</h3>
+        <div id="lunar-20"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Active Day (JSON timestamps as-is)</h3>
+        <div id="active-day-json"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Active Day (Corrected: 19th ends at 19:07 Moscow)</h3>
+        <div id="active-day-corrected"></div>
+    </div>
+
+    <script>
+        // Test data from JSON (assuming different timezone interpretations)
+        const day19_json = {
+            starts_at: "2025-11-08T05:39:05.200000",
+            ends_at: "2025-11-09T05:16:31.600000"
+        };
+
+        const day20_json = {
+            starts_at: "2025-11-09T05:16:31.600000",
+            ends_at: "2025-11-10T04:53:58"
+        };
+
+        // Corrected timing: 19th day ends at 19:07 Moscow time
+        // Converting Moscow time to UTC: 19:07 MSK = 16:07 UTC
+        const day19_corrected = {
+            starts_at: "2025-11-08T05:39:05.200000",
+            ends_at: "2025-11-09T16:07:00.000000"  // 19:07 Moscow time = 16:07 UTC
+        };
+
+        const day20_corrected = {
+            starts_at: "2025-11-09T16:07:00.000000",  // 19:07 Moscow time = 16:07 UTC
+            ends_at: "2025-11-10T15:53:58"
+        };
+
+        function formatTime(isoString, label) {
+            const date = new Date(isoString);
+            const moscowTime = date.toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            return `<strong>${label}:</strong> ${moscowTime} (Moscow time)<br>
+                    <em>ISO:</em> ${isoString}`;
+        }
+
+        function checkActiveLunarDay(useCorrection = false) {
+            const now = new Date();
+            const dayData = useCorrection ?
+                { day19: day19_corrected, day20: day20_corrected } :
+                { day19: day19_json, day20: day20_json };
+
+            const day19Start = new Date(dayData.day19.starts_at);
+            const day19End = new Date(dayData.day19.ends_at);
+            const day20Start = new Date(dayData.day20.starts_at);
+            const day20End = new Date(dayData.day20.ends_at);
+
+            let activeDay = "Unknown";
+            let color = "#666";
+
+            if (now >= day19Start && now < day19End) {
+                activeDay = "19th Lunar Day (Mars, Red colors)";
+                color = "#B22222";
+            } else if (now >= day20Start && now < day20End) {
+                activeDay = "20th Lunar Day (Jupiter, Yellow colors)";
+                color = "#FFFACD";
+            } else if (now < day19Start) {
+                activeDay = "Before 19th lunar day starts";
+            } else if (now >= day20End) {
+                activeDay = "After 20th lunar day ends";
+            }
+
+            return { activeDay, color };
+        }
+
+        // Display current time
+        const now = new Date();
+        document.getElementById('current-time').innerHTML = `
+            <strong>Current Time:</strong><br>
+            ${now.toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            })} (Moscow time)<br>
+            <em>UTC:</em> ${now.toISOString()}
+        `;
+
+        // Display lunar day timings
+        document.getElementById('lunar-19').innerHTML =
+            formatTime(day19_json.starts_at, 'Starts (JSON)') + '<br>' +
+            formatTime(day19_json.ends_at, 'Ends (JSON)') + '<br><br>' +
+            formatTime(day19_corrected.starts_at, 'Starts (Corrected)') + '<br>' +
+            formatTime(day19_corrected.ends_at, 'Ends (Corrected - 19:07 MSK)');
+
+        document.getElementById('lunar-20').innerHTML =
+            formatTime(day20_json.starts_at, 'Starts (JSON)') + '<br>' +
+            formatTime(day20_json.ends_at, 'Ends (JSON)') + '<br><br>' +
+            formatTime(day20_corrected.starts_at, 'Starts (Corrected)') + '<br>' +
+            formatTime(day20_corrected.ends_at, 'Ends (Corrected)');
+
+        // Check which day should be active - both interpretations
+        const resultJSON = checkActiveLunarDay(false);
+        const resultCorrected = checkActiveLunarDay(true);
+
+        document.getElementById('active-day-json').innerHTML = `
+            <strong style="color: ${resultJSON.color}; font-size: 18px;">${resultJSON.activeDay}</strong>
+        `;
+        document.getElementById('active-day-json').style.borderLeftColor = resultJSON.color;
+
+        document.getElementById('active-day-corrected').innerHTML = `
+            <strong style="color: ${resultCorrected.color}; font-size: 18px;">${resultCorrected.activeDay}</strong>
+        `;
+        document.getElementById('active-day-corrected').style.borderLeftColor = resultCorrected.color;
+
+        // Update every second
+        setInterval(() => {
+            const newNow = new Date();
+            document.getElementById('current-time').innerHTML = `
+                <strong>Current Time:</strong><br>
+                ${newNow.toLocaleString('ru-RU', {
+                    timeZone: 'Europe/Moscow',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })} (Moscow time)<br>
+                <em>UTC:</em> ${newNow.toISOString()}
+            `;
+
+            const newResultJSON = checkActiveLunarDay(false);
+            const newResultCorrected = checkActiveLunarDay(true);
+
+            document.getElementById('active-day-json').innerHTML = `
+                <strong style="color: ${newResultJSON.color}; font-size: 18px;">${newResultJSON.activeDay}</strong>
+            `;
+            document.getElementById('active-day-json').style.borderLeftColor = newResultJSON.color;
+
+            document.getElementById('active-day-corrected').innerHTML = `
+                <strong style="color: ${newResultCorrected.color}; font-size: 18px;">${newResultCorrected.activeDay}</strong>
+            `;
+            document.getElementById('active-day-corrected').style.borderLeftColor = newResultCorrected.color;
+        }, 1000);
+    </script>
+</body>
+</html>

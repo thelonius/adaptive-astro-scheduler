@@ -1,0 +1,3 @@
+"""
+Core astronomical calculation modules.
+"""

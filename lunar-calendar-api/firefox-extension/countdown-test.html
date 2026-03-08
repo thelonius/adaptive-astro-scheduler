@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lunar Day Time Correction Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .card { background: rgba(0,0,0,0.8); padding: 20px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #FFD700; }
+        .countdown { font-size: 24px; color: #FFD700; font-weight: bold; margin: 10px 0; }
+        .correction { background: rgba(46, 204, 113, 0.2); padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🌙 Lunar Day Timing Correction</h1>
+
+    <div class="card">
+        <h3>Current Time</h3>
+        <div id="current-time"></div>
+    </div>
+
+    <div class="card">
+        <h3>19th Lunar Day - Time Analysis</h3>
+        <p><strong>JSON shows end time:</strong> 2025-11-09T05:16:31 (Moscow time)</p>
+        <p><strong>Actual end time should be:</strong> 2025-11-09T18:52:00 (Moscow time)</p>
+        <p><strong>Difference:</strong> 13 hours 35 minutes 29 seconds</p>
+
+        <div class="correction">
+            <h4>Calculated Offset:</h4>
+            <p>JSON times appear to be off by approximately <strong>13.6 hours</strong></p>
+            <p>This could be:</p>
+            <ul>
+                <li>Different timezone than expected</li>
+                <li>Different astronomical calculation method</li>
+                <li>Data generation error</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Countdown to 20th Lunar Day</h3>
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <div class="card">
+        <h3>What Should Happen at 18:52</h3>
+        <p>🌙 <strong>Lunar Event:</strong> Moon reaches specific elongation (19th day ends, 20th begins)</p>
+        <p>🎨 <strong>Colors change:</strong> Red (#B22222) → Light Yellow (#FFFACD)</p>
+        <p>🪐 <strong>Planet changes:</strong> Mars → Jupiter</p>
+        <p>📖 <strong>Theme changes:</strong> "Dangerous day" → "Spiritual ascension"</p>
+    </div>
+
+    <script>
+        // Correct end time for 19th lunar day
+        const correctEndTime = new Date('2025-11-09T18:52:00+03:00'); // 18:52 Moscow time
+        const jsonEndTime = new Date('2025-11-09T05:16:31.600+03:00'); // What JSON shows
+
+        function updateDisplay() {
+            const now = new Date();
+
+            // Current time
+            const moscowTime = now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+            const utcTime = now.toISOString();
+
+            document.getElementById('current-time').innerHTML = `
+                <p><strong>Moscow:</strong> ${moscowTime}</p>
+                <p><strong>UTC:</strong> ${utcTime}</p>
+            `;
+
+            // Countdown
+            const timeUntilChange = correctEndTime.getTime() - now.getTime();
+
+            if (timeUntilChange > 0) {
+                const hours = Math.floor(timeUntilChange / (1000 * 60 * 60));
+                const minutes = Math.floor((timeUntilChange % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeUntilChange % (1000 * 60)) / 1000);
+
+                document.getElementById('countdown').innerHTML = `
+                    20th Lunar Day starts in: ${hours}h ${minutes}m ${seconds}s
+                    <br><small>At 18:52:00 Moscow time</small>
+                `;
+                document.getElementById('countdown').style.color = '#FFD700';
+            } else {
+                const timeSince = now.getTime() - correctEndTime.getTime();
+                const hours = Math.floor(timeSince / (1000 * 60 * 60));
+                const minutes = Math.floor((timeSince % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeSince % (1000 * 60)) / 1000);
+
+                document.getElementById('countdown').innerHTML = `
+                    20th Lunar Day started ${hours}h ${minutes}m ${seconds}s ago!
+                    <br><small>Started at 18:52:00 Moscow time</small>
+                `;
+                document.getElementById('countdown').style.color = '#2ecc71';
+            }
+        }
+
+        updateDisplay();
+        setInterval(updateDisplay, 1000);
+    </script>
+</body>
+</html>

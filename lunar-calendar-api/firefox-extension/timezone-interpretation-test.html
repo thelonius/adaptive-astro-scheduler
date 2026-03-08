@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timezone Interpretation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .test-card { background: rgba(0,0,0,0.8); padding: 20px; margin: 10px 0; border-radius: 10px; }
+        .interpretation { padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid; }
+        .active { border-left-color: #2ecc71; background: rgba(46, 204, 113, 0.2); }
+        .inactive { border-left-color: #e74c3c; background: rgba(231, 76, 60, 0.2); }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { color: #FFD700; }
+    </style>
+</head>
+<body>
+    <h1>Testing Different Timezone Interpretations</h1>
+
+    <div class="test-card">
+        <h3>Current Time</h3>
+        <div id="current-time"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Interpretation 1: JSON timestamps are UTC</h3>
+        <div id="interpretation-utc"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Interpretation 2: JSON timestamps are already Moscow time (MSK)</h3>
+        <div id="interpretation-msk"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Interpretation 3: Manual correction (19th ends at 19:07 MSK)</h3>
+        <div id="interpretation-manual"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Comparison Table</h3>
+        <table id="comparison-table"></table>
+    </div>
+
+    <script>
+        const jsonEndTime = "2025-11-09T05:16:31.600000";
+
+        function parseAsUTC(isoString) {
+            // Parse as UTC
+            return new Date(isoString + 'Z');
+        }
+
+        function parseAsMoscow(isoString) {
+            // Parse as if it's already Moscow time (UTC+3)
+            // Need to subtract 3 hours to get actual UTC
+            const date = new Date(isoString);
+            return new Date(date.getTime() - (3 * 60 * 60 * 1000));
+        }
+
+        function testInterpretation(endDate, label) {
+            const now = new Date();
+            const isActive19 = now < endDate;
+            const moscowString = endDate.toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const timeDiff = endDate.getTime() - now.getTime();
+            const hours = Math.floor(Math.abs(timeDiff) / (1000 * 60 * 60));
+            const minutes = Math.floor((Math.abs(timeDiff) % (1000 * 60 * 60)) / (1000 * 60));
+
+            let status = "";
+            if (timeDiff > 0) {
+                status = `Still 19th day - ends in ${hours}h ${minutes}m`;
+            } else {
+                status = `Already 20th day - changed ${hours}h ${minutes}m ago`;
+            }
+
+            return {
+                moscowTime: moscowString,
+                isActive19: isActive19,
+                status: status,
+                endDate: endDate
+            };
+        }
+
+        function updateDisplay() {
+            const now = new Date();
+
+            // Current time
+            document.getElementById('current-time').innerHTML = `
+                <strong>Moscow:</strong> ${now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}<br>
+                <strong>UTC:</strong> ${now.toISOString()}
+            `;
+
+            // Test different interpretations
+            const utcResult = testInterpretation(parseAsUTC(jsonEndTime), "UTC");
+            const mskResult = testInterpretation(parseAsMoscow(jsonEndTime), "MSK");
+            const manualResult = testInterpretation(new Date("2025-11-09T16:07:00.000Z"), "Manual"); // 19:07 MSK = 16:07 UTC
+
+            // Display results
+            document.getElementById('interpretation-utc').innerHTML = `
+                <div class="${utcResult.isActive19 ? 'active' : 'inactive'} interpretation">
+                    <h4>${utcResult.status}</h4>
+                    <p><strong>19th day ends at:</strong> ${utcResult.moscowTime} Moscow time</p>
+                    <p><strong>Calculation:</strong> JSON timestamp treated as UTC, then converted to Moscow</p>
+                </div>
+            `;
+
+            document.getElementById('interpretation-msk').innerHTML = `
+                <div class="${mskResult.isActive19 ? 'active' : 'inactive'} interpretation">
+                    <h4>${mskResult.status}</h4>
+                    <p><strong>19th day ends at:</strong> ${mskResult.moscowTime} Moscow time</p>
+                    <p><strong>Calculation:</strong> JSON timestamp already represents Moscow time</p>
+                </div>
+            `;
+
+            document.getElementById('interpretation-manual').innerHTML = `
+                <div class="${manualResult.isActive19 ? 'active' : 'inactive'} interpretation">
+                    <h4>${manualResult.status}</h4>
+                    <p><strong>19th day ends at:</strong> 19:07:00 Moscow time</p>
+                    <p><strong>Calculation:</strong> Based on external calendar sources</p>
+                </div>
+            `;
+
+            // Comparison table
+            document.getElementById('comparison-table').innerHTML = `
+                <tr>
+                    <th>Interpretation</th>
+                    <th>19th Day Ends (Moscow)</th>
+                    <th>Current Status</th>
+                    <th>Matches External Calendars?</th>
+                </tr>
+                <tr>
+                    <td>UTC Timestamps</td>
+                    <td>${utcResult.moscowTime}</td>
+                    <td>${utcResult.isActive19 ? '19th day' : '20th day'}</td>
+                    <td>${utcResult.isActive19 ? '❌ No' : '✅ Maybe'}</td>
+                </tr>
+                <tr>
+                    <td>Moscow Timestamps</td>
+                    <td>${mskResult.moscowTime}</td>
+                    <td>${mskResult.isActive19 ? '19th day' : '20th day'}</td>
+                    <td>${mskResult.isActive19 ? '✅ Likely' : '❌ No'}</td>
+                </tr>
+                <tr>
+                    <td>Manual (19:07)</td>
+                    <td>19:07:00</td>
+                    <td>${manualResult.isActive19 ? '19th day' : '20th day'}</td>
+                    <td>${manualResult.isActive19 ? '✅ Yes' : '❌ No'}</td>
+                </tr>
+            `;
+        }
+
+        updateDisplay();
+        setInterval(updateDisplay, 10000);
+    </script>
+</body>
+</html>

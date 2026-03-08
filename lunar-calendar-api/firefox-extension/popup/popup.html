@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Calendar Colors</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title" data-i18n="popup.title">🌙 Lunar Calendar</h1>
+            <div class="language-switcher">
+                <button class="lang-btn" data-lang="en" title="English">EN</button>
+                <button class="lang-btn" data-lang="ru" title="Русский">RU</button>
+            </div>
+        </header>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p data-i18n="popup.loading">Loading lunar data...</p>
+        </div>
+
+        <div class="content" id="content" style="display: none;">
+            <div class="lunar-info">
+                <div class="day-info">
+                    <span class="day-number" id="dayNumber">1</span>
+                    <span class="day-label" data-i18n="popup.dayLabel">Lunar Day</span>
+                </div>
+
+                <div class="phase-info">
+                    <span class="phase-name" id="phaseName">New Moon</span>
+                    <span class="illumination" id="illumination">0%</span>
+                </div>
+            </div>
+
+            <div class="color-palette" id="colorPalette">
+                <!-- Colors will be dynamically added here -->
+            </div>
+
+            <div class="progress-info">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-text" id="progressText" data-i18n-template="popup.progressLabel">Day Progress: 0%</span>
+            </div>
+        </div>
+
+        <div class="error" id="error" style="display: none;">
+            <p data-i18n="popup.error">Unable to connect to lunar calendar API</p>
+            <button id="retryBtn" data-i18n="popup.retry">Retry</button>
+            <button id="testBtn" style="margin-left: 10px;">Test API</button>
+            <button id="debugBtn" style="margin-left: 10px;">Debug</button>
+        </div>
+    </div>
+
+    <script src="../localization.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

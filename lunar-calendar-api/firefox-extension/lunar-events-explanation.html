@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lunar Day Transition Events - Astronomical Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .info-card { background: rgba(0,0,0,0.8); padding: 20px; margin: 15px 0; border-radius: 10px; border-left: 4px solid #FFD700; }
+        .astronomical-data { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .highlight { color: #FFD700; font-weight: bold; }
+        .formula { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; font-family: monospace; }
+        .duration-analysis { background: rgba(0, 100, 200, 0.2); padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🌙 Lunar Day Transition Events</h1>
+
+    <div class="info-card">
+        <h3>What Defines a Lunar Day (Tithi)?</h3>
+        <p><strong>Astronomical Definition:</strong> A lunar day (tithi) is the time it takes for the Moon to advance <span class="highlight">12 degrees in longitude</span> relative to the Sun.</p>
+
+        <div class="formula">
+            Lunar Elongation = Moon's Longitude - Sun's Longitude
+            <br>Each Tithi = 12° of elongation
+            <br>30 Tithis = 360° = 1 Lunar Month
+        </div>
+
+        <p><strong>Key Points:</strong></p>
+        <ul>
+            <li>🕐 Can end at <strong>any time</strong> of day or night</li>
+            <li>⏱️ Duration varies from ~19 to ~26 hours</li>
+            <li>🌍 Same worldwide (not tied to local sunrise)</li>
+            <li>📐 Based on precise astronomical calculations</li>
+        </ul>
+    </div>
+
+    <div class="info-card">
+        <h3>Analysis of Your JSON Data</h3>
+        <div class="astronomical-data">
+            <div>
+                <h4>Lunar Day 19</h4>
+                <div id="day19-analysis"></div>
+            </div>
+            <div>
+                <h4>Lunar Day 20</h4>
+                <div id="day20-analysis"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>Duration Pattern Analysis</h3>
+        <div id="duration-patterns"></div>
+    </div>
+
+    <div class="info-card">
+        <h3>Current Status</h3>
+        <div id="current-status"></div>
+    </div>
+
+    <script>
+        // Sample lunar days from JSON
+        const lunarDays = [
+            {
+                day: 18,
+                starts_at: "2025-10-08T13:30:35.800000",
+                ends_at: "2025-10-09T13:08:02.200000",
+                duration_hours: 23.62
+            },
+            {
+                day: 19,
+                starts_at: "2025-11-08T05:39:05.200000",
+                ends_at: "2025-11-09T05:16:31.600000",
+                duration_hours: 23.62
+            },
+            {
+                day: 20,
+                starts_at: "2025-11-09T05:16:31.600000",
+                ends_at: "2025-11-10T04:53:58.000000",
+                duration_hours: 23.62
+            }
+        ];
+
+        function analyzeLunarDay(dayData) {
+            const start = new Date(dayData.starts_at);
+            const end = new Date(dayData.ends_at);
+            const durationMs = end.getTime() - start.getTime();
+            const actualHours = durationMs / (1000 * 60 * 60);
+
+            return {
+                start: start,
+                end: end,
+                startMoscow: start.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+                endMoscow: end.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+                durationHours: actualHours,
+                durationHMS: formatDuration(durationMs)
+            };
+        }
+
+        function formatDuration(ms) {
+            const hours = Math.floor(ms / (1000 * 60 * 60));
+            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+            return `${hours}ч ${minutes}м ${seconds}с`;
+        }
+
+        function formatEventTime(date) {
+            const moscowTime = date.toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const utcTime = date.toISOString().slice(0, 19) + 'Z';
+
+            return `<strong>Moscow:</strong> ${moscowTime}<br><strong>UTC:</strong> ${utcTime}`;
+        }
+
+        // Analyze specific days
+        const day19 = analyzeLunarDay(lunarDays[1]);
+        const day20 = analyzeLunarDay(lunarDays[2]);
+
+        document.getElementById('day19-analysis').innerHTML = `
+            <p><strong>Transition Event:</strong> Moon reaches specific longitude</p>
+            <p><strong>Starts:</strong><br>${formatEventTime(day19.start)}</p>
+            <p><strong>Ends:</strong><br>${formatEventTime(day19.end)}</p>
+            <div class="duration-analysis">
+                <strong>Duration:</strong> ${day19.durationHMS} (${day19.durationHours.toFixed(2)} hours)
+            </div>
+        `;
+
+        document.getElementById('day20-analysis').innerHTML = `
+            <p><strong>Transition Event:</strong> Moon advances another 12°</p>
+            <p><strong>Starts:</strong><br>${formatEventTime(day20.start)}</p>
+            <p><strong>Ends:</strong><br>${formatEventTime(day20.end)}</p>
+            <div class="duration-analysis">
+                <strong>Duration:</strong> ${day20.durationHMS} (${day20.durationHours.toFixed(2)} hours)
+            </div>
+        `;
+
+        // Duration pattern analysis
+        let durationAnalysis = "<h4>Duration Variations:</h4>";
+        lunarDays.forEach(day => {
+            const analysis = analyzeLunarDay(day);
+            durationAnalysis += `<p><strong>Day ${day.day}:</strong> ${analysis.durationHours.toFixed(2)} hours</p>`;
+        });
+
+        durationAnalysis += `
+            <div class="formula">
+                Why durations vary:
+                • Moon's orbital speed changes (elliptical orbit)
+                • Faster at perigee (closest to Earth)
+                • Slower at apogee (farthest from Earth)
+                • Each 12° takes different amounts of time
+            </div>
+        `;
+
+        document.getElementById('duration-patterns').innerHTML = durationAnalysis;
+
+        // Current status
+        function updateCurrentStatus() {
+            const now = new Date();
+            const day19End = new Date(lunarDays[1].ends_at);
+            const day20Start = new Date(lunarDays[2].starts_at);
+            const day20End = new Date(lunarDays[2].ends_at);
+
+            let status = `<p><strong>Current Time:</strong> ${now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} (Moscow)</p>`;
+
+            if (now < day19End) {
+                const timeLeft = day19End.getTime() - now.getTime();
+                status += `<p class="highlight">Status: Still in 19th Lunar Day</p>`;
+                status += `<p>Time until transition: ${formatDuration(timeLeft)}</p>`;
+                status += `<p>Next transition at: ${day19End.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} Moscow</p>`;
+            } else if (now >= day20Start && now < day20End) {
+                const timeLeft = day20End.getTime() - now.getTime();
+                status += `<p class="highlight">Status: Currently in 20th Lunar Day</p>`;
+                status += `<p>Started at: ${day20Start.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })} Moscow</p>`;
+                status += `<p>Time until next transition: ${formatDuration(timeLeft)}</p>`;
+            } else {
+                status += `<p class="highlight">Status: Between lunar days or in next day</p>`;
+            }
+
+            return status;
+        }
+
+        document.getElementById('current-status').innerHTML = updateCurrentStatus();
+
+        // Update every 30 seconds
+        setInterval(() => {
+            document.getElementById('current-status').innerHTML = updateCurrentStatus();
+        }, 30000);
+    </script>
+</body>
+</html>

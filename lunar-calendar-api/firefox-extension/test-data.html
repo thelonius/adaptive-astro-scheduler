@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Lunar Info Component</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Лунный Календарь - Тестовые Данные на 9 ноября 2025</h1>
+    <div id="test-info"></div>
+
+    <script>
+        // Test data for today (November 9, 2025)
+        const testData = {
+            "lunar_day": 19,
+            "moon_phase": {
+                "name": "Waning Gibbous",
+                "illumination": 78.44,
+                "is_waxing": false,
+                "emoji": "🌖"
+            },
+            "colors": {
+                "base": [
+                    "#B22222",
+                    "#8B0000"
+                ],
+                "gradient": [
+                    "#B22222",
+                    "#AE1F1F",
+                    "#AB1C1C",
+                    "#A81919",
+                    "#A51616",
+                    "#A11313",
+                    "#9E1111",
+                    "#9B0E0E",
+                    "#980B0B",
+                    "#940808",
+                    "#910505",
+                    "#8B0000"
+                ]
+            },
+            "timing": {
+                "starts_at": "2025-11-08T05:39:05.200000",
+                "ends_at": "2025-11-09T05:16:31.600000",
+                "duration_hours": 23.62
+            },
+            "recommendations": {
+                "do": [
+                    "Caution",
+                    "Avoiding trouble",
+                    "Protection",
+                    "Staying safe",
+                    "Low profile"
+                ],
+                "avoid": [
+                    "Risks",
+                    "Adventures",
+                    "Alcohol",
+                    "New ventures",
+                    "Conflicts"
+                ]
+            },
+            "health": {
+                "organs": [
+                    "liver",
+                    "blood"
+                ],
+                "body_parts": [
+                    "right side of body"
+                ]
+            },
+            "description": "A dangerous day. Stay alert, avoid risks and conflicts.",
+            "planet": "Mars"
+        };
+
+        // Display formatted data
+        const container = document.getElementById('test-info');
+
+        function createInfoCard(title, content) {
+            return `
+                <div style="
+                    background: rgba(0,0,0,0.8);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    border-left: 4px solid ${testData.colors.base[0]};
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin: 12px 0;
+                    max-width: 400px;
+                ">
+                    <h3 style="color: ${testData.colors.base[0]}; margin-top: 0;">${title}</h3>
+                    ${content}
+                </div>
+            `;
+        }
+
+        const russianPhases = {
+            "Waning Gibbous": "Убывающая Луна"
+        };
+
+        const russianPlanets = {
+            "Mars": "Марс"
+        };
+
+        function formatRussianTime(isoString) {
+            const date = new Date(isoString);
+            const weekdays = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                           'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+            const weekday = weekdays[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+
+            return `${weekday}, ${day} ${month} в ${hours}:${minutes}`;
+        }
+
+        const startTime = formatRussianTime(testData.timing.starts_at);
+        const endTime = formatRussianTime(testData.timing.ends_at);        let html = createInfoCard('🌙 Лунный День', `
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="font-size: 48px; color: ${testData.colors.base[0]}; font-weight: bold;">${testData.lunar_day}</div>
+                <div>
+                    <div style="font-size: 18px; font-weight: 500;">${russianPhases[testData.moon_phase.name]}</div>
+                    <div style="font-size: 32px; text-align: center;">${testData.moon_phase.emoji}</div>
+                </div>
+            </div>
+        `);
+
+        html += createInfoCard('🌖 Фаза Луны', `
+            <p><strong>Освещённость:</strong> ${testData.moon_phase.illumination.toFixed(1)}%</p>
+            <p><strong>Направление:</strong> ${testData.moon_phase.is_waxing ? 'Растущая' : 'Убывающая'}</p>
+        `);
+
+        html += createInfoCard('⏰ Время', `
+            <p><strong>Начало:</strong> ${startTime}</p>
+            <p><strong>Конец:</strong> ${endTime}</p>
+            <p><strong>Продолжительность:</strong> ${testData.timing.duration_hours.toFixed(1)} ч</p>
+        `);
+
+        html += createInfoCard('🪐 Планета', `
+            <div style="font-size: 24px; font-weight: bold; text-align: center; color: ${testData.colors.base[0]};">
+                ${russianPlanets[testData.planet]}
+            </div>
+        `);
+
+        html += createInfoCard('🏥 Здоровье', `
+            <p><strong>Органы:</strong></p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
+                ${testData.health.organs.map(organ =>
+                    `<span style="background: ${testData.colors.base[0]}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">${organ}</span>`
+                ).join('')}
+            </div>
+            <p><strong>Части тела:</strong></p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${testData.health.body_parts.map(part =>
+                    `<span style="background: ${testData.colors.base[0]}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">${part}</span>`
+                ).join('')}
+            </div>
+        `);
+
+        html += createInfoCard('✅ Рекомендуется', `
+            ${testData.recommendations.do.map(item =>
+                `<div style="padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; background: rgba(46, 204, 113, 0.2); border-left: 3px solid #2ecc71; color: #2ecc71; font-size: 14px;">${item}</div>`
+            ).join('')}
+        `);
+
+        html += createInfoCard('❌ Избегать', `
+            ${testData.recommendations.avoid.map(item =>
+                `<div style="padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; background: rgba(231, 76, 60, 0.2); border-left: 3px solid #e74c3c; color: #e74c3c; font-size: 14px;">${item}</div>`
+            ).join('')}
+        `);
+
+        html += createInfoCard('📖 Описание', `
+            <p style="margin: 0; line-height: 1.5; opacity: 0.9;">${testData.description}</p>
+        `);
+
+        html += createInfoCard('🎨 Цвета', `
+            <p><strong>Базовые:</strong></p>
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                ${testData.colors.base.map(color =>
+                    `<div style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background-color: ${color};" title="${color}"></div>`
+                ).join('')}
+            </div>
+            <p><strong>Градиент:</strong></p>
+            <div style="height: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: linear-gradient(to right, ${testData.colors.gradient.join(', ')});"></div>
+        `);
+
+        container.innerHTML = html;
+    </script>
+</body>
+</html>

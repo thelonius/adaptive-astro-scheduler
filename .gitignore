@@ -91,4 +91,3 @@ docker-compose.override.yml
 
 # Misc
 .turbo
-lunar-calendar-api/
