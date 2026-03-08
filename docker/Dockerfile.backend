@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:18 AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -37,15 +37,15 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Install Swiss Ephemeris data files (if using Sweph)
-RUN apk add --no-cache curl && \
+RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/* && \
     mkdir -p /usr/share/ephe && \
     curl -o /usr/share/ephe/seas_18.se1 https://www.astro.com/ftp/swisseph/ephe/seas_18.se1 && \
     curl -o /usr/share/ephe/semo_18.se1 https://www.astro.com/ftp/swisseph/ephe/semo_18.se1 && \
     curl -o /usr/share/ephe/sepl_18.se1 https://www.astro.com/ftp/swisseph/ephe/sepl_18.se1
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 astroapp
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs astroapp
 
 # Copy built application
 COPY --from=builder --chown=astroapp:nodejs /app/backend/dist ./backend/dist

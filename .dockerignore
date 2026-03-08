@@ -1,0 +1,7 @@
+.git
+node_modules
+docker/postgres-data
+docker/redis-data
+venv
+__pycache__
+dist

@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:18 AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -9,7 +9,7 @@ COPY package.json package-lock.json* ./
 COPY frontend/package.json ./frontend/
 COPY shared/package.json ./shared/
 
-# Install dependencies
+# Install dependencies (node:18 has python, make, g++ built in)
 RUN npm ci
 
 # Rebuild the source code only when needed
