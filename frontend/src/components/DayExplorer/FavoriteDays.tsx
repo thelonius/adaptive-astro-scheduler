@@ -36,14 +36,14 @@ export const FavoriteDays: React.FC<FavoriteDaysProps> = ({
     const [titleInput, setTitleInput] = useState('');
     const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
 
-    // Automatically inject Nikita into favorites if not present
+    // Auto-cleanup Nikita from favorites to migrate him to Natal Charts
     useEffect(() => {
         const state = useFavoritesStore.getState();
-        if (!state.favorites.some(f => f.title?.toLowerCase() === 'никита' || f.title?.toLowerCase() === 'nikita')) {
-            state.addFavorite('1991-06-26', 'Никита', 'Время: 09:43');
+        const nikita = state.favorites.find(f => f.title?.toLowerCase() === 'никита' || f.title?.toLowerCase() === 'nikita');
+        if (nikita && nikita.date === '1991-06-26') {
+            state.removeFavorite('1991-06-26');
         }
     }, []);
-
     const cardBg = 'var(--ag-surface)';
     const borderColor = 'var(--ag-border)';
 
