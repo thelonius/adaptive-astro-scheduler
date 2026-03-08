@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import type { DateTime } from '@adaptive-astro/shared/types';
+import { zonedTimeToUtc } from 'date-fns-tz';
 
 /**
  * Ephemeris Controller
@@ -33,7 +34,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T${time}`),
+        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),
@@ -67,12 +68,13 @@ export class EphemerisController {
       const {
         date = new Date().toISOString().split('T')[0],
         time = '12:00:00',
+        timezone = 'Europe/Moscow',
         orb = '8',
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T${time}`),
-        timezone: 'UTC',
+        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
+        timezone: timezone as string,
         location: { latitude: 0, longitude: 0 }, // Not needed for aspects
       };
 
@@ -107,6 +109,7 @@ export class EphemerisController {
         latitude,
         longitude,
         system = 'placidus',
+        timezone = 'Europe/Moscow',
       } = req.query;
 
       if (!latitude || !longitude) {
@@ -118,8 +121,8 @@ export class EphemerisController {
       }
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T${time}`),
-        timezone: 'UTC',
+        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
+        timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),
           longitude: parseFloat(longitude as string),
@@ -158,7 +161,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),
@@ -189,11 +192,12 @@ export class EphemerisController {
     try {
       const {
         date = new Date().toISOString().split('T')[0],
+        timezone = 'Europe/Moscow',
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
-        timezone: 'UTC',
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
+        timezone: timezone as string,
         location: { latitude: 0, longitude: 0 }, // Not needed for retrogrades
       };
 
@@ -225,7 +229,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
         timezone: timezone as string,
         location: { latitude: 0, longitude: 0 }, // Not needed for void moon
       };
@@ -258,7 +262,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
         timezone: timezone as string,
         location: { latitude: 55.7558, longitude: 37.6173 }, // Default to Moscow
       };
@@ -291,7 +295,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
         timezone: timezone as string,
         location: { latitude: 55.7558, longitude: 37.6173 }, // Default to Moscow
       };
@@ -329,7 +333,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: new Date(`${date}T12:00:00`),
+        date: zonedTimeToUtc(`${date}T12:00:00`, timezone as string),
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),
