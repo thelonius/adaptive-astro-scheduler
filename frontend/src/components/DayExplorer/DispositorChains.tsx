@@ -157,6 +157,11 @@ const LegendPopover: React.FC = () => (
                         label="ends at…"
                         desc="Линейная цепочка — заканчивается у планеты в собственном знаке"
                     />
+                    <LegendRow
+                        preview={<Badge className="chain-status-badge mutual_reception" fontSize="9px">⟷ mutual reception</Badge>}
+                        label="mutual reception"
+                        desc="Взаимная рецепция — две планеты управляют друг другом"
+                    />
 
                     <Divider borderColor="rgba(255,255,255,0.08)" />
                     <Text fontSize="10px" fontWeight="700" color="whiteAlpha.500" textTransform="uppercase" letterSpacing="wider">
@@ -262,7 +267,9 @@ const ChainRow: React.FC<ChainRowProps> = ({ entry, fullMap }) => {
                 })}
             </HStack>
             <Badge className={`chain-status-badge ${entry.status}`} ml={2}>
-                {entry.status === 'cycle' ? '🔄 cycle' : `♛ ends at ${entry.final_dispositor}`}
+                {entry.status === 'cycle' ? '🔄 cycle' :
+                    entry.status === 'mutual_reception' ? '⟷ mutual reception' :
+                        `♛ ends at ${entry.final_dispositor}`}
             </Badge>
         </Box>
     );
