@@ -92,12 +92,12 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
           signal: abortControllerRef.current.signal,
         }),
         axios.get(`${API_BASE_URL}/api/ephemeris/aspects`, {
-          params: { date: queryDate, time: queryTime, orb: aspectOrb },
+          params: { date: queryDate, time: queryTime, timezone, orb: aspectOrb },
           signal: abortControllerRef.current.signal,
         }),
         includeHouses
           ? axios.get(`${API_BASE_URL}/api/ephemeris/houses`, {
-            params: { date: queryDate, time: queryTime, latitude, longitude, system: 'placidus' },
+            params: { date: queryDate, time: queryTime, timezone, latitude, longitude, system: 'placidus' },
             signal: abortControllerRef.current.signal,
           })
           : Promise.resolve(null),
