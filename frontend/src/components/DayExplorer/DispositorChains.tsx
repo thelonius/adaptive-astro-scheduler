@@ -267,9 +267,8 @@ const ChainRow: React.FC<ChainRowProps> = ({ entry, fullMap }) => {
                 })}
             </HStack>
             <Badge className={`chain-status-badge ${entry.status}`} ml={2}>
-                {entry.status === 'cycle' ? '🔄 cycle' :
-                    entry.status === 'mutual_reception' ? '⟷ mutual reception' :
-                        `♛ ends at ${entry.final_dispositor}`}
+                {(entry.status as string) === 'cycle' ? '🔄 cycle' :
+                    `♛ ends at ${entry.final_dispositor}`}
             </Badge>
         </Box>
     );
