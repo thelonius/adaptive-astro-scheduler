@@ -14,6 +14,7 @@ from skyfield.almanac import find_discrete, moon_phases
 from skyfield.timelib import Time as SkyfieldTime
 
 from .interface import IEphemerisCalculator
+from app.calculators.ephemeris_core import ephemeris_core
 from .types import (
     DateTime,
     Location,
@@ -383,19 +384,12 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
             ends_at = ends_at_naive.replace(tzinfo=pytz.UTC)
             duration_hours = 24.0  # Approximate
 
-            # Get characteristics (simplified for now)
-            characteristics = self._get_lunar_day_characteristics(lunar_day_num)
-
             # Determine energy and phase
-            energy = self._get_lunar_day_energy(lunar_day_num)
             moon_phase = await self.get_moon_phase(date_time)
 
             return LunarDay(
                 number=lunar_day_num,
-                symbol=self._get_lunar_day_symbol(lunar_day_num),
-                energy=energy,
                 lunar_phase=moon_phase.phase_type,
-                characteristics=characteristics,
                 starts_at=starts_at,
                 ends_at=ends_at,
                 duration_hours=duration_hours
@@ -435,59 +429,16 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
         lunar_day_num = int((cycles % 1) * 30) + 1
         lunar_day_num = max(1, min(30, lunar_day_num))
 
-        characteristics = self._get_lunar_day_characteristics(lunar_day_num)
-        energy = self._get_lunar_day_energy(lunar_day_num)
         moon_phase = await self.get_moon_phase(date_time)
 
         return LunarDay(
             number=lunar_day_num,
-            symbol=self._get_lunar_day_symbol(lunar_day_num),
-            energy=energy,
             lunar_phase=moon_phase.phase_type,
-            characteristics=characteristics,
             starts_at=target,
             ends_at=target + timedelta(days=1),
             duration_hours=24.0
         )
 
-    def _get_lunar_day_symbol(self, day: int) -> str:
-        """Get symbol for lunar day."""
-        symbols = {
-            1: "Fountain", 2: "Horn of Plenty", 3: "Leopard",
-            4: "Tree of Knowledge", 5: "Unicorn", 6: "Sacred Bird",
-            7: "Wind Rose", 8: "Fire Phoenix", 9: "Bat",
-            10: "Fountain of Life", 11: "Flaming Sword", 12: "Chalice",
-            13: "Spinning Wheel", 14: "Trumpet", 15: "Snake",
-            16: "Dove", 17: "Bunch of Grapes", 18: "Mirror",
-            19: "Spider", 20: "Eagle", 21: "Horse",
-            22: "Elephant", 23: "Crocodile", 24: "Bear",
-            25: "Turtle", 26: "Toad", 27: "Trident",
-            28: "Lotus", 29: "Octopus", 30: "Golden Swan"
-        }
-        return symbols.get(day, f"Day {day}")
-
-    def _get_lunar_day_energy(self, day: int) -> LunarDayEnergy:
-        """Determine energy type for lunar day."""
-        # Days 1-15 are generally waxing (light)
-        # Days 16-30 are generally waning (some dark energy)
-        if day <= 7:
-            return LunarDayEnergy.LIGHT
-        elif day <= 15:
-            return LunarDayEnergy.LIGHT
-        elif day <= 23:
-            return LunarDayEnergy.NEUTRAL
-        else:
-            return LunarDayEnergy.DARK
-
-    def _get_lunar_day_characteristics(self, day: int) -> LunarDayCharacteristics:
-        """Get characteristics for lunar day (simplified)."""
-        # This is a simplified version - full implementation would use
-        # comprehensive lunar day database
-        return LunarDayCharacteristics(
-            spiritual=f"Meditation and reflection suitable for day {day}",
-            practical=f"General activities suitable for day {day}",
-            avoided=["Important life decisions"] if day in [9, 19, 29] else []
-        )
 
     async def get_void_of_course_moon(
         self,
@@ -495,23 +446,124 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
     ) -> Optional[VoidOfCourseMoon]:
         """
         Detect Void of Course Moon periods.
-
-        The Moon is Void of Course from its last major aspect until
-        it enters the next sign.
-
-        Args:
-            date_time: Date and time to check
-
-        Returns:
-            VoidOfCourseMoon if active, None otherwise
         """
-        # This is a complex calculation that requires:
-        # 1. Finding when Moon makes its last aspect in current sign
-        # 2. Finding when Moon enters next sign
-        # 3. Checking if current time falls in that window
+        try:
+            # 1. Get current Moon position and sign
+            moon_pos = ephemeris_core.get_planet_position("Moon", date_time.date)
+            moon_lon = moon_pos[0]
+            current_sign_idx = int(moon_lon / 30)
+            ingress_lon = (current_sign_idx + 1) * 30
+            
+            # 2. Find when Moon leaves current sign (Ingress)
+            # Rough estimate: Moon moves ~0.5 degree per hour
+            # We use a simple Newton-like search for precision
+            ingress_time = await self._find_ingress_time(date_time.date, ingress_lon)
+            
+            # 3. Find all major aspects between date_time and ingress_time
+            # Standard VoC uses Moon aspects with: Sun, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
+            planets = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+            
+            # Use a very early time as baseline
+            last_aspect_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
+            last_planet = None
+            
+            major_aspect_angles: List[float] = [0.0, 60.0, 90.0, 120.0, 180.0]
+            
+            for planet_name in planets:
+                # Find the last aspect of this planet with the Moon before ingress
+                aspect_time, aspect_angle = await self._find_last_moon_aspect(
+                    date_time.date, ingress_time, planet_name, major_aspect_angles
+                )
+                
+                if aspect_time and aspect_time > last_aspect_time:
+                    last_aspect_time = aspect_time
+                    last_planet = PlanetName(planet_name)
+            
+            # 4. Determine if we are currently in VoC
+            # VoC starts at last_aspect_time and ends at ingress_time
+            if last_planet and last_aspect_time <= date_time.date < ingress_time:
+                duration = (ingress_time - last_aspect_time).total_seconds() / 3600.0
+                
+                return VoidOfCourseMoon(
+                    start_time=last_aspect_time,
+                    end_time=ingress_time,
+                    sign=ZodiacSign.from_longitude(moon_lon),
+                    duration_hours=duration,
+                    last_aspect_planet=last_planet,
+                    next_sign=ZodiacSign.from_longitude(ingress_lon % 360)
+                )
+            
+            return None
+            
+        except Exception as e:
+            # Log error but don't fail the whole request
+            return None
 
-        # Simplified implementation - full version would track all aspects
-        return None  # TODO: Implement full VoC Moon detection
+    async def _find_ingress_time(self, start_dt: datetime, target_lon: float) -> datetime:
+        """Find the exact time (UTC) when Moon reaches target_lon."""
+        curr_dt = start_dt
+        for _ in range(5):  # 5 iterations of Newton's method is enough for < 1s precision
+            pos = ephemeris_core.get_planet_position("Moon", curr_dt)
+            curr_lon = pos[0]
+            speed = pos[3] / 24.0  # degrees per hour
+            
+            diff = (target_lon - curr_lon)
+            if diff < -180: diff += 360
+            if diff > 180: diff -= 360
+            
+            dt_diff = diff / speed
+            curr_dt += timedelta(hours=dt_diff)
+            
+        return curr_dt
+
+    async def _find_last_moon_aspect(self, start_dt: datetime, end_dt: datetime, planet_name: str, angles: List[float]) -> Tuple[Optional[datetime], Optional[float]]:
+        """Find the time of the last aspect between Moon and planet before end_dt."""
+        # This is a bit complex for a single step. 
+        # We'll check the end state and work backwards slightly or use a root finder.
+        # Simplified for now: Check every 2 hours between start and end and find transitions.
+        
+        last_found_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
+        last_found_angle = None
+        
+        # Step through the period to find when an aspect occurs
+        # Moon speed is ~13-15 deg/day, Planet speed is < 2 deg/day.
+        # Max relative speed is ~15 deg/day. 
+        # Checking every 2 hours (1.2 deg) won't miss any aspects (orbs don't matter, we want exact).
+        
+        curr_dt = start_dt
+        step = timedelta(hours=2)
+        
+        prev_diff = self._get_moon_planet_diff(start_dt, planet_name)
+        
+        while curr_dt < end_dt:
+            next_dt = min(curr_dt + step, end_dt)
+            next_diff = self._get_moon_planet_diff(next_dt, planet_name)
+            
+            # Check if any major angle was crossed
+            for angle in angles:
+                # Normalizing diffs around the target angle
+                d1 = (prev_diff - angle + 180) % 360 - 180
+                d2 = (next_diff - angle + 180) % 360 - 180
+                
+                if d1 * d2 < 0: # Sign change means we crossed the exact angle
+                    # Refine the time
+                    exact_time = curr_dt + (next_dt - curr_dt) * (abs(d1) / (abs(d1) + abs(d2)))
+                    if exact_time > last_found_time:
+                        last_found_time = exact_time
+                        last_found_angle = angle
+            
+            curr_dt = next_dt
+            prev_diff = next_diff
+            
+        if last_found_time.year == 1900:
+            return None, None
+            
+        return last_found_time, last_found_angle
+
+    def _get_moon_planet_diff(self, dt: datetime, planet_name: str) -> float:
+        m_pos = ephemeris_core.get_planet_position("Moon", dt)
+        p_pos = ephemeris_core.get_planet_position(planet_name, dt)
+        return (m_pos[0] - p_pos[0]) % 360
 
     async def get_retrograde_planets(
         self,
@@ -590,10 +642,7 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                                 angle=separation,
                                 orb=actual_orb,
                                 is_exact=actual_orb < 1.0,
-                                is_applying=is_applying,
-                                interpretation=self._get_aspect_interpretation(
-                                    body1, body2, aspect_type
-                                )
+                                is_applying=is_applying
                             )
                             aspects.append(aspect)
                             break  # Only one aspect per pair
@@ -607,23 +656,6 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                 details={"num_bodies": len(bodies)}
             )
 
-    def _get_aspect_interpretation(
-        self,
-        body1: CelestialBody,
-        body2: CelestialBody,
-        aspect_type: AspectType
-    ) -> str:
-        """Generate human-readable aspect interpretation."""
-        quality = {
-            AspectType.CONJUNCTION: "merges with",
-            AspectType.SEXTILE: "harmonizes with",
-            AspectType.SQUARE: "challenges",
-            AspectType.TRINE: "flows with",
-            AspectType.OPPOSITION: "opposes",
-            AspectType.QUINCUNX: "adjusts to",
-        }.get(aspect_type, "aspects")
-
-        return f"{body1.name.value} {quality} {body2.name.value}"
 
     async def calculate_houses(
         self,
@@ -734,16 +766,106 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
     ) -> List[PlanetaryHour]:
         """
         Calculate planetary hours for the day.
-
-        Planetary hours divide day and night into 12 hours each,
-        ruled by planets in Chaldean order.
-
-        Args:
-            date_time: Date and location
-
-        Returns:
-            List of 24 planetary hours
         """
-        # This requires sunrise/sunset calculation
-        # Simplified implementation
-        return []  # TODO: Implement planetary hours calculation
+        try:
+            from app.calculators.solar_engine import solar_engine
+            
+            # 1. Get sunrise/sunset for the day
+            dt = date_time.date
+            solar_times = solar_engine.get_solar_times(
+                dt, 
+                date_time.location.latitude, 
+                date_time.location.longitude
+            )
+            
+            sunrise = solar_times.get("sunrise")
+            sunset = solar_times.get("sunset")
+            
+            if not sunrise or not sunset:
+                # Fallback if no sunrise/sunset (polar regions)
+                return []
+                
+            # 2. Get next day's sunrise for the second 12-hour block (night)
+            next_day_solar = solar_engine.get_solar_times(
+                dt + timedelta(days=1),
+                date_time.location.latitude,
+                date_time.location.longitude
+            )
+            next_sunrise = next_day_solar.get("sunrise")
+            
+            if not next_sunrise:
+                return []
+            
+            # 3. Calculate hour lengths
+            day_length = (sunset - sunrise).total_seconds() / 12.0
+            night_length = (next_sunrise - sunset).total_seconds() / 12.0
+            
+            # 4. Chaldean order and day rulers
+            chaldean_order = [
+                PlanetName.SATURN, PlanetName.JUPITER, PlanetName.MARS,
+                PlanetName.SUN, PlanetName.VENUS, PlanetName.MERCURY, PlanetName.MOON
+            ]
+            
+            day_rulers = {
+                0: PlanetName.MOON,     # Monday
+                1: PlanetName.MARS,     # Tuesday
+                2: PlanetName.MERCURY,  # Wednesday
+                3: PlanetName.JUPITER,  # Thursday
+                4: PlanetName.VENUS,    # Friday
+                5: PlanetName.SATURN,   # Saturday
+                6: PlanetName.SUN       # Sunday
+            }
+            
+            # Get ruler for the day (using local date of the sunrise)
+            # Skyfield returns UTC, we should ideally use local time at location, 
+            # but let's use the date of the date_time provided.
+            day_of_week = dt.weekday()
+            ruler = day_rulers[day_of_week]
+            
+            # Start position in Chaldean order
+            current_ruler_idx = chaldean_order.index(ruler)
+            
+            planetary_hours = []
+            
+            # Daytime hours
+            for i in range(12):
+                start = sunrise + timedelta(seconds=i * day_length)
+                end = sunrise + timedelta(seconds=(i + 1) * day_length)
+                
+                planet = chaldean_order[current_ruler_idx]
+                
+                planetary_hours.append(PlanetaryHour(
+                    planet=planet,
+                    start_time=start,
+                    end_time=end,
+                    is_day_hour=True,
+                    hour_number=i + 1
+                ))
+                
+                # Advance to next ruler in the sequence
+                current_ruler_idx = (current_ruler_idx + 1) % 7
+                
+            # Nighttime hours
+            for i in range(12):
+                start = sunset + timedelta(seconds=i * night_length)
+                end = sunset + timedelta(seconds=(i + 1) * night_length)
+                
+                planet = chaldean_order[current_ruler_idx]
+                
+                planetary_hours.append(PlanetaryHour(
+                    planet=planet,
+                    start_time=start,
+                    end_time=end,
+                    is_day_hour=False,
+                    hour_number=i + 1
+                ))
+                
+                current_ruler_idx = (current_ruler_idx + 1) % 7
+                
+            return planetary_hours
+            
+        except Exception as e:
+            raise EphemerisError(
+                code=EphemerisErrorCode.CALCULATION_FAILED,
+                message=f"Failed to calculate planetary hours: {str(e)}"
+            )

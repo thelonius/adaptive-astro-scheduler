@@ -43,7 +43,7 @@ from .types import (
 )
 from .interface import IEphemerisCalculator
 from .adapter import SkyfieldEphemerisAdapter
-from .cache import CachedEphemerisCalculator
+from .cache import CachedEphemerisCalculator, create_cache_service
 
 __all__ = [
     "DateTime",
@@ -69,6 +69,7 @@ __all__ = [
     "IEphemerisCalculator",
     "SkyfieldEphemerisAdapter",
     "CachedEphemerisCalculator",
+    "create_cache_service",
     # Advanced astrological points
     "LunarNode",
     "LunarNodes",

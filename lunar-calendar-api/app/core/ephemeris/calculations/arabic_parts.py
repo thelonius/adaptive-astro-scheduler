@@ -29,36 +29,6 @@ from ..types import (
 )
 
 
-# Russian interpretations for Part of Fortune in each zodiac sign
-PART_OF_FORTUNE_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Парс Фортуны в Овне: Удача через инициативу, смелость и независимые действия. Успех в лидерстве.",
-    ZodiacSignName.TAURUS: "Парс Фортуны в Тельце: Удача через стабильность, накопление и наслаждение жизнью. Успех в материальном мире.",
-    ZodiacSignName.GEMINI: "Парс Фортуны в Близнецах: Удача через общение, обучение и многозадачность. Успех в интеллектуальной сфере.",
-    ZodiacSignName.CANCER: "Парс Фортуны в Раке: Удача через заботу, семью и эмоциональные связи. Успех в домашней сфере.",
-    ZodiacSignName.LEO: "Парс Фортуны во Льве: Удача через творчество, самовыражение и щедрость. Успех через признание.",
-    ZodiacSignName.VIRGO: "Парс Фортуны в Деве: Удача через служение, внимание к деталям и совершенствование. Успех в работе.",
-    ZodiacSignName.LIBRA: "Парс Фортуны в Весах: Удача через партнерство, дипломатию и гармонию. Успех в отношениях.",
-    ZodiacSignName.SCORPIO: "Парс Фортуны в Скорпионе: Удача через трансформацию, глубину и регенерацию. Успех через кризисы.",
-    ZodiacSignName.SAGITTARIUS: "Парс Фортуны в Стрельце: Удача через философию, путешествия и расширение. Успех в образовании.",
-    ZodiacSignName.CAPRICORN: "Парс Фортуны в Козероге: Удача через дисциплину, достижения и ответственность. Успех в карьере.",
-    ZodiacSignName.AQUARIUS: "Парс Фортуны в Водолее: Удача через инновации, дружбу и уникальность. Успех в группах.",
-    ZodiacSignName.PISCES: "Парс Фортуны в Рыбах: Удача через сострадание, интуицию и духовность. Успех через служение.",
-}
-
-PART_OF_SPIRIT_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Парс Духа в Овне: Духовная цель через пионерство, храбрость и независимость.",
-    ZodiacSignName.TAURUS: "Парс Духа в Тельце: Духовная цель через стабильность, красоту и ценности.",
-    ZodiacSignName.GEMINI: "Парс Духа в Близнецах: Духовная цель через знания, общение и связи.",
-    ZodiacSignName.CANCER: "Парс Духа в Раке: Духовная цель через заботу, эмоции и семью.",
-    ZodiacSignName.LEO: "Парс Духа во Льве: Духовная цель через творчество, самовыражение и радость.",
-    ZodiacSignName.VIRGO: "Парс Духа в Деве: Духовная цель через служение, исцеление и совершенство.",
-    ZodiacSignName.LIBRA: "Парс Духа в Весах: Духовная цель через гармонию, справедливость и партнерство.",
-    ZodiacSignName.SCORPIO: "Парс Духа в Скорпионе: Духовная цель через трансформацию, силу и глубину.",
-    ZodiacSignName.SAGITTARIUS: "Парс Духа в Стрельце: Духовная цель через мудрость, истину и расширение.",
-    ZodiacSignName.CAPRICORN: "Парс Духа в Козероге: Духовная цель через мастерство, структуру и наследие.",
-    ZodiacSignName.AQUARIUS: "Парс Духа в Водолее: Духовная цель через инновации, свободу и человечество.",
-    ZodiacSignName.PISCES: "Парс Духа в Рыбах: Духовная цель через сострадание, единство и духовность.",
-}
 
 
 def get_zodiac_sign(longitude: float) -> ZodiacSignName:
@@ -118,8 +88,7 @@ def calculate_arabic_part(
     planet1: float,
     planet2: float,
     is_nocturnal: bool,
-    reverse_formula_for_nocturnal: bool = False,
-    interpretation_ru: str = ""
+    reverse_formula_for_nocturnal: bool = False
 ) -> ArabicPart:
     """
     Calculate an Arabic Part using the standard formula.
@@ -167,8 +136,7 @@ def calculate_arabic_part(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal,
-        interpretation_ru=interpretation_ru
+        is_nocturnal=is_nocturnal
     )
 
 
@@ -219,15 +187,12 @@ def calculate_part_of_fortune(
         formula = "Asc + Moon - Sun (diurnal)"
 
     zodiac_sign = get_zodiac_sign(longitude)
-    interpretation = PART_OF_FORTUNE_INTERPRETATIONS_RU[zodiac_sign]
-
     return ArabicPart(
         name="Part of Fortune",
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal,
-        interpretation_ru=interpretation
+        is_nocturnal=is_nocturnal
     )
 
 
@@ -270,15 +235,12 @@ def calculate_part_of_spirit(
         formula = "Asc + Sun - Moon (diurnal)"
 
     zodiac_sign = get_zodiac_sign(longitude)
-    interpretation = PART_OF_SPIRIT_INTERPRETATIONS_RU[zodiac_sign]
-
     return ArabicPart(
         name="Part of Spirit",
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal,
-        interpretation_ru=interpretation
+        is_nocturnal=is_nocturnal
     )
 
 
@@ -310,6 +272,5 @@ def calculate_part_of_eros(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula="Asc + Venus - Mars",
-        is_nocturnal=is_nocturnal,
-        interpretation_ru=f"Парс Эроса в {zodiac_sign.value}: Страстная любовь и желание проявляются через энергию этого знака."
+        is_nocturnal=is_nocturnal
     )

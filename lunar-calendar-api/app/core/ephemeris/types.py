@@ -222,22 +222,13 @@ class MoonPhase:
     angle: float             # Phase angle in degrees (0-360)
 
 
-@dataclass
-class LunarDayCharacteristics:
-    """Characteristics and recommendations for a lunar day."""
-    spiritual: str           # "Meditation", "Cleansing"
-    practical: str           # "Planting", "Haircut"
-    avoided: List[str]       # ["Important decisions", "Marriage"]
 
 
 @dataclass
 class LunarDay:
     """Lunar day information (1-30)."""
     number: int              # 1-30
-    symbol: str              # "New Moon", "First Crescent", etc.
-    energy: LunarDayEnergy   # Light, Dark, or Neutral
     lunar_phase: MoonPhaseName  # New, Waxing, Full, Waning
-    characteristics: LunarDayCharacteristics
     starts_at: datetime      # When this lunar day begins
     ends_at: datetime        # When this lunar day ends
     duration_hours: float    # Duration in hours
@@ -316,7 +307,6 @@ class Aspect:
     orb: float                # Orb (difference from exact)
     is_exact: bool            # Within acceptable orb?
     is_applying: bool         # Is the aspect getting tighter?
-    interpretation: str       # Human-readable description
 
     def __str__(self) -> str:
         orb_str = f"{self.orb:.2f}°"
@@ -361,7 +351,6 @@ class PlanetaryHour:
     end_time: datetime
     is_day_hour: bool        # True if daytime, False if nighttime
     hour_number: int         # 1-12 for day/night
-    interpretation: str      # What this hour is good for
 
 
 # ============================================================================
@@ -409,7 +398,6 @@ class LunarNode:
     zodiac_sign: ZodiacSignName
     speed: float           # Daily motion in degrees
     is_retrograde: bool    # Nodes are always retrograde (moving backward)
-    interpretation_ru: str  # Russian interpretation
 
 
 @dataclass
@@ -427,7 +415,6 @@ class BlackMoonLilith:
     latitude: float
     zodiac_sign: ZodiacSignName
     speed: float           # Daily motion
-    interpretation_ru: str  # Russian interpretation
 
 
 @dataclass
@@ -438,7 +425,6 @@ class ArabicPart:
     zodiac_sign: ZodiacSignName
     formula: str          # Formula used: e.g., "Asc + Moon - Sun"
     is_nocturnal: bool    # Whether nocturnal formula was used
-    interpretation_ru: str  # Russian interpretation
 
 
 @dataclass
@@ -450,4 +436,3 @@ class ChironPosition:
     speed: float          # Daily motion
     is_retrograde: bool
     distance_au: float    # Distance from Earth in AU
-    interpretation_ru: str  # Russian interpretation

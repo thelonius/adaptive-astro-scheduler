@@ -23,39 +23,11 @@ import { EphemerisError } from './errors';
  * Response types from the external ephemeris API
  */
 interface LunarDayResponse {
-  lunar_day: number;
-  gregorian_date: string;
-  timing: {
-    starts_at: string;
-    ends_at: string;
-    duration_hours: number;
-    is_current: boolean;
-  };
-  moon_phase: {
-    name: string;
-    illumination: number;
-    is_waxing: boolean;
-    emoji: string;
-  };
-  color_palette: {
-    base_colors: string[];
-    gradient: string[];
-  };
-  health: {
-    affected_organs: string[];
-    affected_body_parts: string[];
-    health_tips: string[];
-  };
-  recommendations: {
-    recommended: string[];
-    not_recommended: string[];
-  };
-  planetary_influence: {
-    dominant_planet: string;
-    additional_influences: string[];
-    description: string;
-  };
-  general_description: string;
+  number: number;
+  lunar_phase: string;
+  starts_at: string;
+  ends_at: string;
+  duration_hours: number;
 }
 
 interface MoonPhaseResponse {
@@ -178,20 +150,21 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    * Calculate lunar day (1-30) for given date/time
    */
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {
-    const response = await this.fetch<any>('/api/v1/ephemeris/lunar-day', {
+    const response = await this.fetch<LunarDayResponse>('/api/v1/ephemeris/lunar-day', {
       date: dateTime.date.toISOString().split('.')[0],
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,
     });
 
     return {
       number: response.number,
-      symbol: response.symbol || '🌙',
+      symbol: '🌙', // Default symbol since API is now data-only
       energy: this.getLunarEnergy(response.number),
       lunarPhase: this.parseLunarPhase(response.lunar_phase),
-      colorPalette: response.color_palette,
       characteristics: {
-        spiritual: `Lunar Day ${response.number}: ${response.symbol}`,
-        practical: `Energy: ${response.energy}`,
+        spiritual: `Lunar Day ${response.number}`,
+        practical: `Starts: ${response.starts_at}, Ends: ${response.ends_at}`,
         avoided: [],
       },
     };
@@ -239,29 +212,28 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
     try {
       const params = {
-        date: this.formatDate(dateTime.date),
-        tz: dateTime.timezone,
+        date: dateTime.date.toISOString().split('.')[0],
+        latitude: dateTime.location.latitude.toString(),
+        longitude: dateTime.location.longitude.toString(),
+        timezone: dateTime.timezone,
       };
 
-      return await this.fetch<VoidMoonApiResponse>('/api/v1/ephemeris/void-moon', params);
-    } catch (error) {
-      // API doesn't support void moon - calculate from aspects
-      // Import here to avoid circular dependency
-      const { VoidMoonCalculator } = await import('../../services/void-moon-calculator');
-      const calculator = new VoidMoonCalculator(this);
-      const voidPeriod = await calculator.calculateVoidMoon(dateTime);
-
+      const resp = await this.fetch<any>('/api/v1/ephemeris/void-moon', params);
+      
       return {
-        date: this.formatDate(dateTime.date),
-        isVoidOfCourse: voidPeriod.isVoid,
-        voidPeriod: voidPeriod.isVoid && voidPeriod.voidStart && voidPeriod.voidEnd ? {
-          startTime: voidPeriod.voidStart.toISOString(),
-          endTime: voidPeriod.voidEnd.toISOString(),
-          currentSign: voidPeriod.currentSign || '',
-          nextSign: voidPeriod.nextSign || '',
-          durationHours: (voidPeriod.voidEnd.getTime() - voidPeriod.voidStart.getTime()) / (1000 * 60 * 60),
+        date: dateTime.date.toISOString().split('T')[0],
+        isVoidOfCourse: resp.is_void,
+        voidPeriod: resp.is_void ? {
+          startTime: resp.start_time,
+          endTime: resp.end_time,
+          currentSign: resp.sign,
+          nextSign: resp.next_sign,
+          durationHours: resp.duration_hours,
         } : undefined,
       };
+    } catch (error) {
+      // Fallback if needed, but endpoint should now be reliable
+      throw error;
     }
   }
 
@@ -353,13 +325,25 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
     const params = {
-      date: this.formatDate(dateTime.date),
-      lat: dateTime.location.latitude.toString(),
-      lon: dateTime.location.longitude.toString(),
-      tz: dateTime.timezone,
+      date: dateTime.date.toISOString().split('.')[0],
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
+      timezone: dateTime.timezone,
     };
 
-    return this.fetch<PlanetaryHoursApiResponse>('/api/v1/ephemeris/planetary-hours', params);
+    const response = await this.fetch<{ hours: any[] }>('/api/v1/ephemeris/planetary-hours', params);
+    
+    return {
+      date: dateTime.date.toISOString().split('T')[0],
+      sunrise: response.hours[0]?.start_time || '', 
+      sunset: response.hours[12]?.start_time || '',
+      hours: response.hours.map(h => ({
+        hour: h.hour_number,
+        planet: h.planet,
+        startTime: h.start_time,
+        endTime: h.end_time,
+      })),
+    };
   }
 
   /**

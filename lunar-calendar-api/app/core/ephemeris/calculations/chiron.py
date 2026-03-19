@@ -18,21 +18,6 @@ from ..types import (
 )
 
 
-# Russian interpretations for Chiron in each zodiac sign
-CHIRON_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Хирон в Овне: Рана в самоидентичности и лидерстве. Исцеление через принятие своей силы и независимости. Учитель смелости.",
-    ZodiacSignName.TAURUS: "Хирон в Тельце: Рана в самооценке и материальной безопасности. Исцеление через признание своей ценности. Учитель стабильности.",
-    ZodiacSignName.GEMINI: "Хирон в Близнецах: Рана в общении и обучении. Исцеление через принятие своего голоса. Учитель мудрости через слова.",
-    ZodiacSignName.CANCER: "Хирон в Раке: Рана в эмоциональной безопасности и семье. Исцеление через принятие своих эмоций. Учитель заботы.",
-    ZodiacSignName.LEO: "Хирон во Льве: Рана в самовыражении и признании. Исцеление через принятие своей уникальности. Учитель творчества.",
-    ZodiacSignName.VIRGO: "Хирон в Деве: Рана в совершенстве и здоровье. Исцеление через принятие несовершенства. Учитель служения.",
-    ZodiacSignName.LIBRA: "Хирон в Весах: Рана в отношениях и балансе. Исцеление через здоровые границы. Учитель гармонии.",
-    ZodiacSignName.SCORPIO: "Хирон в Скорпионе: Рана в интимности и трансформации. Исцеление через принятие своей темной стороны. Учитель глубины.",
-    ZodiacSignName.SAGITTARIUS: "Хирон в Стрельце: Рана в вере и смысле жизни. Исцеление через поиск своей истины. Учитель мудрости.",
-    ZodiacSignName.CAPRICORN: "Хирон в Козероге: Рана в достижениях и авторитете. Исцеление через принятие своей силы. Учитель ответственности.",
-    ZodiacSignName.AQUARIUS: "Хирон в Водолее: Рана в принадлежности и уникальности. Исцеление через принятие своей индивидуальности. Учитель свободы.",
-    ZodiacSignName.PISCES: "Хирон в Рыбах: Рана в духовности и границах. Исцеление через принятие своей чувствительности. Учитель сострадания.",
-}
 
 
 def get_zodiac_sign(longitude: float) -> ZodiacSignName:
@@ -127,17 +112,13 @@ def calculate_chiron(date_time: DateTime) -> ChironPosition:
     # Get zodiac sign
     zodiac_sign = get_zodiac_sign(longitude)
 
-    # Get interpretation
-    interpretation = CHIRON_INTERPRETATIONS_RU[zodiac_sign]
-
     return ChironPosition(
         longitude=longitude,
         latitude=latitude,
         zodiac_sign=zodiac_sign,
         speed=speed,
         is_retrograde=is_retrograde,
-        distance_au=distance_au,
-        interpretation_ru=interpretation
+        distance_au=distance_au
     )
 
 

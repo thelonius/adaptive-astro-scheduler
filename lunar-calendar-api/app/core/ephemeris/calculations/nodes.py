@@ -21,36 +21,6 @@ from ..types import (
 )
 
 
-# Russian interpretations for each zodiac sign
-RAHU_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Раху в Овне: Путь к самостоятельности, лидерству и храбрости. Развитие инициативы и независимости.",
-    ZodiacSignName.TAURUS: "Раху в Тельце: Путь к материальной стабильности, наслаждению красотой и накоплению ресурсов.",
-    ZodiacSignName.GEMINI: "Раху в Близнецах: Путь к знаниям, общению и многогранности. Развитие интеллекта и коммуникации.",
-    ZodiacSignName.CANCER: "Раху в Раке: Путь к эмоциональной глубине, заботе о близких и созданию дома.",
-    ZodiacSignName.LEO: "Раху во Льве: Путь к самовыражению, творчеству и признанию. Развитие уверенности в себе.",
-    ZodiacSignName.VIRGO: "Раху в Деве: Путь к совершенству, служению и практичности. Развитие внимания к деталям.",
-    ZodiacSignName.LIBRA: "Раху в Весах: Путь к гармонии, партнерству и справедливости. Развитие дипломатии и баланса.",
-    ZodiacSignName.SCORPIO: "Раху в Скорпионе: Путь к глубокой трансформации, силе и регенерации. Развитие духовной силы.",
-    ZodiacSignName.SAGITTARIUS: "Раху в Стрельце: Путь к мудрости, высшему образованию и расширению горизонтов.",
-    ZodiacSignName.CAPRICORN: "Раху в Козероге: Путь к достижениям, дисциплине и социальному статусу.",
-    ZodiacSignName.AQUARIUS: "Раху в Водолее: Путь к инновациям, свободе и служению человечеству.",
-    ZodiacSignName.PISCES: "Раху в Рыбах: Путь к духовности, состраданию и универсальной любви.",
-}
-
-KETU_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Кету в Овне: Прошлый опыт самостоятельности. Важно учиться сотрудничеству.",
-    ZodiacSignName.TAURUS: "Кету в Тельце: Прошлый опыт материальной стабильности. Важно развивать духовные ценности.",
-    ZodiacSignName.GEMINI: "Кету в Близнецах: Прошлый опыт общения и знаний. Важно искать глубокую мудрость.",
-    ZodiacSignName.CANCER: "Кету в Раке: Прошлый опыт заботы и эмоций. Важно развивать профессионализм.",
-    ZodiacSignName.LEO: "Кету во Льве: Прошлый опыт лидерства и признания. Важно учиться работе в команде.",
-    ZodiacSignName.VIRGO: "Кету в Деве: Прошлый опыт служения и перфекционизма. Важно развивать веру и доверие.",
-    ZodiacSignName.LIBRA: "Кету в Весах: Прошлый опыт партнерства. Важно развивать независимость.",
-    ZodiacSignName.SCORPIO: "Кету в Скорпионе: Прошлый опыт трансформации. Важно научиться легкости и простоте.",
-    ZodiacSignName.SAGITTARIUS: "Кету в Стрельце: Прошлый опыт философии и путешествий. Важно развивать практичность.",
-    ZodiacSignName.CAPRICORN: "Кету в Козероге: Прошлый опыт достижений. Важно развивать эмоциональность и заботу.",
-    ZodiacSignName.AQUARIUS: "Кету в Водолее: Прошлый опыт инноваций. Важно развивать творчество и самовыражение.",
-    ZodiacSignName.PISCES: "Кету в Рыбах: Прошлый опыт духовности. Важно развивать практичность и организованность.",
-}
 
 
 def get_zodiac_sign(longitude: float) -> ZodiacSignName:
@@ -143,8 +113,7 @@ def calculate_lunar_nodes(date_time: DateTime) -> LunarNodes:
         latitude=0.0,  # Nodes are always on the ecliptic
         zodiac_sign=north_sign,
         speed=north_speed,
-        is_retrograde=is_retrograde,
-        interpretation_ru=RAHU_INTERPRETATIONS_RU[north_sign]
+        is_retrograde=is_retrograde
     )
 
     # Create South Node (Ketu)
@@ -154,8 +123,7 @@ def calculate_lunar_nodes(date_time: DateTime) -> LunarNodes:
         latitude=0.0,  # Nodes are always on the ecliptic
         zodiac_sign=south_sign,
         speed=north_speed,  # Same speed as north node
-        is_retrograde=is_retrograde,
-        interpretation_ru=KETU_INTERPRETATIONS_RU[south_sign]
+        is_retrograde=is_retrograde
     )
 
     return LunarNodes(
@@ -196,8 +164,7 @@ def calculate_true_node(date_time: DateTime) -> LunarNodes:
         latitude=0.0,
         zodiac_sign=north_sign,
         speed=north_speed,
-        is_retrograde=True,
-        interpretation_ru=RAHU_INTERPRETATIONS_RU[north_sign]
+        is_retrograde=True
     )
 
     south_node = LunarNode(
@@ -206,8 +173,7 @@ def calculate_true_node(date_time: DateTime) -> LunarNodes:
         latitude=0.0,
         zodiac_sign=south_sign,
         speed=north_speed,
-        is_retrograde=True,
-        interpretation_ru=KETU_INTERPRETATIONS_RU[south_sign]
+        is_retrograde=True
     )
 
     return LunarNodes(

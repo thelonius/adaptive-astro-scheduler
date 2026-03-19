@@ -18,6 +18,7 @@ from app.core.ephemeris import (
     HouseSystem,
     PlanetName,
     EphemerisError,
+    create_cache_service,
 )
 
 # Create router
@@ -32,7 +33,8 @@ def get_calculator() -> CachedEphemerisCalculator:
     global _calculator
     if _calculator is None:
         base_calculator = SkyfieldEphemerisAdapter()
-        _calculator = CachedEphemerisCalculator(base_calculator)
+        cache_service = create_cache_service()
+        _calculator = CachedEphemerisCalculator(base_calculator, cache=cache_service)
     return _calculator
 
 
@@ -80,8 +82,6 @@ class MoonPhaseResponse(BaseModel):
 class LunarDayResponse(BaseModel):
     """Lunar day response."""
     number: int
-    symbol: str
-    energy: str
     lunar_phase: str
     starts_at: datetime
     ends_at: datetime
@@ -97,7 +97,6 @@ class AspectResponse(BaseModel):
     orb: float
     is_exact: bool
     is_applying: bool
-    interpretation: str
 
 
 class RetrogradePlanetResponse(BaseModel):
@@ -117,9 +116,41 @@ class HouseResponse(BaseModel):
     planets: List[str]
 
 
-# ============================================================================
+class VoidOfCourseMoonResponse(BaseModel):
+    """Void of Course Moon response."""
+    is_void: bool
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    sign: Optional[str] = None
+    duration_hours: Optional[float] = None
+    last_aspect_planet: Optional[str] = None
+    next_sign: Optional[str] = None
+
+
+class PlanetaryHourResponse(BaseModel):
+    """Planetary hour response."""
+    planet: str
+    start_time: datetime
+    end_time: datetime
+    is_day_hour: bool
+    hour_number: int
+
+
+class PlanetaryHoursResponse(BaseModel):
+    """Planetary hours response."""
+    hours: List[PlanetaryHourResponse]
+
+
+# = :==========================================================================
 # Endpoints
 # ============================================================================
+
+@router.get("/cache/stats")
+async def get_cache_stats():
+    """Get ephemeris cache statistics."""
+    calculator = get_calculator()
+    return calculator.get_cache_stats()
+
 
 @router.get("/planets", response_model=PlanetPositionsResponse)
 async def get_planet_positions(
@@ -254,8 +285,6 @@ async def get_lunar_day(
 
         return LunarDayResponse(
             number=lunar_day.number,
-            symbol=lunar_day.symbol,
-            energy=lunar_day.energy.value,
             lunar_phase=lunar_day.lunar_phase.value,
             starts_at=lunar_day.starts_at,
             ends_at=lunar_day.ends_at,
@@ -344,8 +373,7 @@ async def get_aspects(
                 angle=aspect.angle,
                 orb=aspect.orb,
                 is_exact=aspect.is_exact,
-                is_applying=aspect.is_applying,
-                interpretation=aspect.interpretation
+                is_applying=aspect.is_applying
             )
             for aspect in aspects
         ]
@@ -436,7 +464,6 @@ class LunarNodeResponse(BaseModel):
     zodiac_sign: str
     speed: float
     is_retrograde: bool
-    interpretation_ru: str
 
 
 class LunarNodesResponse(BaseModel):
@@ -452,7 +479,6 @@ class BlackMoonLilithResponse(BaseModel):
     latitude: float
     zodiac_sign: str
     speed: float
-    interpretation_ru: str
 
 
 class ArabicPartResponse(BaseModel):
@@ -462,7 +488,6 @@ class ArabicPartResponse(BaseModel):
     zodiac_sign: str
     formula: str
     is_nocturnal: bool
-    interpretation_ru: str
 
 
 class ChironResponse(BaseModel):
@@ -473,7 +498,6 @@ class ChironResponse(BaseModel):
     speed: float
     is_retrograde: bool
     distance_au: float
-    interpretation_ru: str
 
 
 @router.get("/lunar-nodes", response_model=LunarNodesResponse)
@@ -531,8 +555,7 @@ async def get_lunar_nodes(
                 latitude=nodes.north_node.latitude,
                 zodiac_sign=nodes.north_node.zodiac_sign.value,
                 speed=nodes.north_node.speed,
-                is_retrograde=nodes.north_node.is_retrograde,
-                interpretation_ru=nodes.north_node.interpretation_ru
+                is_retrograde=nodes.north_node.is_retrograde
             ),
             south_node=LunarNodeResponse(
                 name=nodes.south_node.name,
@@ -540,8 +563,7 @@ async def get_lunar_nodes(
                 latitude=nodes.south_node.latitude,
                 zodiac_sign=nodes.south_node.zodiac_sign.value,
                 speed=nodes.south_node.speed,
-                is_retrograde=nodes.south_node.is_retrograde,
-                interpretation_ru=nodes.south_node.interpretation_ru
+                is_retrograde=nodes.south_node.is_retrograde
             )
         )
 
@@ -613,8 +635,7 @@ async def get_black_moon_lilith(
             longitude=lilith.longitude,
             latitude=lilith.latitude,
             zodiac_sign=lilith.zodiac_sign.value,
-            speed=lilith.speed,
-            interpretation_ru=lilith.interpretation_ru
+            speed=lilith.speed
         )
 
     except HTTPException:
@@ -671,8 +692,7 @@ async def get_chiron(
             zodiac_sign=chiron.zodiac_sign.value,
             speed=chiron.speed,
             is_retrograde=chiron.is_retrograde,
-            distance_au=chiron.distance_au,
-            interpretation_ru=chiron.interpretation_ru
+            distance_au=chiron.distance_au
         )
 
     except Exception as e:
@@ -724,8 +744,7 @@ async def get_part_of_fortune(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal,
-            interpretation_ru=part.interpretation_ru
+            is_nocturnal=part.is_nocturnal
         )
 
     except Exception as e:
@@ -777,8 +796,7 @@ async def get_part_of_spirit(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal,
-            interpretation_ru=part.interpretation_ru
+            is_nocturnal=part.is_nocturnal
         )
 
     except Exception as e:
@@ -822,6 +840,90 @@ class SolarTimesResponse(BaseModel):
     # Timestamps in epoch seconds (for easy JS comparison)
     sunrise_ts: Optional[float] = None
     sunset_ts: Optional[float] = None
+
+
+@router.get("/void-moon", response_model=VoidOfCourseMoonResponse)
+async def get_void_of_course_moon(
+    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
+    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+    timezone: str = Query("UTC", description="Timezone")
+):
+    """
+    Check if Moon is currently Void of Course.
+    """
+    try:
+        if date:
+            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+        else:
+            dt = datetime.utcnow()
+
+        date_time = DateTime(
+            date=dt,
+            timezone=timezone,
+            location=Location(latitude, longitude)
+        )
+
+        calculator = get_calculator()
+        voc = await calculator.get_void_of_course_moon(date_time)
+
+        if not voc:
+            return VoidOfCourseMoonResponse(is_void=False)
+
+        return VoidOfCourseMoonResponse(
+            is_void=True,
+            start_time=voc.start_time,
+            end_time=voc.end_time,
+            sign=voc.sign.value,
+            duration_hours=voc.duration_hours,
+            last_aspect_planet=voc.last_aspect_planet.value,
+            next_sign=voc.next_sign.value
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating VoC Moon: {str(e)}")
+
+
+@router.get("/planetary-hours", response_model=PlanetaryHoursResponse)
+async def get_planetary_hours(
+    date: Optional[str] = Query(None, description="ISO format date (UTC, default: today)"),
+    latitude: float = Query(..., ge=-90, le=90, description="Observer latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Observer longitude"),
+    timezone: str = Query("UTC", description="IANA timezone")
+):
+    """
+    Get 24 planetary hours for the given date.
+    """
+    try:
+        if date:
+            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+        else:
+            dt = datetime.utcnow()
+
+        date_time = DateTime(
+            date=dt,
+            timezone=timezone,
+            location=Location(latitude, longitude)
+        )
+
+        calculator = get_calculator()
+        hours = await calculator.get_planetary_hours(date_time)
+
+        return PlanetaryHoursResponse(
+            hours=[
+                PlanetaryHourResponse(
+                    planet=h.planet.value,
+                    start_time=h.start_time,
+                    end_time=h.end_time,
+                    is_day_hour=h.is_day_hour,
+                    hour_number=h.hour_number
+                )
+                for h in hours
+            ]
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating planetary hours: {str(e)}")
 
 
 @router.get("/solar-times", response_model=SolarTimesResponse)

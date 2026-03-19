@@ -393,7 +393,18 @@ export interface CelestialEvent {
   rarity: PatternRarity;         // How rare/significant
   visibility?: 'visible' | 'not-visible' | 'telescope-only';
   significance: string;          // Astrological meaning
+  nextOccurrence?: DateTime;     // When the next same event will occur
+
+  // Duration & Dynamics (for parades, retrogrades, etc)
+  durationDays?: number;         // Total duration in days
+  peakIntensity?: number;        // 0-1 score of current intensity relative to peak
+  isPeak?: boolean;              // Is today the peak intensity day?
+  eventRange?: {                 // Full time window
+    start: Date;
+    end: Date;
+  };
 }
+
 
 
 // ============================================================================

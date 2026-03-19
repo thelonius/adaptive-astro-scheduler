@@ -24,21 +24,6 @@ from ..types import (
 )
 
 
-# Russian interpretations for Lilith in each zodiac sign
-LILITH_INTERPRETATIONS_RU: Dict[ZodiacSignName, str] = {
-    ZodiacSignName.ARIES: "Лилит в Овне: Подавленная агрессия и гнев. Страх проявлять инициативу. Сила через смелость и самостоятельность.",
-    ZodiacSignName.TAURUS: "Лилит в Тельце: Страх потери материальной стабильности. Подавленная чувственность. Сила через принятие своего тела и желаний.",
-    ZodiacSignName.GEMINI: "Лилит в Близнецах: Страх быть непонятым. Подавленные мысли и слова. Сила через честное самовыражение.",
-    ZodiacSignName.CANCER: "Лилит в Раке: Подавленные эмоции и материнские инстинкты. Страх уязвимости. Сила через принятие своих чувств.",
-    ZodiacSignName.LEO: "Лилит во Льве: Подавленное творчество и самовыражение. Страх быть в центре внимания. Сила через принятие своей уникальности.",
-    ZodiacSignName.VIRGO: "Лилит в Деве: Перфекционизм как защита. Страх несовершенства. Сила через принятие своих недостатков.",
-    ZodiacSignName.LIBRA: "Лилит в Весах: Подавленные потребности в отношениях. Страх конфликтов. Сила через честность в партнерстве.",
-    ZodiacSignName.SCORPIO: "Лилит в Скорпионе: Подавленная сексуальность и сила. Страх трансформации. Сила через принятие своей темной стороны.",
-    ZodiacSignName.SAGITTARIUS: "Лилит в Стрельце: Подавленная свобода и искания. Страх ограничений. Сила через следование своей истине.",
-    ZodiacSignName.CAPRICORN: "Лилит в Козероге: Подавленные амбиции. Страх власти и ответственности. Сила через принятие своего авторитета.",
-    ZodiacSignName.AQUARIUS: "Лилит в Водолее: Подавленная индивидуальность. Страх быть другим. Сила через принятие своей уникальности.",
-    ZodiacSignName.PISCES: "Лилит в Рыбах: Подавленная духовность и интуиция. Страх растворения. Сила через принятие своей чувствительности.",
-}
 
 
 def get_zodiac_sign(longitude: float) -> ZodiacSignName:
@@ -130,16 +115,12 @@ def calculate_black_moon_lilith(
     # Get zodiac sign
     zodiac_sign = get_zodiac_sign(longitude)
 
-    # Get interpretation
-    interpretation = LILITH_INTERPRETATIONS_RU[zodiac_sign]
-
     return BlackMoonLilith(
         lilith_type=lilith_type,
         longitude=longitude,
         latitude=latitude,
         zodiac_sign=zodiac_sign,
-        speed=speed,
-        interpretation_ru=interpretation
+        speed=speed
     )
 
 

@@ -7,9 +7,12 @@ Past dates are cached forever, future dates for 24 hours.
 
 import hashlib
 import json
+import logging
+import pickle  # Using pickle for complex astronomical structures
+import os
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-from functools import wraps
+from typing import List, Optional, Dict, Any, Union
+from abc import ABC, abstractmethod
 
 from .interface import IEphemerisCalculator
 from .types import (
@@ -27,8 +30,30 @@ from .types import (
 )
 
 
-class CacheService:
-    """Simple in-memory cache service."""
+logger = logging.getLogger(__name__)
+
+
+class ICacheService(ABC):
+    """Interface for cache services."""
+    @abstractmethod
+    def get(self, key: str) -> Optional[Any]:
+        pass
+
+    @abstractmethod
+    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None):
+        pass
+
+    @abstractmethod
+    def clear(self):
+        pass
+
+    @abstractmethod
+    def size(self) -> int:
+        pass
+
+
+class MemoryCacheService(ICacheService):
+    """Simple in-memory cache service (default)."""
 
     def __init__(self):
         self._cache: Dict[str, tuple[Any, Optional[datetime]]] = {}
@@ -41,11 +66,12 @@ class CacheService:
                 return value
             else:
                 # Expired
-                del self._cache[key]
+                self._cache.pop(key, None)
         return None
 
     def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None):
         """Set value in cache with optional TTL."""
+        # Use UTC for expires_at
         expires_at = None
         if ttl_seconds is not None and ttl_seconds > 0:
             expires_at = datetime.utcnow() + timedelta(seconds=ttl_seconds)
@@ -60,6 +86,58 @@ class CacheService:
         return len(self._cache)
 
 
+class RedisCacheService(ICacheService):
+    """Redis-backed cache service for persistent and distributed caching."""
+
+    def __init__(self, host: str = "redis", port: int = 6379, db: int = 0, password: Optional[str] = None):
+        try:
+            import redis
+            self._client = redis.Redis(
+                host=host,
+                port=port,
+                db=db,
+                password=password,
+                socket_timeout=2,
+                retry_on_timeout=True
+            )
+            self._client.ping()
+            self._enabled = True
+            logger.info(f"Redis cache initialized at {host}:{port}")
+        except Exception as e:
+            self._enabled = False
+            logger.error(f"Failed to connect to Redis: {str(e)}. Falling back to no-cache.")
+
+    def get(self, key: str) -> Optional[Any]:
+        if not self._enabled:
+            return None
+        try:
+            data = self._client.get(key)
+            if data:
+                return pickle.loads(data)
+        except Exception as e:
+            logger.warning(f"Error reading from Redis cache: {str(e)}")
+        return None
+
+    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None):
+        if not self._enabled:
+            return
+        try:
+            # TTL=0 in Redis means no expiration (if ttl_seconds is None)
+            data = pickle.dumps(value)
+            self._client.set(key, data, ex=ttl_seconds)
+        except Exception as e:
+            logger.warning(f"Error writing to Redis cache: {str(e)}")
+
+    def clear(self):
+        if self._enabled:
+            self._client.flushdb()
+
+    def size(self) -> int:
+        if not self._enabled:
+            return 0
+        return self._client.dbsize()
+
+
 class CachedEphemerisCalculator(IEphemerisCalculator):
     """
     Ephemeris calculator with caching layer.
@@ -70,7 +148,7 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
     def __init__(
         self,
         calculator: IEphemerisCalculator,
-        cache: Optional[CacheService] = None
+        cache: Optional[ICacheService] = None
     ):
         """
         Initialize cached calculator.
@@ -80,7 +158,7 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
             cache: Cache service (creates new one if not provided)
         """
         self.calculator = calculator
-        self.cache = cache or CacheService()
+        self.cache = cache or MemoryCacheService()
 
     def _make_cache_key(self, prefix: str, **kwargs) -> str:
         """Generate cache key from arguments."""
@@ -301,11 +379,23 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
     # Stats methods
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
+        backend = "in-memory"
+        if isinstance(self.cache, RedisCacheService):
+            backend = "redis"
+            
         return {
             "size": self.cache.size(),
-            "backend": "in-memory"
+            "backend": backend
         }
 
-    def clear_cache(self):
-        """Clear all cached data."""
-        self.cache.clear()
+
+def create_cache_service() -> ICacheService:
+    """Create cache service based on environment variables."""
+    redis_host = os.environ.get("REDIS_HOST")
+    if redis_host:
+        redis_port = int(os.environ.get("REDIS_PORT", 6379))
+        redis_db = int(os.environ.get("REDIS_DB", 0))
+        redis_password = os.environ.get("REDIS_PASSWORD")
+        return RedisCacheService(host=redis_host, port=redis_port, db=redis_db, password=redis_password)
+    
+    return MemoryCacheService()
