@@ -21,9 +21,10 @@ export class NatalChartRepository {
     const query = `
       INSERT INTO natal_charts (
         user_id, name, birth_date, birth_time, birth_location,
-        planets, houses, aspects, lunar_day, moon_phase, house_system
+        planets, houses, aspects, lunar_day, moon_phase, house_system,
+        chart_type, description, tags
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
@@ -39,19 +40,14 @@ export class NatalChartRepository {
       data.lunar_day ? JSON.stringify(data.lunar_day) : null,
       data.moon_phase || null,
       data.house_system || 'placidus',
+      data.chart_type || 'natal',
+      data.description || null,
+      JSON.stringify(data.tags || []),
     ];
 
     try {
       const result = await pool.query<NatalChart>(query, values);
-      const chart = this.deserialize(result.rows[0]);
-      
-      // Add the additional fields that might not be in DB yet
-      return {
-        ...chart,
-        chart_type: data.chart_type || 'natal',
-        description: data.description,
-        tags: data.tags,
-      };
+      return this.deserialize(result.rows[0]);
     } catch (error) {
       console.error('Error creating chart:', error);
       throw new Error(`Failed to create chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -181,6 +177,21 @@ export class NatalChartRepository {
       values.push(data.moon_phase);
     }
 
+    if (data.chart_type !== undefined) {
+      updates.push(`chart_type = $${paramIndex++}`);
+      values.push(data.chart_type);
+    }
+
+    if (data.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(data.description);
+    }
+
+    if (data.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      values.push(JSON.stringify(data.tags));
+    }
+
     if (updates.length === 0) {
       return this.findById(id);
     }
@@ -250,6 +261,9 @@ export class NatalChartRepository {
       lunar_day: row.lunar_day && typeof row.lunar_day === 'string'
         ? JSON.parse(row.lunar_day)
         : row.lunar_day,
+      tags: row.tags && typeof row.tags === 'string'
+        ? JSON.parse(row.tags)
+        : row.tags,
     };
   }
 }

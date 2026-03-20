@@ -61,10 +61,21 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
     }
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.length >= 3) {
+        handleSearch(searchQuery);
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    handleSearch(query);
+    setSearchQuery(e.target.value);
   };
 
   const handleLocationSelect = (result: GeocodeResult) => {

@@ -7,3 +7,4 @@ const controller = new TravelController();
 travelRoutes.post('/relocation', (req, res) => controller.getRelocation(req, res));
 travelRoutes.post('/analyze', (req, res) => controller.analyzeTrip(req, res));
 travelRoutes.post('/compare', (req, res) => controller.compareDestinations(req, res));
+travelRoutes.post('/scan', (req, res) => controller.scanGlobalZones(req, res));

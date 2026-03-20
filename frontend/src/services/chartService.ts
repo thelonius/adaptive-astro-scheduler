@@ -43,9 +43,11 @@ export class ChartService {
   // Calculate chart (get planetary positions, houses, aspects)
   async calculateChart(chartData: ChartData): Promise<ChartCalculationResult> {
     const response = await axios.post(`${this.baseURL}/api/natal-chart/calculate`, {
-      birthDate: new Date(`${chartData.date}T${chartData.time}`),
-      birthLocation: chartData.location,
-      name: chartData.name
+      birthDate: chartData.date,
+      birthTime: chartData.time,
+      latitude: chartData.location.latitude,
+      longitude: chartData.location.longitude,
+      timezone: chartData.location.timezone
     });
     return {
       ...response.data,
@@ -60,7 +62,12 @@ export class GeocodingService {
   async searchLocations(query: string): Promise<GeocodeResult[]> {
     try {
       const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'Adaptive-Astro-Scheduler/0.1.0'
+          }
+        }
       );
 
       return response.data.map((item: any) => ({
@@ -100,7 +107,12 @@ export class GeocodingService {
           // Reverse geocode to get city/country info
           try {
             const response = await axios.get(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+              {
+                headers: {
+                  'User-Agent': 'Adaptive-Astro-Scheduler/0.1.0'
+                }
+              }
             );
 
             const address = response.data.address || {};

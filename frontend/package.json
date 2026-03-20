@@ -23,6 +23,8 @@
     "chart.js": "^4.4.1",
     "chroma-js": "^3.2.0",
     "date-fns": "^2.30.0",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.6",
     "framer-motion": "^10.18.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",

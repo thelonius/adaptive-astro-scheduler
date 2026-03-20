@@ -46,10 +46,113 @@ export class CelestialEventsDetector {
         events.push(...retrogrades);
         events.push(...ingresses);
 
+        // Deduplicate events to ensure only one entry per unique event per day
+        // This prevents multiple cards for the same eclipse or occultation detected in multiple windows
+        const uniqueEventsMap = new Map<string, CelestialEvent>();
+        for (const event of events) {
+            const dateStr = event.date.date.toISOString().split('T')[0];
+            const key = `${event.type}-${event.name}-${dateStr}`;
+            if (!uniqueEventsMap.has(key)) {
+                uniqueEventsMap.set(key, event);
+            }
+        }
+        const dedupedEvents = Array.from(uniqueEventsMap.values());
+
+        // Post-process rare events to find next occurrence
+        const rareEvents = dedupedEvents.filter(e => e.rarity === 'rare' || e.rarity === 'very-rare');
+        await Promise.all(rareEvents.map(async (event) => {
+            event.nextOccurrence = await this.findNextSameEvent(event);
+        }));
+
         // Sort by date
-        return events.sort((a, b) =>
+        return dedupedEvents.sort((a, b) =>
             a.date.date.getTime() - b.date.date.getTime()
         );
+    }
+
+    /**
+     * Find the next occurrence of the same event
+     */
+    private async findNextSameEvent(event: CelestialEvent): Promise<DateTime | undefined> {
+        // Look ahead up to 5 years for rare events
+        const maxYears = 5;
+        const searchStart = new Date(event.date.date);
+
+        // Skip ahead to avoid finding the same event's next day
+        // For slow-moving events like eclipses and alignments, use a larger skip
+        // For fast events like Moon ingress or occultations, 1 day is enough
+        let skipDays = 1;
+        if (event.type.includes('eclipse') || event.type === 'planetary-alignment') {
+            skipDays = 20; // Skip current window but catch next eclipse (approx 6 mo)
+        } else if (event.type.includes('retrograde')) {
+            skipDays = 5; // Skip current station shadow
+        }
+
+        searchStart.setDate(searchStart.getDate() + skipDays);
+
+        const searchEnd = new Date(searchStart);
+        searchEnd.setFullYear(searchEnd.getFullYear() + maxYears);
+
+        const startDt: DateTime = {
+            date: searchStart,
+            timezone: 'UTC',
+            location: { latitude: 0, longitude: 0 }
+        };
+
+        const endDt: DateTime = {
+            date: searchEnd,
+            timezone: 'UTC',
+            location: { latitude: 0, longitude: 0 }
+        };
+
+        let foundEvents: CelestialEvent[] = [];
+
+        // Specific detection based on type
+        switch (event.type) {
+            case 'solar-eclipse':
+            case 'lunar-eclipse':
+                foundEvents = await this.detectEclipses(startDt, endDt);
+                break;
+            case 'planetary-alignment':
+                foundEvents = await this.detectPlanetaryAlignments(startDt, endDt);
+                break;
+            case 'occultation':
+                foundEvents = await this.detectOccultations(startDt, endDt);
+                break;
+            case 'retrograde-start':
+            case 'retrograde-end':
+                foundEvents = await this.detectRetrogrades(startDt, endDt);
+                break;
+            case 'ingress':
+                foundEvents = await this.detectIngresses(startDt, endDt);
+                break;
+            default:
+                return undefined;
+        }
+
+        // Filter for the "same" event
+        const sameEvent = foundEvents.find(e => {
+            if (e.type !== event.type) return false;
+
+            // For eclipses, check name (Total, Annular, etc.)
+            if (e.type.includes('eclipse')) {
+                return e.name === event.name;
+            }
+
+            // For alignments, check same number of planets or same planets
+            if (e.type === 'planetary-alignment') {
+                return e.planets?.length === event.planets?.length;
+            }
+
+            // For occultations/retrogrades/ingress, check same planets
+            if (e.planets && event.planets) {
+                return e.planets[0] === event.planets[0];
+            }
+
+            return e.name === event.name;
+        });
+
+        return sameEvent?.date;
     }
 
     /**
@@ -139,11 +242,11 @@ export class CelestialEventsDetector {
         startDate: DateTime,
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
-        const events: CelestialEvent[] = [];
+        const rawDetections: { date: DateTime; planets: any[]; arc: number }[] = [];
         const currentDate = new Date(startDate.date);
         const end = new Date(endDate.date);
 
-        // Check every 7 days (alignments are slow-moving)
+        // Sample every 2 days for precision
         while (currentDate <= end) {
             const dateTime: DateTime = {
                 date: new Date(currentDate),
@@ -156,10 +259,10 @@ export class CelestialEventsDetector {
                 ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(p.name)
             );
 
-            // Check for alignments (planets within 30° arc)
             const alignmentArc = 30;
             for (let i = 0; i < majorPlanets.length - 2; i++) {
                 const cluster = [majorPlanets[i]];
+                let maxDist = 0;
 
                 for (let j = i + 1; j < majorPlanets.length; j++) {
                     const distance = this.angularDistance(
@@ -169,32 +272,81 @@ export class CelestialEventsDetector {
 
                     if (distance <= alignmentArc) {
                         cluster.push(majorPlanets[j]);
+                        maxDist = Math.max(maxDist, distance);
                     }
                 }
 
                 if (cluster.length >= 3) {
-                    const planetNames = cluster.map(p => p.name);
-                    events.push({
-                        id: `alignment-${dateTime.date.toISOString().split('T')[0]}-${planetNames.join('-')}`,
-                        type: 'planetary-alignment',
-                        name: `${cluster.length}-Planet Alignment`,
-                        description: `${planetNames.join(', ')} aligned within ${alignmentArc}°`,
-                        date: dateTime,
-                        planets: planetNames,
-                        rarity: cluster.length >= 5 ? 'very-rare' : cluster.length >= 4 ? 'rare' : 'moderate',
-                        significance: `Concentrated planetary energy - major cosmic event affecting ${planetNames.join(', ')}`
-                    });
-
-                    // Skip planets in this cluster
+                    rawDetections.push({ date: dateTime, planets: cluster, arc: maxDist });
                     i += cluster.length - 1;
                     break;
                 }
             }
-
-            currentDate.setDate(currentDate.getDate() + 7);
+            currentDate.setDate(currentDate.getDate() + 2);
         }
 
-        return events;
+        // Group RAW detections into sessions (contiguous periods)
+        const finalEvents: CelestialEvent[] = [];
+        let currentSession: typeof rawDetections = [];
+
+        for (let i = 0; i < rawDetections.length; i++) {
+            const det = rawDetections[i];
+
+            if (currentSession.length === 0) {
+                currentSession.push(det);
+                continue;
+            }
+
+            const prevDet = currentSession[currentSession.length - 1];
+            const daysDiff = (det.date.date.getTime() - prevDet.date.date.getTime()) / (1000 * 3600 * 24);
+
+            // Compare planets in current session vs new detection
+            const samePlanets = det.planets.length === prevDet.planets.length &&
+                det.planets.every(p => prevDet.planets.some(prevP => prevP.name === p.name));
+
+            if (daysDiff <= 4 && samePlanets) {
+                currentSession.push(det);
+            } else {
+                finalEvents.push(this.processAlignmentSession(currentSession));
+                currentSession = [det];
+            }
+        }
+
+        if (currentSession.length > 0) {
+            finalEvents.push(this.processAlignmentSession(currentSession));
+        }
+
+        return finalEvents;
+    }
+
+    /**
+     * Process a session of alignment detections and create a single representative event
+     */
+    private processAlignmentSession(session: { date: DateTime; planets: any[]; arc: number }[]): CelestialEvent {
+        // Find peak day (day with the tightest grouping/smallest arc)
+        const peak = session.reduce((min, current) => current.arc < min.arc ? current : min, session[0]);
+
+        const planetNames = peak.planets.map(p => p.name);
+        const startDate = session[0].date.date;
+        const endDate = session[session.length - 1].date.date;
+        const durationDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+
+        return {
+            id: `alignment-peak-${peak.date.date.toISOString().split('T')[0]}-${planetNames.join('-')}`,
+            type: 'planetary-alignment',
+            name: `${peak.planets.length}-Planet Alignment (Peak)`,
+            description: `A grouping of ${planetNames.join(', ')} within a tight ${peak.arc.toFixed(1)}° arc.`,
+            date: peak.date,
+            planets: planetNames,
+            rarity: peak.planets.length >= 5 ? 'very-rare' : peak.planets.length >= 4 ? 'rare' : 'moderate',
+            significance: `This long-term planetary alignment reaches its peak today. It creates a major concentration of cosmic power, focusing the combined energies of ${planetNames.join(', ')}. Perfect for intensive focused activity.`,
+            durationDays,
+            isPeak: true,
+            eventRange: {
+                start: startDate,
+                end: endDate
+            }
+        };
     }
 
     /**
@@ -348,7 +500,8 @@ export class CelestialEventsDetector {
                 const angularDistance = this.angularDistance(sun.longitude, moon.longitude);
 
                 // Solar Eclipse: New Moon + Sun-Moon close alignment
-                if (Math.abs(phase.angle) < 15) { // Within 15° of New Moon
+                // Solar Eclipse: New Moon day + Sun-Moon close alignment
+                if (Math.abs(phase.angle) < 1.0) { // Must be New Moon day
                     // Check if Moon is near ecliptic (low latitude)
                     if (Math.abs(moon.latitude) < 1.5) {
                         // Determine eclipse type based on Moon's distance
@@ -390,7 +543,8 @@ export class CelestialEventsDetector {
                 }
 
                 // Lunar Eclipse: Full Moon + Sun-Moon-Earth alignment
-                if (Math.abs(phase.angle - 180) < 15) { // Within 15° of Full Moon
+                // Lunar Eclipse: Full Moon day + Sun-Moon-Earth alignment
+                if (Math.abs(phase.angle - 180) < 1.0) { // Must be Full Moon day
                     // Check if Moon is near ecliptic
                     if (Math.abs(moon.latitude) < 1.5) {
                         let eclipseType: 'total' | 'partial' | 'penumbral';

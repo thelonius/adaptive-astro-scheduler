@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { chartService } from '../services/chartService';
 import type { CelestialBody, Aspect, House } from '@adaptive-astro/shared/types';
 import { transformPlanetData, transformAspectData, transformHouseData } from '../utils/apiTransform';
 
@@ -33,6 +34,7 @@ export interface UseNatalChartReturn {
   loading: boolean;
   error: Error | null;
   calculateChart: (input: NatalChartInput) => Promise<void>;
+  loadSavedChart: (id: string) => Promise<void>;
   clearChart: () => void;
 }
 
@@ -102,6 +104,26 @@ export function useNatalChart(): UseNatalChartReturn {
     }
   }, []);
 
+  const loadSavedChart = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const savedChart = await chartService.getChart(id);
+      const input: NatalChartInput = {
+        birthDate: savedChart.date,
+        birthTime: savedChart.time,
+        latitude: savedChart.location.latitude,
+        longitude: savedChart.location.longitude,
+        timezone: savedChart.location.timezone,
+      };
+      await calculateChart(input);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load chart'));
+    } finally {
+      setLoading(false);
+    }
+  }, [calculateChart]);
+
   const clearChart = useCallback(() => {
     setData(null);
     setError(null);
@@ -112,6 +134,7 @@ export function useNatalChart(): UseNatalChartReturn {
     loading,
     error,
     calculateChart,
+    loadSavedChart,
     clearChart,
   };
 }

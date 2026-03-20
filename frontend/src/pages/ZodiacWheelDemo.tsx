@@ -35,6 +35,9 @@ import { FeaturedEventsCarousel, type FeaturedEvent } from '../components/Featur
 import { useAdaptiveZodiacData } from '../hooks/useZodiacData';
 import { AsciiCelestialArt } from '../components/AsciiCelestialArt';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import { useNatalChart } from '../hooks/useNatalChart';
+import { GeoLuckMap } from '../components/GeoLuckMap';
+import axios from 'axios';
 
 export const ZodiacWheelDemo: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -61,6 +64,24 @@ export const ZodiacWheelDemo: React.FC = () => {
   const [targetDate, setTargetDate] = useState<Date | undefined>(undefined);
   const [activeBodies, setActiveBodies] = useState<string[]>([]);
   const [eventTitle, setEventTitle] = useState<string | undefined>(undefined);
+
+  // Geo Scan State
+  const [geoNodes, setGeoNodes] = useState<any[]>([]);
+  const [geoRecs, setGeoRecs] = useState<any>({ career: null, personal: null, wealth: null });
+  const [isScanningGeo, setIsScanningGeo] = useState(false);
+
+  // User Natal Chart for Geo-Scan
+  const { calculateChart: calculateUserNatal, data: userNatalData } = useNatalChart();
+
+  useEffect(() => {
+    calculateUserNatal({
+      birthDate: '1984-09-11',
+      birthTime: '01:40',
+      latitude: 55.7558,
+      longitude: 37.6173,
+      timezone: 'Europe/Moscow'
+    });
+  }, [calculateUserNatal]);
 
   // Use centralized data fetching
   const { data: currentData, loading } = useAdaptiveZodiacData({
@@ -116,6 +137,22 @@ export const ZodiacWheelDemo: React.FC = () => {
       planets: interpolatedPlanets,
       timestamp: currentTime
     };
+  };
+
+  const handleGeoScan = async () => {
+    if (!userNatalData) return;
+    setIsScanningGeo(true);
+    try {
+      const resp = await axios.post('http://localhost:3001/api/v1/travel/scan', {
+        natalChart: userNatalData
+      });
+      setGeoNodes(resp.data.highestScoreZones);
+      setGeoRecs(resp.data.recommendations);
+    } catch (err) {
+      console.error('Geo scan failed:', err);
+    } finally {
+      setIsScanningGeo(false);
+    }
   };
 
   useEffect(() => {
@@ -359,7 +396,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <CardBody display="flex" justifyContent="center" alignItems="center" p={8}>
                   <ZodiacWheel
                     config={{
-                      size,
+                      size: 1000,
                       showHouses,
                       showAspects,
                       showDegrees,
@@ -383,23 +420,41 @@ export const ZodiacWheelDemo: React.FC = () => {
           {/* 3D Cesium Sky Viewer */}
           {(viewMode === '3d' || viewMode === 'both') && (
             <GridItem>
-              <Card>
-                <CardBody p={0}>
-                  <CesiumSkyViewer
-                    key="cesium-viewer"
-                    planetData={currentData || undefined}
-                    currentTime={viewerTime}
-                    height={600}
-                    autoRotate={false}
-                    activeBodies={activeBodies}
-                    loading={loading && !!targetDate}
-                    eventTitle={eventTitle}
-                    isPlaying={isPlaying}
-                    animationSpeed={animationSpeed}
-                    onTogglePlay={() => setIsPlaying(!isPlaying)}
+              <VStack spacing={4} align="stretch">
+                <Card>
+                  <CardBody p={0}>
+                    <CesiumSkyViewer
+                      key="cesium-viewer"
+                      planetData={currentData || undefined}
+                      currentTime={viewerTime}
+                      height={600}
+                      autoRotate={false}
+                      activeBodies={activeBodies}
+                      loading={loading && !!targetDate}
+                      eventTitle={eventTitle}
+                      isPlaying={isPlaying}
+                      animationSpeed={animationSpeed}
+                      onTogglePlay={() => setIsPlaying(!isPlaying)}
+                      natalChart={userNatalData}
+                    />
+                  </CardBody>
+                </Card>
+
+                {/* 2D Geo Luck Projection */}
+                <Box>
+                  <Heading size="sm" mb={3} color="gray.400" display="flex" justifyContent="space-between" alignItems="center">
+                    2D Luck Projection
+                    <Button size="xs" colorScheme="teal" onClick={handleGeoScan} isLoading={isScanningGeo}>
+                      Refresh Scan
+                    </Button>
+                  </Heading>
+                  <GeoLuckMap
+                    nodes={geoNodes}
+                    recommendations={geoRecs}
+                    isLoading={isScanningGeo}
                   />
-                </CardBody>
-              </Card>
+                </Box>
+              </VStack>
             </GridItem>
           )}
 

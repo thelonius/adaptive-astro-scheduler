@@ -16,11 +16,12 @@ export class UserRepository {
 
   async create(data: CreateUserInput): Promise<User> {
     const query = `
-      INSERT INTO users (telegram_id, username, metadata)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (id, telegram_id, username, metadata)
+      VALUES (COALESCE($1, uuid_generate_v4()), $2, $3, $4)
       RETURNING *
     `;
     const values = [
+      data.id || null,
       data.telegram_id ?? null,
       data.username || null,
       data.metadata || {},

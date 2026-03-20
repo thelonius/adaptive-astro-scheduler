@@ -117,7 +117,7 @@ const DayExplorer: React.FC = () => {
 
     return (
         <Box bg="var(--ag-bg)" minH="100vh" py={6} transition="background-color var(--ag-transition-slow)">
-            <Container maxW="container.lg">
+            <Container maxW="1400px">
                 <VStack spacing={8}>
                     {/* Header */}
                     <VStack spacing={3}>
@@ -284,7 +284,7 @@ const DayExplorer: React.FC = () => {
                     {/* Main Content Grid */}
                     <Box
                         display="grid"
-                        gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }}
+                        gridTemplateColumns={{ base: "1fr", lg: "1.5fr 1fr" }}
                         gap={8}
                         width="100%"
                     >
@@ -301,7 +301,7 @@ const DayExplorer: React.FC = () => {
                                 <ZodiacWheel
                                     date={selectedDate}
                                     config={{
-                                        size: 400,
+                                        size: 800,
                                         showHouses: showHouses,
                                         showAspects: showAspects, // Controlled by state
                                         showRetrogrades: showRetrogrades

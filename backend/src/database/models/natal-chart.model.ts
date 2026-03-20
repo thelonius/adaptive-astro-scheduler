@@ -74,6 +74,7 @@ export interface CreateNatalChartInput {
 
 export interface UpdateNatalChartInput {
   name?: string;
+  chart_type?: 'natal' | 'event' | 'question';
   birth_date?: Date | string;
   birth_time?: string;
   birth_location?: BirthLocation;
@@ -82,6 +83,8 @@ export interface UpdateNatalChartInput {
   aspects?: Aspect[];
   lunar_day?: LunarDay | null;
   moon_phase?: string | null;
+  description?: string;
+  tags?: string[];
 }
 
 /**

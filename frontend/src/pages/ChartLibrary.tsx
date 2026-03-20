@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -54,6 +55,7 @@ const ChartLibrary: React.FC = () => {
   const [chartToDelete, setChartToDelete] = useState<SavedChart | null>(null);
   
   const toast = useToast();
+  const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -88,6 +90,10 @@ const ChartLibrary: React.FC = () => {
   const confirmDelete = (chart: SavedChart) => {
     setChartToDelete(chart);
     onOpen();
+  };
+
+  const handleViewChart = (chart: SavedChart) => {
+    navigate(`/natal-chart/${chart.id}`);
   };
 
   const getTypeColor = (type: string) => {
@@ -212,7 +218,10 @@ const ChartLibrary: React.FC = () => {
                           size="sm"
                         />
                         <MenuList>
-                          <MenuItem icon={<ViewIcon />}>
+                          <MenuItem 
+                            icon={<ViewIcon />}
+                            onClick={() => handleViewChart(chart)}
+                          >
                             View Chart
                           </MenuItem>
                           <MenuItem icon={<EditIcon />}>
@@ -274,7 +283,12 @@ const ChartLibrary: React.FC = () => {
 
                     {/* Action Buttons */}
                     <HStack spacing={2} pt={2}>
-                      <Button size="sm" colorScheme="blue" flex={1}>
+                      <Button 
+                        size="sm" 
+                        colorScheme="blue" 
+                        flex={1}
+                        onClick={() => handleViewChart(chart)}
+                      >
                         View Chart
                       </Button>
                       <Button size="sm" variant="outline" flex={1}>

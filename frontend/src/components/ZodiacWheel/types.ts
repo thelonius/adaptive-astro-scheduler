@@ -4,7 +4,8 @@ export interface ZodiacWheelData {
   planets: CelestialBody[];
   aspects: Aspect[];
   houses?: House[];
-  timestamp: Date;
+  voidMoon?: { isVoid: boolean; voidStart?: string; voidEnd?: string };
+  timestamp?: Date | string;
 }
 
 export interface ZodiacWheelConfig {
@@ -33,6 +34,7 @@ export interface PlanetPosition {
   x: number;
   y: number;
   angle: number;
+  exactAngle: number;
   clustered?: boolean;
   clusterIndex?: number;
   originalLongitude?: number;

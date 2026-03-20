@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { AspectLine } from './types';
+import { polarToCartesian } from './utils';
 
 interface AspectLinesProps {
   lines: AspectLine[];
@@ -14,6 +15,67 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
     const order = ['quincunx', 'sextile', 'trine', 'square', 'opposition', 'conjunction'];
     return order.indexOf(a.aspect.type) - order.indexOf(b.aspect.type);
   });
+
+  // Calculate midpoints and group close ones
+  const midpoints: { x: number, y: number, aspect: any, id: string }[] = [];
+  const groupedMidpoints: { x: number, y: number, aspects: any[] }[] = [];
+  const GROUP_DISTANCE = size * 0.05; // Distance threshold for grouping symbols
+
+  const aspectRingRadius = size * 0.28;
+  const centerX = size / 2;
+  const centerY = size / 2;
+
+  const linesWithCoords = sortedLines.map(line => {
+    const fromPoint = polarToCartesian(centerX, centerY, aspectRingRadius, line.from.exactAngle || line.from.angle);
+    const toPoint = polarToCartesian(centerX, centerY, aspectRingRadius, line.to.exactAngle || line.to.angle);
+    return { ...line, fromPoint, toPoint };
+  });
+
+  linesWithCoords.forEach((line, i) => {
+    const midX = (line.fromPoint.x + line.toPoint.x) / 2;
+    const midY = (line.fromPoint.y + line.toPoint.y) / 2;
+    midpoints.push({ x: midX, y: midY, aspect: line.aspect, id: `mid-${i}` });
+  });
+
+  midpoints.forEach(point => {
+    // Find if it belongs to an existing group
+    const existingGroup = groupedMidpoints.find(g =>
+      Math.hypot(g.x - point.x, g.y - point.y) < GROUP_DISTANCE
+    );
+
+    if (existingGroup) {
+      // Add to group, adjust centroid slightly
+      existingGroup.aspects.push(point.aspect);
+      existingGroup.x = (existingGroup.x * (existingGroup.aspects.length - 1) + point.x) / existingGroup.aspects.length;
+      existingGroup.y = (existingGroup.y * (existingGroup.aspects.length - 1) + point.y) / existingGroup.aspects.length;
+    } else {
+      groupedMidpoints.push({ x: point.x, y: point.y, aspects: [point.aspect] });
+    }
+  });
+
+  const getAspectSymbol = (type: string) => {
+    switch (type) {
+      case 'conjunction': return '☌';
+      case 'opposition': return '☍';
+      case 'trine': return '△';
+      case 'square': return '□';
+      case 'sextile': return '⚹';
+      case 'quincunx': return '⚻';
+      default: return '○';
+    }
+  };
+
+  const getAspectColor = (type: string) => {
+    switch (type) {
+      case 'conjunction': return '#FFD700'; // Gold
+      case 'opposition': return '#FF1493'; // Deep Pink/Red
+      case 'trine': return '#32CD32'; // Green
+      case 'square': return '#FF4500'; // Orange/Red
+      case 'sextile': return '#00CED1'; // Cyan
+      case 'quincunx': return '#9370DB'; // Purple
+      default: return '#FFF';
+    }
+  };
 
   return (
     <g id="aspects">
@@ -64,8 +126,8 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
         </linearGradient>
       </defs>
 
-      {sortedLines.map((line, i) => {
-        const { from, to, color, strength, aspect } = line;
+      {linesWithCoords.map((line, i) => {
+        const { fromPoint, toPoint, strength, aspect } = line;
 
         // Calculate stroke width based on aspect strength (make more visible)
         const strokeWidth = Math.max(1, size * 0.002 * (1 + strength * 2));
@@ -113,10 +175,10 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
         return (
           <motion.line
             key={`aspect-${i}-${aspect.body1.name}-${aspect.body2.name}`}
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
+            x1={fromPoint.x}
+            y1={fromPoint.y}
+            x2={toPoint.x}
+            y2={toPoint.y}
             stroke={getGradientUrl(aspect.type)}
             strokeWidth={strokeWidth}
             strokeDasharray={getStrokeDasharray(aspect.type)}
@@ -130,6 +192,62 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
             style={{ pointerEvents: 'none' }}
           />
         );
+      })}
+
+      {/* Render Aspect Symbols at Grouped Midpoints */}
+      {groupedMidpoints.map((group, groupIdx) => {
+        const symbolSize = size * 0.02;
+        const bgRadius = symbolSize * 0.8;
+
+        // If single aspect, just draw it. If multiple, draw a stack or badge
+        if (group.aspects.length === 1) {
+          const asp = group.aspects[0];
+          return (
+            <g key={`aspect-marker-${groupIdx}`}>
+              <circle
+                cx={group.x} cy={group.y}
+                r={bgRadius}
+                fill="#1a202c" /* Background match */
+                stroke={getAspectColor(asp.type)}
+                strokeWidth={1}
+                opacity={0.9}
+              />
+              <text
+                x={group.x} y={group.y}
+                textAnchor="middle" dominantBaseline="middle"
+                fill={getAspectColor(asp.type)}
+                fontSize={symbolSize}
+                fontWeight="bold"
+              >
+                {getAspectSymbol(asp.type)}
+              </text>
+            </g>
+          );
+        } else {
+          // Multiple aspects clustered together - render a small summary badge or stack them
+          return (
+            <g key={`aspect-marker-group-${groupIdx}`}>
+              <rect
+                x={group.x - symbolSize} y={group.y - symbolSize / 2 - 2}
+                width={symbolSize * 2} height={symbolSize + 4}
+                rx={symbolSize / 2}
+                fill="#1a202c"
+                stroke="#666"
+                strokeWidth={1}
+                opacity={0.9}
+              />
+              <text
+                x={group.x} y={group.y}
+                textAnchor="middle" dominantBaseline="central"
+                fill="#ddd"
+                fontSize={symbolSize * 0.8}
+                fontWeight="bold"
+              >
+                {group.aspects.length}
+              </text>
+            </g>
+          );
+        }
       })}
     </g>
   );

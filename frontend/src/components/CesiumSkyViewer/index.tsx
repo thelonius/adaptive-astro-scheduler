@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { CelestialBody } from '@adaptive-astro/shared/types';
+import type { CelestialBody, NatalChart } from '@adaptive-astro/shared/types';
 import type { ZodiacWheelData } from '../ZodiacWheel/types';
 import './CesiumSkyViewer.css';
 
@@ -22,6 +22,7 @@ export interface CesiumSkyViewerProps {
     isPlaying?: boolean;
     animationSpeed?: number;
     onTogglePlay?: () => void;
+    natalChart?: any; // Passing as any to avoid strict type complex inheritance issues in demo
 }
 
 export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
@@ -35,6 +36,7 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
     isPlaying = false,
     animationSpeed = 1,
     onTogglePlay,
+    natalChart
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<any>(null);
@@ -44,6 +46,10 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
     const [viewMode, setViewMode] = useState<'3d' | '2d' | 'both'>('3d');
     const [cinematicMode, setCinematicMode] = useState(false);
     const [selectedPlanet, setSelectedPlanet] = useState<CelestialBody | null>(null);
+    const [luckZones, setLuckZones] = useState<any[]>([]);
+    const [showLuckLayer, setShowLuckLayer] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [selectedZone, setSelectedZone] = useState<any | null>(null);
 
     // Refs for animation and camera
     const planetDataRef = useRef<ZodiacWheelData | undefined>(planetData);
@@ -168,10 +174,17 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
 
             // Handle selection
             viewer.selectedEntityChanged.addEventListener((entity: any) => {
-                if (entity && entity.properties && entity.properties.planetData) {
-                    setSelectedPlanet(entity.properties.planetData.getValue());
+                if (entity && entity.properties) {
+                    if (entity.properties.planetData) {
+                        setSelectedPlanet(entity.properties.planetData.getValue());
+                        setSelectedZone(null);
+                    } else if (entity.properties.isLuckZone) {
+                        setSelectedZone(entity.properties.zoneData);
+                        setSelectedPlanet(null);
+                    }
                 } else {
                     setSelectedPlanet(null);
+                    setSelectedZone(null);
                 }
             });
 
@@ -532,6 +545,74 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
         setCinematicMode(prev => !prev);
     };
 
+    const handleScan = async () => {
+        if (!natalChart || isScanning) return;
+        setIsScanning(true);
+        try {
+            const response = await fetch('/api/travel/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ natalChart })
+            });
+            const data = await response.json();
+            setLuckZones(data.highestScoreZones || []);
+            setShowLuckLayer(true);
+        } catch (e) {
+            console.error('Scan failed:', e);
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const toggleLuckLayer = () => {
+        if (!showLuckLayer && luckZones.length === 0) {
+            handleScan();
+        } else {
+            setShowLuckLayer(!showLuckLayer);
+        }
+    };
+
+    // Luck Layer Rendering Effect
+    useEffect(() => {
+        if (!viewerRef.current) return;
+        const viewer = viewerRef.current;
+
+        // Clear previous luck entities
+        const luckEntities = viewer.entities.values.filter((e: any) => e.properties?.isLuckZone);
+        luckEntities.forEach((e: any) => viewer.entities.remove(e));
+
+        if (showLuckLayer) {
+            luckZones.forEach((zone: any) => {
+                viewer.entities.add({
+                    id: `luck-zone-${zone.latitude}-${zone.longitude}`,
+                    position: Cesium.Cartesian3.fromDegrees(zone.longitude, zone.latitude),
+                    point: {
+                        pixelSize: 15,
+                        color: Cesium.Color.fromHsl((zone.score - 50) / 100, 1.0, 0.5, 0.8), // Green for good, red for bad
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2,
+                        disableDepthTestDistance: Number.POSITIVE_INFINITY
+                    },
+                    label: {
+                        text: `${zone.score}`,
+                        font: 'bold 12px monospace',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 3,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                        pixelOffset: new Cesium.Cartesian2(0, -15),
+                        disableDepthTestDistance: Number.POSITIVE_INFINITY
+                    },
+                    properties: {
+                        isLuckZone: true,
+                        zoneData: zone
+                    }
+                });
+            });
+        }
+    }, [showLuckLayer, luckZones]);
+
     const handlePlayPause = () => {
         if (onTogglePlay) {
             onTogglePlay();
@@ -705,6 +786,20 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                     >
                         🎬
                     </button>
+
+                    {/* Luck Layer Toggle */}
+                    <button
+                        className={`cesium-control-btn ${isScanning ? 'is-loading' : ''}`}
+                        onClick={toggleLuckLayer}
+                        title="Global Luck Scan"
+                        style={{
+                            background: showLuckLayer ? 'rgba(0, 255, 127, 0.3)' : 'rgba(0,0,0,0.6)',
+                            border: showLuckLayer ? '2px solid springgreen' : '1px solid rgba(255,255,255,0.3)',
+                            position: 'relative'
+                        }}
+                    >
+                        {isScanning ? '⌛' : '🛰️'}
+                    </button>
                 </div>
 
                 <div className="cesium-controls__group">
@@ -803,6 +898,97 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
                             </div>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Selected Zone Details Overlay */}
+            {selectedZone && (
+                <div className="cesium-details-overlay" style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    backgroundColor: 'rgba(10, 25, 10, 0.9)',
+                    padding: '24px',
+                    borderRadius: '16px',
+                    color: 'white',
+                    width: '320px',
+                    zIndex: 1001,
+                    backdropFilter: 'blur(15px)',
+                    border: '1px solid rgba(0, 255, 127, 0.3)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 20px rgba(0, 255, 127, 0.1)'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '22px', fontWeight: 'bold', color: 'springgreen' }}>
+                                Zone Analysis
+                            </h3>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                                {selectedZone.latitude.toFixed(2)}°, {selectedZone.longitude.toFixed(2)}°
+                            </div>
+                        </div>
+                        <div style={{
+                            fontSize: '28px',
+                            fontWeight: '900',
+                            color: 'white',
+                            background: 'rgba(0, 255, 127, 0.2)',
+                            padding: '10px',
+                            borderRadius: '12px'
+                        }}>
+                            {selectedZone.score}
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+                            Primary Potential
+                        </div>
+                        <span style={{
+                            background: '#38A169',
+                            color: 'white',
+                            fontSize: '14px',
+                            padding: '4px 12px',
+                            borderRadius: '4px',
+                            fontWeight: 'bold',
+                            display: 'inline-block'
+                        }}>
+                            🌟 {selectedZone.primaryAspect} Focus
+                        </span>
+                    </div>
+
+                    <div>
+                        <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>
+                            Key Benefits
+                        </div>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                            {selectedZone.pros.map((pro: string, idx: number) => (
+                                <li key={idx} style={{
+                                    fontSize: '13px',
+                                    marginBottom: '6px',
+                                    paddingLeft: '18px',
+                                    position: 'relative'
+                                }}>
+                                    <span style={{ position: 'absolute', left: 0 }}>✅</span>
+                                    {pro}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <button
+                        onClick={() => setSelectedZone(null)}
+                        style={{
+                            marginTop: '20px',
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: 'white',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Close Analysis
+                    </button>
                 </div>
             )}
 

@@ -9,9 +9,10 @@ interface TooltipProps {
   planet: CelestialBody | null;
   aspects?: Aspect[];
   position: { x: number; y: number };
+  voidMoon?: { isVoid: boolean; voidStart?: string; voidEnd?: string };
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({ planet, aspects, position }) => {
+export const Tooltip: React.FC<TooltipProps> = ({ planet, aspects, position, voidMoon }) => {
   if (!planet) return null;
 
   const relatedAspects = aspects?.filter(
@@ -53,11 +54,18 @@ export const Tooltip: React.FC<TooltipProps> = ({ planet, aspects, position }) =
                   {planet.name}
                 </Text>
               </HStack>
-              {planet.isRetrograde && (
-                <Badge colorScheme="red" fontSize="xs">
-                  ℞ Retrograde
-                </Badge>
-              )}
+              <VStack align="end" spacing={1}>
+                {planet.isRetrograde && (
+                  <Badge colorScheme="red" fontSize="xs">
+                    ℞ Retrograde
+                  </Badge>
+                )}
+                {planet.name === 'Moon' && voidMoon?.isVoid && (
+                  <Badge colorScheme="orange" fontSize="xs">
+                    ⚠️ Луна без курса
+                  </Badge>
+                )}
+              </VStack>
             </HStack>
 
             {/* Position */}

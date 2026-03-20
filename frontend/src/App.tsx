@@ -157,6 +157,7 @@ function App() {
         <Route path="/day-explorer" element={<DayExplorer />} />
         <Route path="/chart-library" element={<ChartLibrary />} />
         <Route path="/natal-chart" element={<NatalChart />} />
+        <Route path="/natal-chart/:id" element={<NatalChart />} />
         <Route path="/zodiac-wheel-test" element={<ZodiacWheelTest />} />
         <Route path="/zodiac-wheel-demo" element={<ZodiacWheelDemo />} />
       </Routes>

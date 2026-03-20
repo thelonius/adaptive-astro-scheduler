@@ -89,9 +89,11 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     const sorted = sortPlanetsByOrbit(data.planets);
     const centerX = config.size / 2;
     const centerY = config.size / 2;
-    const radius = config.size * 0.3; // Planet orbit radius
-    return calculatePlanetPositions(sorted, centerX, centerY, radius);
-  }, [data?.planets, config.size]);
+    const radius = config.size * 0.32; // Planet orbit radius
+    const asc = data.houses?.find(h => h.number === 1);
+    const rotationDeg = asc ? asc.cusp : 0;
+    return calculatePlanetPositions(sorted, centerX, centerY, radius, rotationDeg);
+  }, [data?.planets, data?.houses, config.size]);
 
   const aspectLines = useMemo(() => {
     if (!data?.aspects || !config.showAspects) {
@@ -177,7 +179,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   }
 
   return (
-    <Box position="relative" width={config.size} height={config.size}>
+    <Box position="relative" width="100%" maxWidth={`${config.size}px`} aspectRatio="1/1">
       {/* Loading overlay */}
       {loading && !data && (
         <Box
@@ -202,11 +204,10 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
         </Box>
       )}
 
-      {/* Main SVG */}
       <motion.svg
         ref={svgRef}
-        width={config.size}
-        height={config.size}
+        width="100%"
+        height="100%"
         viewBox={`0 0 ${config.size} ${config.size}`}
         style={{
           background: config.colorScheme.background,
@@ -225,21 +226,19 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
           </radialGradient>
         </defs>
         {/* Compute rotation so ASC (house 1 cusp) sits at 9 o'clock (left/east horizon)
-            Math: longitudeToAngle(L) = 270 - L (gives SVG screen degrees clockwise from 12 o'clock)
-            ASC without rotation is at screen angle: 270 - asc.cusp
-            We need it at 270° (9 o'clock). SVG rotate() rotates content clockwise.
-            So: (270 - asc.cusp) + R = 270  →  R = asc.cusp */}
+            Math: longitudeToAngle applies this globally to specific coordinates, no SVG transform needed */}
         {(() => {
           const asc = data?.houses?.find(h => h.number === 1);
           const rotationDeg = asc ? asc.cusp : 0;
           return (
-            <g transform={`rotate(${rotationDeg}, ${config.size / 2}, ${config.size / 2})`}>
+            <>
               {/* Zodiac circle (signs and degrees) */}
               <ZodiacCircle
                 size={config.size}
                 colorScheme={config.colorScheme}
                 showDegrees={config.showDegrees}
                 onZodiacHover={handleZodiacHover}
+                chartRotation={rotationDeg}
               />
 
               {/* Houses overlay (optional) */}
@@ -249,6 +248,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                   size={config.size}
                   colorScheme={config.colorScheme}
                   onHouseHover={handleHouseHover}
+                  chartRotation={rotationDeg}
                 />
               )}
 
@@ -258,18 +258,20 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                   positions={planetPositions}
                   colorScheme={config.colorScheme}
                   showRetrogrades={config.showRetrogrades}
+                  voidMoon={data?.voidMoon}
                   onPlanetHover={setHoveredPlanet}
                   onClusterHover={handleClusterHover}
                   onClusterClick={handleClusterClick}
                   size={config.size}
+                  chartRotation={rotationDeg}
                 />
               )}
 
-              {/* Aspect lines — rendered inside rotation group to align with planets */}
+              {/* Aspect lines — lines connect math-calculated planet positions natively */}
               {config.showAspects && aspectLines.length > 0 && (
                 <AspectLines lines={aspectLines} size={config.size} />
               )}
-            </g>
+            </>
           );
         })()}
       </motion.svg>
@@ -280,6 +282,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
           planet={hoveredPlanet}
           aspects={data?.aspects}
           position={mousePosition}
+          voidMoon={data?.voidMoon}
         />
       )}
 

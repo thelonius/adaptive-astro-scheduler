@@ -85,8 +85,20 @@ export const EventCard: React.FC<EventCardProps> = ({ event, expanded: initialEx
             <div className="event-card__header" onClick={() => setExpanded(!expanded)}>
                 <div className="event-card__icon">{getEventIcon(event.type)}</div>
                 <div className="event-card__main">
-                    <h3 className="event-card__title">{event.name}</h3>
-                    <p className="event-card__date">{formatDate(event.date.date)}</p>
+                    <h3 className="event-card__title">
+                        {event.name}
+                        {event.isPeak && <span className="event-card__peak-badge">Peak Today</span>}
+                    </h3>
+                    <p className="event-card__date">
+                        {event.durationDays ? (
+                            <span className="event-card__duration">
+                                🗓️ {event.durationDays} days active
+                                {event.eventRange && ` (${new Date(event.eventRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(event.eventRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`}
+                            </span>
+                        ) : (
+                            formatDate(event.date.date)
+                        )}
+                    </p>
                 </div>
                 <div className="event-card__meta">
                     <span
@@ -129,6 +141,33 @@ export const EventCard: React.FC<EventCardProps> = ({ event, expanded: initialEx
                     {event.visibility && (
                         <div className="event-card__visibility">
                             <strong>Visibility:</strong> {event.visibility}
+                        </div>
+                    )}
+
+                    {event.eventRange && (
+                        <div className="event-card__progression">
+                            <strong>Event Progression:</strong>
+                            <div className="event-card__progress-bar">
+                                <div
+                                    className="event-card__progress-fill"
+                                    style={{
+                                        width: `${Math.min(100, Math.max(0,
+                                            ((new Date().getTime() - new Date(event.eventRange.start).getTime()) /
+                                                (new Date(event.eventRange.end).getTime() - new Date(event.eventRange.start).getTime())) * 100
+                                        ))}%`
+                                    }}
+                                />
+                            </div>
+                            <div className="event-card__progress-labels">
+                                <span>Start: {new Date(event.eventRange.start).toLocaleDateString()}</span>
+                                <span>End: {new Date(event.eventRange.end).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {event.nextOccurrence && (
+                        <div className="event-card__next-occurrence">
+                            <strong>Next Same Event:</strong> {formatDate(event.nextOccurrence.date)}
                         </div>
                     )}
                 </div>

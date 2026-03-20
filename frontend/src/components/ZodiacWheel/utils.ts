@@ -7,10 +7,11 @@ import type { PlanetPosition, AspectLine, ColorScheme, SmartLabelPosition } from
  * In SVG, 0° is at the right, moves clockwise
  * We need to flip the direction and rotate to align Aries at the left (9 o'clock)
  */
-export function longitudeToAngle(longitude: number): number {
+export function longitudeToAngle(longitude: number, rotationOffset: number = 0): number {
   // Aries starts at 0°, but we want it at the left (270° in SVG)
-  // Convert astrology degrees to SVG degrees
-  return 270 - longitude;
+  // Convert astrology degrees to SVG degrees and apply programmatic rotation
+  const angle = (270 - longitude + rotationOffset) % 360;
+  return angle >= 0 ? angle : angle + 360;
 }
 
 /**
@@ -93,7 +94,8 @@ export function findPlanetClusters(
 export function calculateCombinedClusterLabel(
   cluster: PlanetPosition[],
   centerX: number,
-  centerY: number
+  centerY: number,
+  rotationOffset: number = 0
 ): {
   x: number;
   y: number;
@@ -109,7 +111,7 @@ export function calculateCombinedClusterLabel(
 
   // Position label at optimal distance from cluster
   const labelRadius = 65; // Distance from center
-  const labelAngle = (longitudeToAngle(clusterCenter) - 90) * Math.PI / 180;
+  const labelAngle = (longitudeToAngle(clusterCenter, rotationOffset) - 90) * Math.PI / 180;
   const labelX = centerX + labelRadius * Math.cos(labelAngle);
   const labelY = centerY + labelRadius * Math.sin(labelAngle);
 
@@ -194,39 +196,38 @@ export function calculateClusteredPlanetPositions(
   centerX: number,
   centerY: number,
   baseRadius: number,
-  clusterIndex: number
+  clusterIndex: number,
+  rotationOffset: number = 0
 ): PlanetPosition[] {
   if (cluster.length === 1) {
     // Single planet - use normal positioning
     const planet = cluster[0];
-    const angle = longitudeToAngle(planet.longitude);
+    const angle = longitudeToAngle(planet.longitude, rotationOffset);
+    const exactAngle = angle; // For single planet, exact is visual
     const { x, y } = polarToCartesian(centerX, centerY, baseRadius, angle);
     return [{
       planet,
       x,
       y,
       angle,
+      exactAngle,
       clustered: false,
       clusterIndex: 0
     }];
   }
 
-  // Multiple planets - apply radial offsetting
+  // Multiple planets - render strictly on exact degree with slight radial stagger
   const positions: PlanetPosition[] = [];
-  const clusterCenter = cluster.reduce((sum, p) => sum + p.longitude, 0) / cluster.length;
-  const radiusStep = 15; // Pixels between radial layers
-  const angleSpread = Math.min(8, 20 / cluster.length); // Smaller spread for more planets
+  const radiusStep = baseRadius * 0.08; // Small stagger
 
   cluster.forEach((planet, index) => {
-    // Stagger planets in radial layers (every other planet in different layer)
-    const layerIndex = Math.floor(index / 2);
-    const radialOffset = layerIndex * radiusStep * (index % 2 === 0 ? 1 : -1);
-    const planetRadius = baseRadius + radialOffset;
+    // Stagger planets in radial layers to avoid complete overlaps for perfectly coincident degrees
+    const layerOffset = index === 0 ? 0 : Math.ceil(index / 2) * (index % 2 !== 0 ? 1 : -1);
+    const planetRadius = baseRadius + layerOffset * radiusStep;
 
-    // Distribute planets in a small arc around cluster center
-    const angularOffset = (index - (cluster.length - 1) / 2) * angleSpread;
-    const adjustedLongitude = clusterCenter + angularOffset;
-    const angle = longitudeToAngle(adjustedLongitude);
+    // Strict exact degree placement
+    const angle = longitudeToAngle(planet.longitude, rotationOffset);
+    const exactAngle = angle;
     const { x, y } = polarToCartesian(centerX, centerY, planetRadius, angle);
 
     positions.push({
@@ -234,6 +235,7 @@ export function calculateClusteredPlanetPositions(
       x,
       y,
       angle,
+      exactAngle,
       clustered: true,
       clusterIndex,
       originalLongitude: planet.longitude
@@ -250,7 +252,8 @@ export function calculatePlanetPositions(
   planets: CelestialBody[],
   centerX: number,
   centerY: number,
-  radius: number
+  radius: number,
+  rotationOffset: number = 0
 ): PlanetPosition[] {
   // Find planet clusters
   const clusters = findPlanetClusters(planets, 15);
@@ -262,7 +265,8 @@ export function calculatePlanetPositions(
       centerX,
       centerY,
       radius,
-      clusterIndex
+      clusterIndex,
+      rotationOffset
     );
     allPositions.push(...clusterPositions);
   });
@@ -279,10 +283,18 @@ export function calculateAspectLines(
   colorScheme: ColorScheme
 ): AspectLine[] {
   console.log('Calculating aspect lines for:', aspects.length, 'aspects');
-  console.log('Available planet positions:', planetPositions.map(p => p.planet.name));
-  console.log('First aspect example:', aspects[0]);
 
-  const filteredAspects = aspects.filter(aspect => aspect.orb <= 8); // Temporarily ignore type requirement
+  const standardTypes = ['opposition', 'trine', 'square', 'sextile', 'quincunx']; // Exclude conjunction lines
+  const filteredAspects = aspects.filter(aspect => {
+    if (aspect.orb > 8) return false;
+    const type = (aspect.type || '').toLowerCase();
+    const passes = standardTypes.includes(type);
+    // Debug Moon aspects specifically
+    if (aspect.body1?.name === 'Moon' || aspect.body2?.name === 'Moon') {
+      console.log(`[Moon aspect] ${aspect.body1?.name}-${aspect.body2?.name}: type="${aspect.type}" orb=${aspect.orb} passes=${passes}`);
+    }
+    return passes;
+  });
   console.log('Aspects after orb/type filter:', filteredAspects.length);
 
   return filteredAspects
@@ -302,7 +314,7 @@ export function calculateAspectLines(
       }
 
       // Handle missing aspect type
-      const aspectType = aspect.type || 'conjunction'; // Default to conjunction
+      const aspectType = (aspect.type || 'conjunction').toLowerCase();
       const aspectColor = colorScheme.aspects[aspectType] || colorScheme.aspects.conjunction || '#888';
 
       // Calculate strength based on orb (closer = stronger)
@@ -325,7 +337,7 @@ export function calculateAspectLines(
 /**
  * Get zodiac sign data with positions
  */
-export function getZodiacSignPositions(size: number) {
+export function getZodiacSignPositions(size: number, rotationOffset: number = 0) {
   const signs = [
     { name: 'Овен', symbol: '♈', angle: 0 },
     { name: 'Телец', symbol: '♉', angle: 30 },
@@ -346,7 +358,7 @@ export function getZodiacSignPositions(size: number) {
   const radius = size * 0.42; // Position signs at outer ring
 
   return signs.map(sign => {
-    const svgAngle = longitudeToAngle(sign.angle);
+    const svgAngle = longitudeToAngle(sign.angle, rotationOffset);
     const { x, y } = polarToCartesian(centerX, centerY, radius, svgAngle);
 
     return {
@@ -361,7 +373,7 @@ export function getZodiacSignPositions(size: number) {
 /**
  * Generate degree marks around the wheel
  */
-export function generateDegreeMarks(size: number, interval: number = 5) {
+export function generateDegreeMarks(size: number, interval: number = 5, rotationOffset: number = 0) {
   const centerX = size / 2;
   const centerY = size / 2;
   const outerRadius = size * 0.48;
@@ -369,7 +381,7 @@ export function generateDegreeMarks(size: number, interval: number = 5) {
   const marks = [];
 
   for (let degree = 0; degree < 360; degree += interval) {
-    const svgAngle = longitudeToAngle(degree);
+    const svgAngle = longitudeToAngle(degree, rotationOffset);
     const outer = polarToCartesian(centerX, centerY, outerRadius, svgAngle);
     const inner = polarToCartesian(centerX, centerY, innerRadius, svgAngle);
 
@@ -447,7 +459,7 @@ export function getPlanetSymbol(name: string): string {
     Mars: '♂',
     Jupiter: '♃',
     Saturn: '♄',
-    Uranus: '♅',
+    Uranus: '⛢',
     Neptune: '♆',
     Pluto: '♇',
   };

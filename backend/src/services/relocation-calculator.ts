@@ -16,7 +16,7 @@ export interface RelocationResult {
 }
 
 export class RelocationCalculator {
-  constructor(private ephemeris: IEphemerisCalculator) {}
+  constructor(private ephemeris: IEphemerisCalculator) { }
 
   /**
    * Geocode a city name to coordinates and timezone
@@ -26,12 +26,12 @@ export class RelocationCalculator {
     if (!cities || cities.length === 0) {
       return null;
     }
-    
+
     // Default to the most populated match
     const city = cities.reduce((prev, current) => (prev.pop > current.pop) ? prev : current);
-    
+
     const timezone = tzlookup(city.lat, city.lng);
-    
+
     return {
       city: city.city,
       latitude: city.lat,
@@ -46,15 +46,35 @@ export class RelocationCalculator {
    */
   async calculateRelocation(natalChart: NatalChart, destinationCity: string): Promise<RelocationResult | null> {
     const locationInfo = this.resolveLocation(destinationCity);
-    
+
     if (!locationInfo) {
       throw new Error(`Could not resolve location for city: ${destinationCity}`);
     }
 
-    // Natal chart time should be treated as absolute UTC time.
-    // We pass the exact same UTC birth time, but change the location and timezone to the destination.
+    return this.calculateRelocationByCoords(
+      natalChart,
+      locationInfo.latitude,
+      locationInfo.longitude,
+      locationInfo.city
+    );
+  }
+
+  /**
+   * Calculate a relocation chart based on coordinates
+   */
+  async calculateRelocationByCoords(natalChart: NatalChart, latitude: number, longitude: number, city: string = 'Custom'): Promise<RelocationResult> {
+    const timezone = tzlookup(latitude, longitude);
+
+    const locationInfo = {
+      city,
+      latitude,
+      longitude,
+      timezone,
+      country: 'Unknown'
+    };
+
     const relocationDateTime: DateTime = {
-      date: natalChart.birthDateTime.date, // The original Date object is timezone-agnostic (represents Unix epoch)
+      date: new Date(natalChart.birthDateTime.date),
       timezone: locationInfo.timezone,
       location: {
         latitude: locationInfo.latitude,
@@ -62,26 +82,23 @@ export class RelocationCalculator {
       }
     };
 
-    // Calculate houses for the new location at the exact same moment in time
     const apiHouses = await this.ephemeris.getHouses(relocationDateTime);
-    
-    // Transform HousesApiResponse to local format if needed. 
-    // Assuming apiHouses.houses is an array of HouseApiData
+
     const relocatedHouses: { [key: number]: House } = {};
     if (apiHouses.houses && Array.isArray(apiHouses.houses)) {
       apiHouses.houses.forEach((h: any) => {
         relocatedHouses[h.number] = {
-           number: h.number,
-           cusp: h.cusp,
-           sign: {
-             id: 1, // Placeholder
-             name: h.zodiacSign,
-             element: 'Огонь', // Placeholder
-             quality: 'Кардинальный', // Placeholder
-             rulingPlanet: 'Sun', // Placeholder
-             symbol: '',
-             dateRange: [1, 1]
-           }
+          number: h.number,
+          cusp: h.cusp,
+          sign: {
+            id: 1,
+            name: h.zodiacSign,
+            element: 'Огонь',
+            quality: 'Кардинальный',
+            rulingPlanet: 'Sun',
+            symbol: '',
+            dateRange: [1, 1]
+          } as any
         };
       });
     }

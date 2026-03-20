@@ -17,6 +17,7 @@ export interface User {
 }
 
 export interface CreateUserInput {
+  id?: string;
   email?: string;
   telegram_id?: number;
   username?: string;

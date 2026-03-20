@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -31,7 +32,14 @@ import { ChartInterpretation } from '../components/NatalChart/ChartInterpretatio
 import { useNatalChart } from '../hooks/useNatalChart';
 
 export const NatalChart: React.FC = () => {
-  const { data, loading, error, calculateChart } = useNatalChart();
+  const { id } = useParams<{ id: string }>();
+  const { data, loading, error, calculateChart, loadSavedChart } = useNatalChart();
+
+  useEffect(() => {
+    if (id) {
+      loadSavedChart(id);
+    }
+  }, [id, loadSavedChart]);
 
   // Prepare zodiac wheel config for natal chart (static, no refresh)
   const wheelConfig = useMemo(() => ({
@@ -72,7 +80,7 @@ export const NatalChart: React.FC = () => {
   }), []);
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <Container maxW="1400px" py={8}>
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Box>
@@ -85,7 +93,7 @@ export const NatalChart: React.FC = () => {
         </Box>
 
         {/* Main Layout */}
-        <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
+        <Grid templateColumns={{ base: '1fr', lg: '1fr 1.5fr', xl: '1fr 2fr' }} gap={6}>
           {/* Left: Input Form */}
           <GridItem>
             <BirthDataForm onCalculate={calculateChart} loading={loading} />
@@ -175,6 +183,7 @@ export const NatalChart: React.FC = () => {
                       longitude={data.birthData.location.longitude}
                       timezone={data.birthData.location.timezone}
                       useAdaptiveRefresh={false}
+                      data={data}
                     />
                   </CardBody>
                 </Card>
@@ -280,11 +289,11 @@ export const NatalChart: React.FC = () => {
                                     <Badge
                                       colorScheme={
                                         aspect.type === 'conjunction' ? 'yellow' :
-                                        aspect.type === 'trine' ? 'green' :
-                                        aspect.type === 'square' ? 'red' :
-                                        aspect.type === 'opposition' ? 'pink' :
-                                        aspect.type === 'sextile' ? 'cyan' :
-                                        'purple'
+                                          aspect.type === 'trine' ? 'green' :
+                                            aspect.type === 'square' ? 'red' :
+                                              aspect.type === 'opposition' ? 'pink' :
+                                                aspect.type === 'sextile' ? 'cyan' :
+                                                  'purple'
                                       }
                                       fontSize="xs"
                                     >

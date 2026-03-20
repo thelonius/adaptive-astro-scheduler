@@ -32,6 +32,9 @@
 }
 
 .event-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
@@ -39,10 +42,47 @@
   margin-bottom: 4px;
 }
 
+.event-card__peak-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--ag-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.3);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.3);
+  }
+}
+
 .event-card__date {
   margin: 0;
   font-size: 14px;
   color: var(--ag-text-muted);
+}
+
+.event-card__duration {
+  color: var(--ag-day-accent);
+  font-weight: 500;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--ag-radius-sm);
 }
 
 .event-card__meta {
@@ -156,6 +196,63 @@
 
 .event-card__visibility strong {
   color: var(--ag-text);
+}
+
+.event-card__next-occurrence {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: var(--ag-radius-md);
+  border: 1px dashed rgba(139, 92, 246, 0.3);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-card__next-occurrence strong {
+  color: var(--ag-text);
+}
+
+.event-card__next-occurrence::before {
+  content: '⏳';
+  font-size: 16px;
+}
+
+.event-card__progression {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--ag-border);
+}
+
+.event-card__progression strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--ag-text);
+}
+
+.event-card__progress-bar {
+  height: 8px;
+  background: var(--ag-bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid var(--ag-border);
+}
+
+.event-card__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ag-day-primary), var(--ag-day-accent));
+  box-shadow: 0 0 10px var(--ag-day-accent);
+  transition: width 1s ease-in-out;
+}
+
+.event-card__progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ag-text-muted);
 }
 
 /* Event type specific colors */

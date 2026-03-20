@@ -44,12 +44,13 @@ export class ChartController {
 
       // For now, we'll use a default user or create anonymous charts
       // In production, this would use authenticated user from JWT token
-      const defaultUserId = '00000000-0000-0000-0000-000000000001';
+      const defaultUserId = '00000000-0000-0000-0000-000000000000';
 
       let user = await this.userRepo.findById(defaultUserId);
       if (!user) {
         // Create a default user for web app charts
         user = await this.userRepo.create({
+          id: defaultUserId,
           username: 'web_user',
           metadata: {
             source: 'web_app',
@@ -67,6 +68,7 @@ export class ChartController {
         user_id: user.id,
         name: chartData.name,
         birth_date: birthDateTime,
+        birth_time: `${chartData.time}:00`,
         birth_location: chartData.location,
         house_system: 'placidus',
         chart_type: chartData.type,
@@ -106,7 +108,7 @@ export class ChartController {
   async getCharts(req: Request, res: Response) {
     try {
       // For now, get charts for the default web user
-      const defaultUserId = '00000000-0000-0000-0000-000000000001';
+      const defaultUserId = '00000000-0000-0000-0000-000000000000';
 
       const user = await this.userRepo.findById(defaultUserId);
       if (!user) {
@@ -117,11 +119,14 @@ export class ChartController {
       const charts = await this.natalRepo.findFullChartsByUserId(user.id);
 
       const response = charts.map(chart => {
+        // Handle Postgres DATE (no time part)
         const birthDate = new Date(chart.birth_date);
-        // Use ISO string and split to avoid timezone offset issues
-        const isoStr = birthDate.toISOString();
-        const date = isoStr.split('T')[0];
-        const time = isoStr.split('T')[1].substring(0, 5);
+        const date = birthDate.getFullYear() + '-' + 
+                    String(birthDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(birthDate.getDate()).padStart(2, '0');
+        
+        // Use birth_time column instead of extracting from birth_date
+        const time = chart.birth_time ? chart.birth_time.substring(0, 5) : '00:00';
 
         return {
           id: chart.id,
@@ -160,10 +165,13 @@ export class ChartController {
         return;
       }
 
-      // Extract date and time from birth_date
+      // Handle Postgres DATE
       const birthDate = new Date(chart.birth_date);
-      const date = birthDate.toISOString().split('T')[0];
-      const time = birthDate.toTimeString().substring(0, 5);
+      const date = birthDate.getFullYear() + '-' + 
+                  String(birthDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(birthDate.getDate()).padStart(2, '0');
+      
+      const time = chart.birth_time ? chart.birth_time.substring(0, 5) : '00:00';
 
       const response = {
         id: chart.id,
@@ -205,9 +213,9 @@ export class ChartController {
       // Update birth_date if date/time provided
       let birthDate = existingChart.birth_date;
       if (updates.date || updates.time) {
-        const date = updates.date || existingChart.birth_date.toISOString().split('T')[0];
-        const time = updates.time || existingChart.birth_date.toTimeString().substring(0, 5);
-        birthDate = new Date(`${date}T${time}:00.000Z`);
+        const dateStr = updates.date || existingChart.birth_date.toISOString().split('T')[0];
+        const timeStr = updates.time || existingChart.birth_time.substring(0, 5);
+        birthDate = new Date(`${dateStr}T${timeStr}:00`);
       }
 
       const updateData: any = {
@@ -219,7 +227,11 @@ export class ChartController {
       if (updates.location) updateData.birth_location = updates.location;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.tags !== undefined) updateData.tags = updates.tags;
-      if (birthDate !== existingChart.birth_date) updateData.birth_date = birthDate;
+      if (updates.date || updates.time) {
+        updateData.birth_date = birthDate;
+        const finalTime = updates.time || existingChart.birth_date.toISOString().split('T')[1].substring(0, 5);
+        updateData.birth_time = `${finalTime}:00`;
+      }
 
       const updatedChart = await this.natalRepo.update(id, updateData);
 
@@ -229,8 +241,13 @@ export class ChartController {
       }
 
       // Format response
-      const date = updatedChart.birth_date.toISOString().split('T')[0];
-      const time = updatedChart.birth_date.toTimeString().substring(0, 5);
+      // Format response
+      const updatedBirthDate = new Date(updatedChart.birth_date);
+      const date = updatedBirthDate.getFullYear() + '-' + 
+                  String(updatedBirthDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(updatedBirthDate.getDate()).padStart(2, '0');
+      
+      const time = updatedChart.birth_time ? updatedChart.birth_time.substring(0, 5) : '00:00';
 
       const response = {
         id: updatedChart.id,
