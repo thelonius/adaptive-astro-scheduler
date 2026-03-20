@@ -375,6 +375,8 @@ export type CelestialEventType =
   | 'retrograde-start'     // Planet stations retrograde
   | 'retrograde-end'       // Planet stations direct
   | 'ingress'              // Planet enters new sign
+  | 'void-moon'            // Moon is void of course
+  | 'planetary-hour'       // Specific planetary hour
   | 'equinox'              // Spring/Autumn equinox
   | 'solstice';            // Summer/Winter solstice
 

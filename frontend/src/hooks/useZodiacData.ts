@@ -86,7 +86,7 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
       setError(null);
 
       // Fetch planets and aspects in parallel
-      const [planetsResponse, aspectsResponse, housesResponse, voidMoonResponse] = await Promise.all([
+      const [planetsResponse, aspectsResponse, housesResponse, voidMoonResponse, hoursResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/ephemeris/planets`, {
           params: { date: queryDate, time: queryTime, latitude, longitude, timezone },
           signal: abortControllerRef.current.signal,
@@ -105,12 +105,17 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
           params: { date: queryDate, latitude, longitude, timezone },
           signal: abortControllerRef.current.signal,
         }).catch(() => null), // fail gracefully
+        axios.get(`${API_BASE_URL}/api/ephemeris/planetary-hours`, {
+          params: { date: queryDate, latitude, longitude, timezone },
+          signal: abortControllerRef.current.signal,
+        }).catch(() => null),
       ]);
 
       // Transform API data to frontend types
       const apiPlanets = planetsResponse.data.planets as PlanetApiData[];
       const apiAspects = (aspectsResponse.data.aspects as AspectApiData[]) || [];
       const apiHouses = housesResponse?.data.houses as HouseApiData[] | undefined;
+      const hoursData = hoursResponse?.data?.hours || [];
 
       // Transform planets
       const planets = apiPlanets.map(transformPlanetData);
@@ -144,6 +149,7 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
           voidStart: voidMoonResponse.data.data.voidStart,
           voidEnd: voidMoonResponse.data.data.voidEnd
         }) : undefined,
+        planetaryHours: hoursData,
         timestamp: targetDate,
       });
       setLastUpdate(new Date());

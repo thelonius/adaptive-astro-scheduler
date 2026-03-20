@@ -10,6 +10,7 @@ import type {
 } from '@adaptive-astro/shared/types';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
+import { interpretationService } from './astrology/interpretation.service';
 
 /**
  * Calendar Generator Service
@@ -41,7 +42,12 @@ export class CalendarGenerator {
       this.ephemeris.getAspects(dateTime).catch(() => null as AspectsApiResponse | null),
     ]);
 
-    const lunarDayEntity = new LunarDayEntity(lunarDay);
+    // Enrich lunar day with calculations and interpretations
+    const enrichedLunarDay = interpretationService.getLunarDay(lunarDay.number, lunarDay.lunarPhase);
+    const lunarDayEntity = new LunarDayEntity({
+      ...lunarDay,
+      ...enrichedLunarDay
+    });
 
     // Determine seasonal phase
     const seasonalPhase = this.getSeasonalPhase(dateTime.date);
@@ -68,7 +74,7 @@ export class CalendarGenerator {
 
     const calendarDay: CalendarDay = {
       date: dateTime,
-      lunarDay,
+      lunarDay: lunarDayEntity.toJSON(),
       lunarPhase: moonPhase,
       moonPhase: {
         phase: phaseName,
@@ -248,7 +254,7 @@ export class CalendarGenerator {
     strength = Math.max(0, Math.min(1, strength));
 
     // Generate general mood
-    const generalMood = this.getGeneralMood(lunarDay, moonPhase);
+    const generalMood = lunarDay.characteristics.spiritual.split('.')[0] || 'A neutral lunar day';
 
     return {
       bestFor,
@@ -260,32 +266,6 @@ export class CalendarGenerator {
     };
   }
 
-  /**
-   * Get general mood description
-   */
-  private getGeneralMood(lunarDay: LunarDayEntity, moonPhase: number): string {
-    const phase = lunarDay.lunarPhase;
-    const energy = lunarDay.energy;
-
-    if (phase === 'New') {
-      return 'Introspective and contemplative';
-    } else if (phase === 'Full') {
-      return 'Energetic and expressive';
-    } else if (phase === 'Waxing') {
-      if (energy === 'Light') {
-        return 'Building momentum and optimistic';
-      } else {
-        return 'Growing but cautious';
-      }
-    } else {
-      // Waning
-      if (energy === 'Dark') {
-        return 'Releasing and introspective';
-      } else {
-        return 'Reflective and clearing';
-      }
-    }
-  }
 
   /**
    * Determine seasonal phase from date

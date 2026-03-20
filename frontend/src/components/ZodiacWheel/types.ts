@@ -5,6 +5,7 @@ export interface ZodiacWheelData {
   aspects: Aspect[];
   houses?: House[];
   voidMoon?: { isVoid: boolean; voidStart?: string; voidEnd?: string };
+  planetaryHours?: any[];
   timestamp?: Date | string;
 }
 

@@ -29,14 +29,16 @@ export class CelestialEventsDetector {
             occultations,
             alignments,
             retrogrades,
-            ingresses
+            ingresses,
+            voidMoons
         ] = await Promise.all([
             this.detectLunarPhases(startDate, endDate),
             this.detectEclipses(startDate, endDate),
             this.detectOccultations(startDate, endDate),
             this.detectPlanetaryAlignments(startDate, endDate),
             this.detectRetrogrades(startDate, endDate),
-            this.detectIngresses(startDate, endDate)
+            this.detectIngresses(startDate, endDate),
+            this.detectVoidMoons(startDate, endDate)
         ]);
 
         events.push(...lunarPhases);
@@ -45,6 +47,7 @@ export class CelestialEventsDetector {
         events.push(...alignments);
         events.push(...retrogrades);
         events.push(...ingresses);
+        events.push(...voidMoons);
 
         // Deduplicate events to ensure only one entry per unique event per day
         // This prevents multiple cards for the same eclipse or occultation detected in multiple windows
@@ -707,5 +710,61 @@ export class CelestialEventsDetector {
         let diff = Math.abs(lon1 - lon2);
         if (diff > 180) diff = 360 - diff;
         return diff;
+    }
+
+    /**
+     * Detect Void of Course Moon periods
+     */
+    private async detectVoidMoons(
+        startDate: DateTime,
+        endDate: DateTime
+    ): Promise<CelestialEvent[]> {
+        const events: CelestialEvent[] = [];
+        let currentDate = new Date(startDate.date);
+        const endDay = new Date(endDate.date);
+
+        // Check every day - if void of course is active, fetch the window
+        while (currentDate <= endDay) {
+            const dateTime: DateTime = {
+                date: new Date(currentDate),
+                timezone: 'UTC',
+                location: { latitude: 0, longitude: 0 }
+            };
+
+            try {
+                const voidData = await this.ephemeris.getVoidOfCourseMoon(dateTime);
+                if (voidData.isVoidOfCourse && voidData.voidPeriod) {
+                    const start = new Date(voidData.voidPeriod.startTime);
+                    const eventEnd = new Date(voidData.voidPeriod.endTime);
+                    
+                    events.push({
+                        id: `void-moon-${voidData.voidPeriod.startTime}`,
+                        type: 'void-moon',
+                        name: 'Void of Course Moon',
+                        description: `Moon is void of course from ${start.toLocaleTimeString()} to ${eventEnd.toLocaleTimeString()}`,
+                        date: { ...dateTime, date: start },
+                        endDate: { ...dateTime, date: eventEnd },
+                        planets: ['Moon'],
+                        rarity: 'common',
+                        significance: 'Traditional period of "nothing comes of it" - avoid important new beginnings',
+                        durationDays: voidData.voidPeriod.durationHours / 24,
+                        eventRange: {
+                            start,
+                            end: eventEnd
+                        }
+                    });
+                    
+                    // Jump past the end of this void period to avoid redundant detections
+                    currentDate = new Date(eventEnd.getTime() + 1000 * 3600); // 1 hour buffer
+                } else {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            } catch (error) {
+                console.error('Failed to detect void moons for date:', currentDate, error);
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        return events;
     }
 }

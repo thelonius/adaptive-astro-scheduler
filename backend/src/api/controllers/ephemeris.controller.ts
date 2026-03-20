@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import type { DateTime } from '@adaptive-astro/shared/types';
+import { interpretationService } from '../../services/astrology/interpretation.service';
 import { zonedTimeToUtc } from 'date-fns-tz';
 
 /**
@@ -235,7 +236,17 @@ export class EphemerisController {
       };
 
       const voidMoon = await this.ephemeris.getVoidOfCourseMoon(dateTime);
-      res.json(voidMoon);
+      res.json({
+        success: true,
+        data: {
+          isVoid: voidMoon.isVoidOfCourse,
+          voidStart: voidMoon.voidPeriod?.startTime,
+          voidEnd: voidMoon.voidPeriod?.endTime,
+          currentSign: voidMoon.voidPeriod?.currentSign,
+          nextSign: voidMoon.voidPeriod?.nextSign,
+          duration: voidMoon.voidPeriod?.durationHours
+        }
+      });
     } catch (error) {
       console.error('Error fetching void moon:', error);
       res.status(500).json({
@@ -267,8 +278,13 @@ export class EphemerisController {
         location: { latitude: 55.7558, longitude: 37.6173 }, // Default to Moscow
       };
 
-      const lunarDay = await this.ephemeris.getLunarDay(dateTime);
-      res.json(lunarDay);
+      const lunarDayRaw = await this.ephemeris.getLunarDay(dateTime);
+      const enriched = interpretationService.getLunarDay(lunarDayRaw.number, lunarDayRaw.lunarPhase);
+      
+      res.json({
+        ...lunarDayRaw,
+        ...enriched
+      });
     } catch (error) {
       console.error('Error fetching lunar day:', error);
       res.status(500).json({

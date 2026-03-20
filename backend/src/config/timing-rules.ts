@@ -34,7 +34,8 @@ export const TIMING_RULES: Record<IntentionCategory, IntentionRules> = {
 
             // Retrograde starts can meaningful chaos/revisiting
             { type: 'retrograde-start', planet: 'Mercury', weight: -5 },
-            { type: 'retrograde-start', planet: 'Mars', weight: -10 } // Loss of drive
+            { type: 'retrograde-start', planet: 'Mars', weight: -10 }, // Loss of drive
+            { type: 'void-moon', weight: -12 } // Not good for meaningful release
         ],
         moonSigns: {
             favorable: ['Scorpio', 'Capricorn', 'Virgo', 'Pisces'],
@@ -61,7 +62,8 @@ export const TIMING_RULES: Record<IntentionCategory, IntentionRules> = {
             { type: 'lunar-phase', phase: 'Waning', weight: -8 },
             { type: 'lunar-phase', phase: 'Balsamic', weight: -12 }, // Too tired/old
             { type: 'retrograde-start', planet: 'Mercury', weight: -10 }, // Communication errors
-            { type: 'retrograde-start', planet: 'Mars', weight: -15 } // Frustrated action
+            { type: 'retrograde-start', planet: 'Mars', weight: -15 }, // Frustrated action
+            { type: 'void-moon', weight: -20 } // Absolute no for starting!
         ],
         moonSigns: {
             favorable: ['Aries', 'Leo', 'Sagittarius', 'Gemini'],
@@ -84,7 +86,8 @@ export const TIMING_RULES: Record<IntentionCategory, IntentionRules> = {
         unfavorable: [
             { type: 'retrograde-start', planet: 'Mercury', weight: -15 }, // Confusion
             { type: 'retrograde-start', planet: 'Neptune', weight: -8 }, // Fog
-            { type: 'lunar-phase', phase: 'Full Moon', weight: -5 } // Too emotional
+            { type: 'lunar-phase', phase: 'Full Moon', weight: -5 }, // Too emotional
+            { type: 'void-moon', weight: -15 } // Poor judgment
         ],
         moonSigns: {
             favorable: ['Gemini', 'Virgo', 'Libra', 'Aquarius'],
@@ -102,7 +105,8 @@ export const TIMING_RULES: Record<IntentionCategory, IntentionRules> = {
         ],
         unfavorable: [
             { type: 'retrograde-start', planet: 'Mercury', weight: -10 }, // Contract issues
-            { type: 'retrograde-start', planet: 'Venus', weight: -5 } // Financial evaluation
+            { type: 'retrograde-start', planet: 'Venus', weight: -5 }, // Financial evaluation
+            { type: 'void-moon', weight: -15 } // Job interview disaster
         ],
         moonSigns: {
             favorable: ['Capricorn', 'Virgo', 'Taurus', 'Leo'],
@@ -139,7 +143,8 @@ export const TIMING_RULES: Record<IntentionCategory, IntentionRules> = {
         ],
         unfavorable: [
             { type: 'retrograde-start', planet: 'Venus', weight: -12 },
-            { type: 'retrograde-start', planet: 'Mercury', weight: -5 } // Signing contracts
+            { type: 'retrograde-start', planet: 'Mercury', weight: -5 }, // Signing contracts
+            { type: 'void-moon', weight: -15 } // Financial instability
         ],
         moonSigns: {
             favorable: ['Taurus', 'Capricorn', 'Virgo', 'Scorpio'],
