@@ -1,5 +1,5 @@
+import { NatalChart } from '../../database/models';
 import type { 
-    NatalChart, 
     DateTime, 
     PlanetaryHour, 
     PlanetName,

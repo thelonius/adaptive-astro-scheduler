@@ -10,21 +10,21 @@ async function main() {
     const detector = new CelestialEventsDetector(adapter);
     const service = new OptimalTimingService(detector);
 
-    // Current time from metadata: 2026-02-23T00:25:29+03:00
-    const start = new Date('2026-02-23T00:00:00Z');
+    // Current time from metadata: 2026-03-20T12:00:00+03:00
+    const start = new Date('2026-03-20T00:00:00Z');
     const end = new Date(start);
     end.setMonth(start.getMonth() + 1);
 
     const startDate: DateTime = {
         date: start,
-        timezone: 'UTC',
-        location: { latitude: 55.75, longitude: 37.61 } // Moscow
+        timezone: 'Europe/Moscow',
+        location: { latitude: 55.8893, longitude: 37.4450 } // Khimki
     };
 
     const endDate: DateTime = {
         date: end,
-        timezone: 'UTC',
-        location: { latitude: 55.75, longitude: 37.61 }
+        timezone: 'Europe/Moscow',
+        location: { latitude: 55.8893, longitude: 37.4450 }
     };
 
     console.log('\n--- 🌌 MONTHLY ASTROLOGICAL ADVISOR 🌌 ---');

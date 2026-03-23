@@ -7,6 +7,8 @@ Provides high-precision astronomical calculations using JPL ephemeris data.
 
 import pytz
 import numpy as np
+import json
+import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Tuple
 from skyfield.api import load, Topos, wgs84
@@ -55,6 +57,40 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
     REFERENCE_NEW_MOON = datetime(2000, 1, 6, 18, 14, 0)
     LUNAR_MONTH = 29.53058867  # Synodic month in days
 
+    # Standard lunar day symbols and energy
+    LUNAR_DAY_METADATA = {
+        1: ("Lamp", LunarDayEnergy.LIGHT),
+        2: ("Horn of Plenty", LunarDayEnergy.LIGHT),
+        3: ("Leopard", LunarDayEnergy.LIGHT),
+        4: ("Tree of Knowledge", LunarDayEnergy.LIGHT),
+        5: ("Unicorn", LunarDayEnergy.LIGHT),
+        6: ("Crane", LunarDayEnergy.LIGHT),
+        7: ("Rooster", LunarDayEnergy.LIGHT),
+        8: ("Phoenix", LunarDayEnergy.LIGHT),
+        9: ("Bat", LunarDayEnergy.DARK),
+        10: ("Fountain", LunarDayEnergy.LIGHT),
+        11: ("Fiery Sword", LunarDayEnergy.LIGHT),
+        12: ("Chalice", LunarDayEnergy.LIGHT),
+        13: ("Wheel", LunarDayEnergy.LIGHT),
+        14: ("Trumpet", LunarDayEnergy.LIGHT),
+        15: ("Serpent", LunarDayEnergy.DARK),
+        16: ("Dove", LunarDayEnergy.LIGHT),
+        17: ("Grape Bunch", LunarDayEnergy.LIGHT),
+        18: ("Mirror", LunarDayEnergy.NEUTRAL),
+        19: ("Spider", LunarDayEnergy.DARK),
+        20: ("Eagle", LunarDayEnergy.LIGHT),
+        21: ("Horse", LunarDayEnergy.LIGHT),
+        22: ("Elephant", LunarDayEnergy.LIGHT),
+        23: ("Crocodile", LunarDayEnergy.DARK),
+        24: ("Bear", LunarDayEnergy.LIGHT),
+        25: ("Turtle", LunarDayEnergy.LIGHT),
+        26: ("Toad", LunarDayEnergy.DARK),
+        27: ("Trident", LunarDayEnergy.LIGHT),
+        28: ("Lotus", LunarDayEnergy.LIGHT),
+        29: ("Octopus", LunarDayEnergy.DARK),
+        30: ("Golden Swan", LunarDayEnergy.LIGHT),
+    }
+
     def __init__(self, ephemeris_path: str = 'de421.bsp'):
         """
         Initialize the Skyfield ephemeris adapter.
@@ -75,6 +111,15 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
             self.earth = self.eph['earth']
             self.sun = self.eph['sun']
             self.moon = self.eph['moon']
+
+            # Load lunar days data
+            self.lunar_days_data = {}
+            lunar_json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'lunar_days.json')
+            if os.path.exists(lunar_json_path):
+                with open(lunar_json_path, 'r', encoding='utf-8') as f:
+                    content = json.load(f)
+                    for ld in content.get('lunar_days', []):
+                        self.lunar_days_data[ld['lunar_day']] = ld
         except Exception as e:
             raise EphemerisError(
                 code=EphemerisErrorCode.DATA_UNAVAILABLE,
@@ -387,12 +432,38 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
             # Determine energy and phase
             moon_phase = await self.get_moon_phase(date_time)
 
+            # Get metadata
+            symbol, energy = self.LUNAR_DAY_METADATA.get(lunar_day_num, (None, None))
+            
+            # Get characteristics from JSON
+            characteristics = None
+            ld_data = self.lunar_days_data.get(lunar_day_num)
+            if ld_data:
+                characteristics = LunarDayCharacteristics(
+                    number=lunar_day_num,
+                    symbol=symbol or "",
+                    energy=energy or LunarDayEnergy.NEUTRAL,
+                    base_colors=ld_data.get('base_colors', []),
+                    affected_organs=ld_data.get('affected_organs', []),
+                    affected_body_parts=ld_data.get('affected_body_parts', []),
+                    health_tips=ld_data.get('health_tips', []),
+                    recommended=ld_data.get('recommended', []),
+                    not_recommended=ld_data.get('not_recommended', []),
+                    dominant_planet=ld_data.get('dominant_planet', ""),
+                    additional_influences=ld_data.get('additional_influences', []),
+                    planetary_description=ld_data.get('planetary_description', ""),
+                    general_description=ld_data.get('general_description', "")
+                )
+
             return LunarDay(
                 number=lunar_day_num,
                 lunar_phase=moon_phase.phase_type,
                 starts_at=starts_at,
                 ends_at=ends_at,
-                duration_hours=duration_hours
+                duration_hours=duration_hours,
+                symbol=symbol,
+                energy=energy,
+                characteristics=characteristics
             )
 
         except EphemerisError:

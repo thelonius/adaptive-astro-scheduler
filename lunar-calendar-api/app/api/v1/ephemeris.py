@@ -86,6 +86,8 @@ class LunarDayResponse(BaseModel):
     starts_at: datetime
     ends_at: datetime
     duration_hours: float
+    symbol: Optional[str] = None
+    energy: Optional[str] = None
 
 
 class AspectResponse(BaseModel):
@@ -288,7 +290,9 @@ async def get_lunar_day(
             lunar_phase=lunar_day.lunar_phase.value,
             starts_at=lunar_day.starts_at,
             ends_at=lunar_day.ends_at,
-            duration_hours=lunar_day.duration_hours
+            duration_hours=lunar_day.duration_hours,
+            symbol=lunar_day.symbol,
+            energy=lunar_day.energy.value if lunar_day.energy else None
         )
 
     except EphemerisError as e:
