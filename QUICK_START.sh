@@ -34,7 +34,7 @@ echo ""
 echo "🚀 Starting services..."
 echo ""
 echo "This will open 2 terminal tabs:"
-echo "  1. Backend server (port 3000)"
+echo "  1. Backend server (port 3001)"
 echo "  2. Frontend dev server (port 5173)"
 echo ""
 

@@ -58,9 +58,13 @@ const DayExplorer: React.FC = () => {
 
     // Update URL when selectedDate changes
     useEffect(() => {
+        // Only update URL if it's actually different (toISOString can vary by ms, but here we care about the main date)
+        const currentUrlDate = searchParams.get('date');
         const isoString = selectedDate.toISOString();
-        // Only update if different to avoid loops (though setSearchParams handles this well usually)
-        if (searchParams.get('date') !== isoString) {
+        if (currentUrlDate !== isoString && currentUrlDate !== null) {
+            setSearchParams({ date: isoString }, { replace: true });
+        } else if (currentUrlDate === null) {
+            // Only set if not preset, but don't force re-render if it's already basically same
             setSearchParams({ date: isoString }, { replace: true });
         }
     }, [selectedDate, setSearchParams]);
@@ -300,6 +304,18 @@ const DayExplorer: React.FC = () => {
                             <CardBody display="flex" justifyContent="center">
                                 <ZodiacWheel
                                     date={selectedDate}
+                                    data={dayData ? {
+                                        planets: Object.values(dayData.transits || {}),
+                                        aspects: dayData.aspects || [],
+                                        houses: dayData.houses || [],
+                                        voidMoon: dayData.voidOfCourseMoon ? {
+                                            isVoid: true, // If it exists, it's void
+                                            voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
+                                            voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString()
+                                        } : { isVoid: false },
+                                        planetaryHours: dayData.planetaryHours || [],
+                                        timestamp: selectedDate
+                                    } as any : null}
                                     config={{
                                         size: 800,
                                         showHouses: showHouses,

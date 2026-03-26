@@ -7,6 +7,7 @@ import {
   Transit,
   PlanetaryHour,
   AspectApiData,
+  House,
 } from './astrology';
 
 export interface CalendarDay {
@@ -42,6 +43,8 @@ export interface CalendarDay {
   retrogradesActive: CelestialBody[];
   eclipseWindow: boolean;
   aspects?: AspectApiData[];   // Current sky aspects
+  houses?: House[];            // Current sky houses
+
 
   // Personal (if natal chart provided)
   personalTransits?: Transit[];

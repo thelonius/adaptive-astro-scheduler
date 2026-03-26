@@ -49,7 +49,11 @@ export interface CalendarDay {
     moonPhase: MoonPhaseData;
     voidMoon: VoidMoonData;
     planets?: PlanetPosition[];
+    transits?: Record<string, any>;
     aspects?: any[];
+    houses?: any[];
+    retrogradesActive?: any[];
+    voidOfCourseMoon?: any;
     planetaryHours?: any[];
     dayQuality?: {
         overall: string;
