@@ -308,7 +308,7 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
 
             const active = activeBodiesRef.current;
 
-            const baseTime = baseData.timestamp.getTime();
+            const baseTime = baseData.timestamp instanceof Date ? baseData.timestamp.getTime() : new Date(baseData.timestamp ?? Date.now()).getTime();
             const currentTimeMs = now.getTime();
             const elapsedMs = currentTimeMs - baseTime;
             const elapsedDays = elapsedMs / (86400000);
