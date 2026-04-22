@@ -22,7 +22,6 @@ import {
     Tooltip,
     Badge,
     Divider,
-    useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import type { DayColorPalette as DayColorPaletteType } from '../../theme/natalDayColorEngine';

@@ -2,10 +2,6 @@ import type {
   DateTime,
   CelestialBody,
   LunarDay,
-  VoidOfCourseMoon,
-  Aspect,
-  House,
-  PlanetaryHour,
   LunarPhaseType,
   PlanetsApiResponse,
   AspectsApiResponse,
@@ -15,12 +11,11 @@ import type {
   PlanetaryHoursApiResponse,
   RetrogradesApiResponse,
   DispositorChainsResponse,
-  ZodiacSign,
   PlanetName,
   PlanetApiData,
   HouseApiData,
 } from '@adaptive-astro/shared/types/astrology';
-import { ZODIAC_SIGNS, getZodiacSignByLongitude } from '@adaptive-astro/shared';
+import { getZodiacSignByLongitude } from '@adaptive-astro/shared';
 import { IEphemerisCalculator } from './interface';
 
 /**
@@ -36,7 +31,6 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
     // Use date to generate consistent but varying positions
     const dayOfYear = this.getDayOfYear(dateTime.date);
-    const year = dateTime.date.getFullYear();
 
     // Add realistic base offsets for each planet (approximate positions for 2026)
     const baseOffsets = {

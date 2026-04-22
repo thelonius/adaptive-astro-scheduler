@@ -1,5 +1,5 @@
 import type { CelestialBody, Aspect } from '@adaptive-astro/shared/types';
-import type { PlanetPosition, AspectLine, ColorScheme, SmartLabelPosition } from './types';
+import type { PlanetPosition, AspectLine, ColorScheme } from './types';
 
 /**
  * Convert zodiac longitude (0-360°) to SVG coordinates

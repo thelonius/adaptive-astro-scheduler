@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { IconButton, Tooltip, useColorMode, useColorModeValue } from '@chakra-ui/react';
+import { IconButton, Tooltip, useColorMode } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MotionBox = motion.div;

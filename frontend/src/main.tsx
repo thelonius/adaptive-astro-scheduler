@@ -41,7 +41,7 @@ const chakraTheme = extendTheme({
   },
   components: {
     Card: {
-      baseStyle: (props: any) => ({
+      baseStyle: (_props: any) => ({
         container: {
           bg: 'var(--ag-surface)',
           borderColor: 'var(--ag-border)',

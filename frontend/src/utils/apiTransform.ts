@@ -5,7 +5,6 @@ import type {
   PlanetApiData,
   AspectApiData,
   HouseApiData,
-  ZodiacSign
 } from '@adaptive-astro/shared/types';
 import { ZODIAC_SIGNS } from '@adaptive-astro/shared/constants/zodiac';
 
@@ -21,16 +20,6 @@ export function transformPlanetData(apiPlanet: PlanetApiData): CelestialBody {
 
   if (!zodiacSign) {
     console.warn(`Unknown zodiac sign: ${apiPlanet.zodiacSign}. Using fallback.`);
-    // Use a fallback zodiac sign if not found
-    const fallbackSign: ZodiacSign = {
-      id: 1,
-      name: 'Овен',
-      element: 'Огонь',
-      quality: 'Кардинальный',
-      rulingPlanet: 'Mars',
-      symbol: '♈',
-      dateRange: [21, 19],
-    };
   }
 
   return {

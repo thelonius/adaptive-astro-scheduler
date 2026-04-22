@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import { PersonalizedAnalyticsService } from '../../services/personalized-analytics';
 import { natalChartRepository } from '../../database/repositories/natal-chart.repository';
-import type { DateTime } from '@adaptive-astro/shared/types';
 
 /**
  * Personalized Analytics Controller

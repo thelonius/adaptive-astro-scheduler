@@ -7,11 +7,6 @@ import {
   Input,
   VStack,
   HStack,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Select,
   Text,
   Card,
@@ -31,7 +26,7 @@ interface BirthDataFormProps {
 }
 
 // Common timezones for quick selection
-const COMMON_TIMEZONES = [
+const _COMMON_TIMEZONES = [
   { label: 'Europe/Moscow', value: 'Europe/Moscow' },
   { label: 'Europe/London', value: 'Europe/London' },
   { label: 'Europe/Paris', value: 'Europe/Paris' },

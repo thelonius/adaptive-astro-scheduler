@@ -310,7 +310,7 @@ export class RuleValidationEngine {
   /**
    * Create safe function for execution
    */
-  private createSafeFunction(code: string): Function {
+  private createSafeFunction(code: string): (...args: unknown[]) => RuleExecutionResult {
     // Create restricted global context
     const safeGlobals = {
       Math: Math,

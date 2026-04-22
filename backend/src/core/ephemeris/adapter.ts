@@ -1,11 +1,6 @@
 import type {
   DateTime,
-  CelestialBody,
   LunarDay,
-  VoidOfCourseMoon,
-  Aspect,
-  House,
-  PlanetaryHour,
   LunarPhaseType,
   LunarEnergyType,
   PlanetsApiResponse,
@@ -210,31 +205,26 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    * Falls back to calculation from aspects if API doesn't support it
    */
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
-    try {
-      const params = {
-        date: dateTime.date.toISOString().split('.')[0],
-        latitude: dateTime.location.latitude.toString(),
-        longitude: dateTime.location.longitude.toString(),
-        timezone: dateTime.timezone,
-      };
+    const params = {
+      date: dateTime.date.toISOString().split('.')[0],
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
+      timezone: dateTime.timezone,
+    };
 
-      const resp = await this.fetch<any>('/api/v1/ephemeris/void-moon', params);
-      
-      return {
-        date: dateTime.date.toISOString().split('T')[0],
-        isVoidOfCourse: resp.is_void,
-        voidPeriod: resp.is_void ? {
-          startTime: resp.start_time,
-          endTime: resp.end_time,
-          currentSign: resp.sign,
-          nextSign: resp.next_sign,
-          durationHours: resp.duration_hours,
-        } : undefined,
-      };
-    } catch (error) {
-      // Fallback if needed, but endpoint should now be reliable
-      throw error;
-    }
+    const resp = await this.fetch<any>('/api/v1/ephemeris/void-moon', params);
+
+    return {
+      date: dateTime.date.toISOString().split('T')[0],
+      isVoidOfCourse: resp.is_void,
+      voidPeriod: resp.is_void ? {
+        startTime: resp.start_time,
+        endTime: resp.end_time,
+        currentSign: resp.sign,
+        nextSign: resp.next_sign,
+        durationHours: resp.duration_hours,
+      } : undefined,
+    };
   }
 
   /**

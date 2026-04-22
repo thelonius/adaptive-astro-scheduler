@@ -1,4 +1,4 @@
-import type { CelestialBody, Aspect, House, ZodiacSign } from '@adaptive-astro/shared/types';
+import type { CelestialBody, Aspect, House } from '@adaptive-astro/shared/types';
 
 export interface ZodiacWheelData {
   planets: CelestialBody[];

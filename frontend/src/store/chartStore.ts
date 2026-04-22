@@ -15,7 +15,7 @@ interface ChartStore {
   clearError: () => void;
 }
 
-export const useChartStore = create<ChartStore>((set, get) => ({
+export const useChartStore = create<ChartStore>((set, _get) => ({
   charts: [],
   isLoading: false,
   error: null,

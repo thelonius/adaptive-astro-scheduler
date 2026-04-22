@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Box, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 
 interface AsciiCelestialArtProps {
     time: Date;
@@ -97,19 +97,19 @@ const AsciiCelestialArtBase: React.FC<AsciiCelestialArtProps> = ({
     }, [type, frame]); // Re-generate on frame tick
 
     // Overlay main art on background
-    const finalArt = useMemo(() => {
+    const _finalArt = useMemo(() => {
         const bgLines = background.split('\n');
         const artLines = art.split('\n').filter(l => l.length > 0);
 
         // Center the art
         const startRow = Math.floor((bgLines.length - artLines.length) / 2);
-        const startCol = Math.floor((40 - artLines[0].length) / 2); // Assuming 40 width
+        const _startCol = Math.floor((40 - artLines[0].length) / 2); // Assuming 40 width
 
-        let combined = [...bgLines];
+        const combined = [...bgLines];
 
         artLines.forEach((line, i) => {
             if (startRow + i >= 0 && startRow + i < combined.length) {
-                const bgLine = combined[startRow + i];
+                const _bgLine = combined[startRow + i];
                 // Simple replace
                 // A better way would be character by character
                 // But let's just use CSS positioning to overlay for simplicity and better color control?

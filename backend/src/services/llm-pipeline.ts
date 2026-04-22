@@ -1,7 +1,6 @@
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import type {
-  AstrologicalLayer,
   CustomRule,
   LayerGenerationRequest,
   LayerValidationResult,
@@ -237,7 +236,7 @@ Generate improved rule:`;
    */
   private async callLLM(prompt: string, provider: LLMProvider): Promise<string> {
     switch (provider) {
-      case 'openai':
+      case 'openai': {
         if (!this.openai) throw new Error('OpenAI not configured');
         const gptResponse = await this.openai.chat.completions.create({
           model: 'gpt-4',
@@ -246,8 +245,9 @@ Generate improved rule:`;
           max_tokens: 2000,
         });
         return gptResponse.choices[0].message.content || '';
+      }
 
-      case 'claude':
+      case 'claude': {
         if (!this.anthropic) throw new Error('Anthropic not configured');
         const claudeResponse = await this.anthropic.messages.create({
           model: 'claude-3-sonnet-20240229',
@@ -259,6 +259,7 @@ Generate improved rule:`;
         // Extract text from Claude's response format
         const content = claudeResponse.content[0];
         return content.type === 'text' ? content.text : '';
+      }
 
       default:
         throw new Error(`Unsupported LLM provider: ${provider}`);
@@ -312,7 +313,7 @@ Generate improved rule:`;
   /**
    * Parse validation response
    */
-  private parseValidationResponse(response: string, rule: CustomRule): LayerValidationResult {
+  private parseValidationResponse(response: string, _rule: CustomRule): LayerValidationResult {
     try {
       const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ||
                        response.match(/(\{[\s\S]*\})/);

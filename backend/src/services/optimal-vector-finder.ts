@@ -1,6 +1,6 @@
 import { NatalChart, DateTime, House } from '@adaptive-astro/shared/types';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
-import { TravelAnalyzer, LocationScore } from './travel-analyzer';
+import { TravelAnalyzer } from './travel-analyzer';
 import tzlookup from 'tz-lookup';
 
 export interface VectorNode {

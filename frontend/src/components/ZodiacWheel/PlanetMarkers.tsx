@@ -1,16 +1,12 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import type { CelestialBody } from '@adaptive-astro/shared/types';
 import type { ColorScheme, PlanetPosition } from './types';
 import {
   getPlanetSymbol,
-  formatPlanetDegree,
-  groupPlanetsByCluster,
-  calculateCombinedClusterLabel,
   longitudeToAngle,
   polarToCartesian
 } from './utils';
-import { analyzeCluster } from '../../constants/clusterAnalysis';
 
 interface PlanetMarkersProps {
   positions: PlanetPosition[];
@@ -38,7 +34,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   return (
     <g id="planets">
       {/* Render all planet markers along orbit, using individual spacing */}
-      {positions.map((pos, i) => {
+      {positions.map((pos, _i) => {
         const planet = pos.planet;
         const color = colorScheme.planets?.[planet.name] || '#fff';
         const isRetrograde = planet.isRetrograde && showRetrogrades;
@@ -47,7 +43,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
 
         // Inner ring exact point calculation
         const exactAngle = longitudeToAngle(planet.longitude, chartRotation);
-        const pointOnRing = polarToCartesian(size / 2, size / 2, size * 0.38, exactAngle);
+        const _pointOnRing = polarToCartesian(size / 2, size / 2, size * 0.38, exactAngle);
 
         return (
           <g

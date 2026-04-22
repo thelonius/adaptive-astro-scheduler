@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import type { CelestialBody, Aspect, House, PlanetApiData, AspectApiData, HouseApiData } from '@adaptive-astro/shared/types';
+import type { CelestialBody, Aspect, PlanetApiData, AspectApiData, HouseApiData } from '@adaptive-astro/shared/types';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
 import { transformPlanetData, transformAspectData, transformHouseData } from '../utils/apiTransform';
 
@@ -58,27 +58,13 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
 
     // Determine the date/time to use
     // If dateProp is provided, use it. Otherwise use current time
-    let queryDate: string;
-    let queryTime: string;
-    let targetDate: Date;
-
-    if (dateProp) {
-      targetDate = typeof dateProp === 'string' ? new Date(dateProp) : dateProp;
-      // Use local date components to match local time
-      const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const day = String(targetDate.getDate()).padStart(2, '0');
-      queryDate = `${year}-${month}-${day}`;
-      queryTime = targetDate.toTimeString().split(' ')[0];
-    } else {
-      targetDate = new Date();
-      // Use local date components to match local time
-      const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const day = String(targetDate.getDate()).padStart(2, '0');
-      queryDate = `${year}-${month}-${day}`;
-      queryTime = targetDate.toTimeString().split(' ')[0];
-    }
+    const targetDate: Date = dateProp
+      ? (typeof dateProp === 'string' ? new Date(dateProp) : dateProp)
+      : new Date();
+    // Always extract UTC components so backend receives unambiguous UTC time
+    const iso = targetDate.toISOString(); // e.g. "2024-04-22T09:30:00.000Z"
+    const queryDate = iso.split('T')[0];
+    const queryTime = iso.split('T')[1].split('.')[0];
 
 
     try {

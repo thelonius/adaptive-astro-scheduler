@@ -6,15 +6,11 @@ import {
     VStack,
     HStack,
     Button,
-    IconButton,
-    useColorModeValue,
     useToast,
-    useBreakpointValue,
     Card,
     CardBody,
     CardHeader,
     Text,
-    Flex,
     Switch,
     FormControl,
     FormLabel,
@@ -23,12 +19,11 @@ import { motion } from 'framer-motion';
 import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { dayService, type CalendarDay } from '../services/dayService';
-import { useFavoritesStore } from '../store/favoritesStore';
 import { useDynamicTheme } from '../theme/DynamicThemeProvider';
 import { LocationBar } from '../components/common/LocationBar';
 import { useLocationStore } from '../store/locationStore';
 
-const MotionBox = motion(Box);
+const _MotionBox = motion(Box);
 const MotionCard = motion(Card);
 
 import { useSearchParams } from 'react-router-dom';
@@ -46,7 +41,7 @@ const DayExplorer: React.FC = () => {
     const { applyNatalDayTheme } = useDynamicTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const [_isFavorite, _setIsFavorite] = useState(false);
     const toast = useToast();
 
     // Геолокация пользователя из глобального store

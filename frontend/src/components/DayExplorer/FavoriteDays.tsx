@@ -12,7 +12,6 @@ import {
     IconButton,
     Input,
     Button,
-    useColorModeValue,
     Collapse,
     useDisclosure,
 } from '@chakra-ui/react';

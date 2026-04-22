@@ -134,7 +134,6 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
         applyDayPaletteToCSS(defaultPalette, mode);
         setDayPalette(defaultPalette);
         updateCssVariables(defaultPrimary, defaultSecondary, isDark ? '#F687B3' : '#D53F8C', isDark ? '#080c18' : '#f0f4fc');
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isDark]);
 
     // Когда меняется colorMode — переприменяем палитру с правильным режимом
@@ -145,7 +144,7 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
         const palette = dayPalette ?? computeDayColorPalette(new Date());
         applyDayPaletteToCSS(palette, mode);
         if (!dayPalette) setDayPalette(palette);
-    }, [colorMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [colorMode]);
 
     return (
         <DynamicThemeContext.Provider value={{

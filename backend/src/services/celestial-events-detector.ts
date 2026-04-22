@@ -1,4 +1,4 @@
-import type { DateTime, CelestialEvent, CelestialEventType } from '@adaptive-astro/shared/types';
+import type { DateTime, CelestialEvent } from '@adaptive-astro/shared/types';
 import type { IEphemerisCalculator } from '../core/ephemeris';
 
 /**

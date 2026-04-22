@@ -3,8 +3,7 @@ import { motion } from 'framer-motion';
 import type { House } from '@adaptive-astro/shared/types';
 import type { ColorScheme } from './types';
 import { longitudeToAngle, polarToCartesian } from './utils';
-import { HouseTooltip } from './HouseTooltip';
-import { getHouseMeaning, isAngularHouse } from '../../constants/houses';
+import { isAngularHouse } from '../../constants/houses';
 
 interface HousesOverlayProps {
   houses: House[];
@@ -23,7 +22,7 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
   const innerRadius = 0; // Extend to center completely
 
   const handleMouseEnter = useCallback((houseNumber: number, event: React.MouseEvent) => {
-    const rect = (event.target as Element).getBoundingClientRect();
+    const _rect = (event.target as Element).getBoundingClientRect();
     const position = {
       x: event.clientX,
       y: event.clientY
@@ -52,8 +51,8 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
       {/* House divisions */}
       {houses.map((house, i) => {
         const angle = longitudeToAngle(house.cusp, chartRotation);
-        const outer = polarToCartesian(centerX, centerY, outerRadius, angle);
-        const inner = polarToCartesian(centerX, centerY, innerRadius, angle);
+        const _outer = polarToCartesian(centerX, centerY, outerRadius, angle);
+        const _inner = polarToCartesian(centerX, centerY, innerRadius, angle);
 
         // Calculate midpoint angle for house number
         const nextHouse = houses[(i + 1) % houses.length];

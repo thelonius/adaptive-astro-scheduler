@@ -33,14 +33,13 @@ import { CesiumSkyViewer } from '../components/CesiumSkyViewer';
 import { themes, type ThemeName } from '../components/ZodiacWheel/themes';
 import { FeaturedEventsCarousel, type FeaturedEvent } from '../components/FeaturedEvents';
 import { useAdaptiveZodiacData } from '../hooks/useZodiacData';
-import { AsciiCelestialArt } from '../components/AsciiCelestialArt';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
 import { useNatalChart } from '../hooks/useNatalChart';
 import { GeoLuckMap } from '../components/GeoLuckMap';
 import axios from 'axios';
 
 export const ZodiacWheelDemo: React.FC = () => {
-  const { colorMode } = useColorMode();
+  const { colorMode: _colorMode } = useColorMode();
 
   // Configuration state
   const [size, setSize] = useState(600);
@@ -97,7 +96,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
   // Viewer time state for animations (separate from data fetch time)
   const [viewerTime, setViewerTime] = useState<Date>(new Date());
-  const [animatedData, setAnimatedData] = useState<ZodiacWheelData | null>(null);
+  const [_animatedData, setAnimatedData] = useState<ZodiacWheelData | null>(null);
   const animationRef = useRef<number>();
   const baseDataRef = useRef<ZodiacWheelData | null>(null);
   const baseTimeRef = useRef<Date | null>(null);

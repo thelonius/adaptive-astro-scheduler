@@ -1,11 +1,6 @@
 import type {
   DateTime,
-  CelestialBody,
   LunarDay,
-  VoidOfCourseMoon,
-  Aspect,
-  House,
-  PlanetaryHour,
   PlanetsApiResponse,
   AspectsApiResponse,
   HousesApiResponse,

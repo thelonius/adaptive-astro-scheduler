@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Text, VStack, HStack, Badge, Wrap, WrapItem } from '@chakra-ui/react';
 import ZodiacIcon from './ZodiacIcon';
-import { getDetailedZodiacInfo, type DetailedZodiacInfo } from './zodiacData';
+import { getDetailedZodiacInfo } from './zodiacData';
 
 interface ZodiacSignTooltipProps {
   signName: string;

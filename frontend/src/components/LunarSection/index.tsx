@@ -12,14 +12,10 @@ import {
   Spinner,
   Grid,
   GridItem,
-  Icon,
-  Divider,
   Progress,
-  Tooltip,
-  useColorModeValue
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import type { LunarDay, DateTime } from '@adaptive-astro/shared/types';
+import type { LunarDay } from '@adaptive-astro/shared/types';
 
 interface LunarSectionProps {
   latitude?: number;

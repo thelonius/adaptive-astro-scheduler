@@ -1,4 +1,4 @@
-import type { DateTime, CelestialBody, Aspect, PlanetApiData, AspectApiData } from '@adaptive-astro/shared/types/astrology';
+import type { DateTime, CelestialBody, PlanetApiData, AspectApiData } from '@adaptive-astro/shared/types/astrology';
 import { IEphemerisCalculator } from '../core/ephemeris';
 
 /**

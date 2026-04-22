@@ -1,4 +1,4 @@
-import type { DateTime, AspectPattern, ScoredAspect, AspectPatternType } from '@adaptive-astro/shared/types';
+import type { DateTime, AspectPattern, ScoredAspect } from '@adaptive-astro/shared/types';
 import type { IEphemerisCalculator } from '../core/ephemeris';
 import { AspectStrengthCalculator } from '../utils/aspect-strength';
 
