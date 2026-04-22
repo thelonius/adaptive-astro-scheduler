@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Container, Heading, Text, VStack, SimpleGrid, Button, Select, FormControl, FormLabel, Input, useToast, HStack } from '@chakra-ui/react';
+import { Box, Container, Heading, Text, VStack, SimpleGrid, Button, FormControl, FormLabel, Input, useToast, HStack } from '@chakra-ui/react';
 import { IntentionSelector } from '../components/OptimalTiming/IntentionSelector';
 import { optimalTimingService } from '../services/optimalTimingService';
 import type { IntentionCategory, TimingWindow } from '@adaptive-astro/shared/types/astrology';

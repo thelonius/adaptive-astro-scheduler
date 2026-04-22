@@ -5,7 +5,7 @@
  * and their significance in natal charts and current transits.
  */
 
-import type { CelestialBody, ZodiacSign } from '@adaptive-astro/shared/types';
+import type { CelestialBody } from '@adaptive-astro/shared/types';
 
 export interface ClusterAnalysis {
   planets: CelestialBody[];

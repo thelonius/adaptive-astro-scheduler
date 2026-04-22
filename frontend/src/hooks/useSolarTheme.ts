@@ -80,7 +80,7 @@ function getSolarColorMode(period: SolarPeriod, policy: SolarThemePolicy): Color
 function getSolarTransitionVars(
     period: SolarPeriod,
     targetMode: ColorMode,
-    primaryColor: string
+    _primaryColor: string
 ): Record<string, string> {
     if (period === 'civil_twilight' && targetMode === 'light') {
         // Рассвет — розово-золотые тона
@@ -127,7 +127,7 @@ export function useSolarTheme(options: SolarThemeOptions = {}): SolarThemeState 
 
     const { colorMode, setColorMode } = useColorMode();
     const { transitionCssVars } = useColorTransition();
-    const { dayPalette, applyNatalDayTheme } = useDynamicTheme();
+    const { dayPalette, applyNatalDayTheme: _applyNatalDayTheme } = useDynamicTheme();
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     const { solarTimes, userLocation } = useSolarTimes({

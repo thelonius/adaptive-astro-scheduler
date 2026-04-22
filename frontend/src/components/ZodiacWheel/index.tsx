@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Box, Spinner, Text, VStack, HStack, Badge, Button } from '@chakra-ui/react';
+import { Box, Spinner, Text, VStack, Button } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import type { CelestialBody } from '@adaptive-astro/shared/types';
-import { useZodiacData, useAdaptiveZodiacData } from '../../hooks/useZodiacData';
+import { useAdaptiveZodiacData } from '../../hooks/useZodiacData';
 import { ZodiacCircle } from './ZodiacCircle';
 import { PlanetMarkers } from './PlanetMarkers';
 import { AspectLines } from './AspectLines';
@@ -54,7 +54,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
 
   // Always use the adaptive hook wrapper, passing the 'adaptive' flag to control behavior
   // If external data is provided, disable internal fetching
-  const { data: internalData, loading: internalLoading, error, refresh, lastUpdate } = useAdaptiveZodiacData({
+  const { data: internalData, loading: internalLoading, error, refresh, lastUpdate: _lastUpdate } = useAdaptiveZodiacData({
     refreshInterval: config.refreshInterval,
     latitude,
     longitude,

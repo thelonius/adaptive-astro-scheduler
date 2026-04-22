@@ -6,15 +6,11 @@ import {
     VStack,
     HStack,
     Button,
-    IconButton,
-    useColorModeValue,
     useToast,
-    useBreakpointValue,
     Card,
     CardBody,
     CardHeader,
     Text,
-    Flex,
     Switch,
     FormControl,
     FormLabel,
@@ -23,12 +19,11 @@ import { motion } from 'framer-motion';
 import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { dayService, type CalendarDay } from '../services/dayService';
-import { useFavoritesStore } from '../store/favoritesStore';
 import { useDynamicTheme } from '../theme/DynamicThemeProvider';
 import { LocationBar } from '../components/common/LocationBar';
 import { useLocationStore } from '../store/locationStore';
 
-const MotionBox = motion(Box);
+const _MotionBox = motion(Box);
 const MotionCard = motion(Card);
 
 import { useSearchParams } from 'react-router-dom';
@@ -46,7 +41,7 @@ const DayExplorer: React.FC = () => {
     const { applyNatalDayTheme } = useDynamicTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const [_isFavorite, _setIsFavorite] = useState(false);
     const toast = useToast();
 
     // Геолокация пользователя из глобального store
@@ -58,9 +53,13 @@ const DayExplorer: React.FC = () => {
 
     // Update URL when selectedDate changes
     useEffect(() => {
+        // Only update URL if it's actually different (toISOString can vary by ms, but here we care about the main date)
+        const currentUrlDate = searchParams.get('date');
         const isoString = selectedDate.toISOString();
-        // Only update if different to avoid loops (though setSearchParams handles this well usually)
-        if (searchParams.get('date') !== isoString) {
+        if (currentUrlDate !== isoString && currentUrlDate !== null) {
+            setSearchParams({ date: isoString }, { replace: true });
+        } else if (currentUrlDate === null) {
+            // Only set if not preset, but don't force re-render if it's already basically same
             setSearchParams({ date: isoString }, { replace: true });
         }
     }, [selectedDate, setSearchParams]);
@@ -300,6 +299,18 @@ const DayExplorer: React.FC = () => {
                             <CardBody display="flex" justifyContent="center">
                                 <ZodiacWheel
                                     date={selectedDate}
+                                    data={dayData ? {
+                                        planets: Object.values(dayData.transits || {}),
+                                        aspects: dayData.aspects || [],
+                                        houses: dayData.houses || [],
+                                        voidMoon: dayData.voidOfCourseMoon ? {
+                                            isVoid: true, // If it exists, it's void
+                                            voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
+                                            voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString()
+                                        } : { isVoid: false },
+                                        planetaryHours: dayData.planetaryHours || [],
+                                        timestamp: selectedDate
+                                    } as any : null}
                                     config={{
                                         size: 800,
                                         showHouses: showHouses,

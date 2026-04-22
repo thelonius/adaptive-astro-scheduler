@@ -1,11 +1,8 @@
-import type { 
-    NatalChart, 
-    DateTime, 
-    PlanetaryHour, 
+import { NatalChart } from '../../database/models';
+import type {
+    PlanetaryHour,
     PlanetName,
-    AspectType
 } from '@adaptive-astro/shared/types/astrology';
-import { interpretationService } from './interpretation.service';
 
 /**
  * Personalization Engine
@@ -57,7 +54,7 @@ export class PersonalizationService {
     /**
      * Calculate personalized strength for an aspect
      */
-    public scoreAspect(aspect: any, natalChart: NatalChart): number {
+    public scoreAspect(aspect: any, _natalChart: NatalChart): number {
         // Aspects to natal Sun, Moon, or ASC are much more significant
         const sensitivePlanets = ['Sun', 'Moon', 'Ascendant'];
         let multiplier = 1.0;

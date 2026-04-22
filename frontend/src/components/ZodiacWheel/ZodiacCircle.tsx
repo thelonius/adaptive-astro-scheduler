@@ -17,7 +17,7 @@ export const ZodiacCircle: React.FC<ZodiacCircleProps> = ({ size, colorScheme, s
   const centerY = size / 2;
   const outerRadius = size * 0.46;
   const innerRadius = size * 0.38;
-  const signRadius = size * 0.42;
+  const _signRadius = size * 0.42;
 
   const signs = getZodiacSignPositions(size, chartRotation);
   // Generate high-fidelity degree marks (every 1 degree) for the inner ring
@@ -101,7 +101,7 @@ export const ZodiacCircle: React.FC<ZodiacCircleProps> = ({ size, colorScheme, s
       />
 
       {/* Wedges for elemental colors */}
-      {signs.map((sign, i) => {
+      {signs.map((sign, _i) => {
         const startAngle = sign.angle; // Longitude
         const endAngle = startAngle + 30; // Next sign
 

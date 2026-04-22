@@ -3,10 +3,9 @@ import type {
   CalendarDay,
   CalendarMonth,
   CelestialBody,
-  PlanetsApiResponse,
-  VoidMoonApiResponse,
-  RetrogradesApiResponse,
   AspectsApiResponse,
+  HousesApiResponse,
+  PlanetaryHoursApiResponse,
 } from '@adaptive-astro/shared/types';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
@@ -33,6 +32,8 @@ export class CalendarGenerator {
       voidMoonData,
       retrogradesData,
       aspectsData,
+      housesData,
+      hoursData,
     ] = await Promise.all([
       this.ephemeris.getLunarDay(dateTime),
       this.ephemeris.getMoonPhase(dateTime),
@@ -40,6 +41,8 @@ export class CalendarGenerator {
       this.ephemeris.getVoidOfCourseMoon(dateTime),
       this.ephemeris.getRetrogradePlanets(dateTime),
       this.ephemeris.getAspects(dateTime).catch(() => null as AspectsApiResponse | null),
+      this.ephemeris.getHouses(dateTime, 'placidus').catch(() => null as HousesApiResponse | null),
+      this.ephemeris.getPlanetaryHours(dateTime).catch(() => null as PlanetaryHoursApiResponse | null),
     ]);
 
     // Enrich lunar day with calculations and interpretations
@@ -110,6 +113,17 @@ export class CalendarGenerator {
         : [],
       eclipseWindow: false,
       aspects: aspectsData?.aspects ?? [],
+      houses: (housesData?.houses || []).map(h => ({
+        number: h.number as any,
+        cusp: h.cusp,
+        sign: this.getZodiacSignFromName(h.zodiacSign)
+      })),
+      planetaryHours: (hoursData?.hours || []).map(h => ({
+        hour: h.hour,
+        ruler: h.planet as any,
+        startTime: { date: new Date(h.startTime), timezone: dateTime.timezone, location: dateTime.location },
+        endTime: { date: new Date(h.endTime), timezone: dateTime.timezone, location: dateTime.location }
+      })),
       recommendations,
     };
 

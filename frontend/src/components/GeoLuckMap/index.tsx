@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
-import { Box, Spinner, Text, VStack, Button, Badge } from '@chakra-ui/react';
+import { Box, Spinner, Text, VStack } from '@chakra-ui/react';
 
 interface GeoLuckMapProps {
     nodes: Array<{

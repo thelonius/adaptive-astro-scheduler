@@ -8,12 +8,6 @@ import * as path from 'path';
  * Simple migration system that runs SQL files in order
  */
 
-interface Migration {
-  id: string;
-  filename: string;
-  executedAt: Date | null;
-}
-
 async function createMigrationsTable(): Promise<void> {
   const query = `
     CREATE TABLE IF NOT EXISTS migrations (

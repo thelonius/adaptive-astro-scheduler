@@ -5,7 +5,7 @@
 import React, { useMemo } from 'react';
 import {
     Box, HStack, VStack, Text, Tooltip, Badge,
-    useColorModeValue, Icon, Spinner,
+    Spinner,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { SolarTimes, SolarPeriod } from '../../hooks/useSolarTimes';

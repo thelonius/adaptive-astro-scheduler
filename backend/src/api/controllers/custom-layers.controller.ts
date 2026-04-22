@@ -157,7 +157,6 @@ export class CustomLayersController {
    */
   async improveRule(req: Request, res: Response): Promise<void> {
     try {
-      const { ruleId } = req.params;
       const { rule, feedback, outcomeData } = req.body;
 
       if (!rule) {

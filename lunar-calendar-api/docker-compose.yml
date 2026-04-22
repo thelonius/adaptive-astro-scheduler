@@ -10,12 +10,33 @@ services:
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - API_RELOAD=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
-      - ./app/data:/app/app/data
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    container_name: lunar-redis
+    ports:
+      - "6380:6379" # Map to different port from root redis if they ever run together
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis_data:

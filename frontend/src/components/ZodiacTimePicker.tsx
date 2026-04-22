@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Text, useColorModeValue } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+import { Box, Text } from '@chakra-ui/react';
 
 // Zodiac signs with approximate starting hours for a 24h "Day Clock" mapping
 // This maps the 24h day to the zodiac circle (Aries = 6AM roughly)
@@ -72,8 +71,8 @@ export const ZodiacTimePicker: React.FC<ZodiacTimePickerProps> = ({
         // Calculate angle. Atan2(y,x) is standard.
         // We want 0 at top (-Y). 
         // angle = atan2(x, -y) gives 0 at top, increasing clockwise.
-        let angleRad = Math.atan2(dx, -dy);
-        let angleDeg = angleRad * (180 / Math.PI);
+        const angleRad = Math.atan2(dx, -dy);
+        const angleDeg = angleRad * (180 / Math.PI);
 
         onChange(getTimeFromAngle(angleDeg));
     };

@@ -52,7 +52,7 @@ export class ServerClient {
             }
             let data = '';
             stream
-              .on('close', (code: any, signal: any) => {
+              .on('close', (_code: unknown, _signal: unknown) => {
                 conn.end();
                 resolve(data.trim());
               })

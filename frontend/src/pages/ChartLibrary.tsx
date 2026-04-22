@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
   Container,
   Heading,
   VStack,
@@ -51,7 +50,7 @@ import { ChartCreator } from '../components/common/ChartCreator';
 const ChartLibrary: React.FC = () => {
   const { charts, isLoading, error, loadCharts, deleteChart } = useChartStore();
   const [showCreator, setShowCreator] = useState(false);
-  const [selectedChart, setSelectedChart] = useState<SavedChart | null>(null);
+  const [_selectedChart, _setSelectedChart] = useState<SavedChart | null>(null);
   const [chartToDelete, setChartToDelete] = useState<SavedChart | null>(null);
   
   const toast = useToast();

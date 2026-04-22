@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import calendarRoutes from './api/routes/calendar.routes';
 import ephemerisRoutes from './api/routes/ephemeris.routes';
@@ -10,6 +10,7 @@ import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
 import { travelRoutes } from './api/routes/travel.routes';
 import { createChartRoutes } from './api/routes/chart.routes';
+import { natalChartRepository, userRepository } from './database/repositories';
 
 /**
  * Create and configure Express application
@@ -61,15 +62,16 @@ export function createApp(): Express {
 
   // Chart management routes (requires repositories)
   const chartRoutes = createChartRoutes(
-    require('./database/repositories').natalChartRepository,
-    require('./database/repositories').userRepository
+    natalChartRepository,
+    userRepository
   );
   app.use('/api/charts', chartRoutes);
 
-  // Telegram Bot Webhook
+  // Telegram Bot Webhook (lazy-loaded to avoid circular dependencies at startup)
   app.post('/webhook/telegram', (req, res) => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { TelegramBotService } = require('./services/telegram-bot.service');
-    const botService = TelegramBotService.getInstance();
+    const botService = TelegramBotService.getInstance ? TelegramBotService.getInstance() : null;
     if (botService && botService.handleWebhook) {
       botService.handleWebhook(req, res);
     } else {
@@ -89,7 +91,7 @@ export function createApp(): Express {
   });
 
   // Error handler
-  app.use((err: Error, req: Request, res: Response, next: any) => {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
       success: false,

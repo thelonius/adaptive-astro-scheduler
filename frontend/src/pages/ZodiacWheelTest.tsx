@@ -36,7 +36,6 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Code,
   List,
   ListItem,
   ListIcon,
@@ -92,7 +91,7 @@ export const ZodiacWheelTest: React.FC = () => {
   const [updateCount, setUpdateCount] = useState(0);
 
   const handleDataUpdate = (data: ZodiacWheelData) => {
-    const updateTime = Date.now();
+    const _updateTime = Date.now();
     // Commented out resource-heavy toast notifications
     // if (currentData) {
     //   const latency = updateTime - currentData.timestamp.getTime();

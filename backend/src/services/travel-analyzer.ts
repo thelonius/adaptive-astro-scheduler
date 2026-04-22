@@ -1,4 +1,4 @@
-import { NatalChart, DateTime, CelestialBody, Aspect } from '@adaptive-astro/shared/types';
+import { NatalChart } from '@adaptive-astro/shared/types';
 import { RelocationCalculator, RelocationResult } from './relocation-calculator';
 import { TransitCalculator, Transit, HouseTransit } from './transit-calculator';
 
@@ -36,8 +36,8 @@ export class TravelAnalyzer {
      */
     public analyzeStaticLocation(relocation: RelocationResult): LocationScore {
         let score = 50; // Base neutral score
-        let pros: string[] = [];
-        let warnings: string[] = [];
+        const pros: string[] = [];
+        const warnings: string[] = [];
 
         const { originalChart, relocatedHouses } = relocation;
 

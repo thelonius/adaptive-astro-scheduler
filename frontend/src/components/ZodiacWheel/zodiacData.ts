@@ -1,4 +1,3 @@
-import type { ZodiacSign } from '@adaptive-astro/shared/types';
 
 export interface DetailedZodiacInfo {
   name: string;

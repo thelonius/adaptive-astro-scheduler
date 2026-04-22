@@ -125,9 +125,8 @@ function getLunarDayBaseColor(lunarDay: any): string | null {
 /**
  * Создать тёмный вариант темы из основного цвета
  */
-function buildDarkTheme(primaryHex: string, accentHex: string): DayThemeVariant {
+function buildDarkTheme(primaryHex: string, _accentHex: string): DayThemeVariant {
     const p = chroma(primaryHex);
-    const a = chroma(accentHex);
 
     return {
         bg: '#080c18',
@@ -147,7 +146,7 @@ function buildDarkTheme(primaryHex: string, accentHex: string): DayThemeVariant 
 /**
  * Создать светлый вариант темы из основного цвета
  */
-function buildLightTheme(primaryHex: string, accentHex: string): DayThemeVariant {
+function buildLightTheme(primaryHex: string, _accentHex: string): DayThemeVariant {
     const p = chroma(primaryHex);
 
     return {

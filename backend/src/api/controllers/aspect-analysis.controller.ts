@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import { AspectStrengthCalculator } from '../../utils/aspect-strength';
-import type { DateTime, AspectAnalysisResponse, ScoredAspect } from '@adaptive-astro/shared/types';
+import type { DateTime, AspectAnalysisResponse } from '@adaptive-astro/shared/types';
 
 /**
  * Aspect Analysis Controller

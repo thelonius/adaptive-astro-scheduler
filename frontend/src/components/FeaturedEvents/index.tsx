@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Box, VStack, HStack, Text, Image, Card, CardBody, Heading, useColorModeValue, Badge } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text, Image, Card, CardBody, Heading, Badge } from '@chakra-ui/react';
 
 export interface FeaturedEvent {
     id: string;

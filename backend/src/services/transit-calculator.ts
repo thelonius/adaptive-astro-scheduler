@@ -122,8 +122,6 @@ export class TransitCalculator {
     natalPlanets: (CelestialBody | PlanetApiData)[]
   ): Transit[] {
     const transits: Transit[] = [];
-    const maxOrb = 8; // degrees
-
     const aspectTypes = [
       { type: 'conjunction' as const, angle: 0, orb: 8 },
       { type: 'sextile' as const, angle: 60, orb: 6 },
@@ -209,8 +207,8 @@ export class TransitCalculator {
       const currentHouse = houses[i];
       const nextHouse = houses[(i + 1) % houses.length];
 
-      let start = currentHouse.cusp;
-      let end = nextHouse.cusp;
+      const start = currentHouse.cusp;
+      const end = nextHouse.cusp;
 
       // Handle wrap-around at 360/0 degrees
       if (end < start) {
@@ -267,7 +265,7 @@ export class TransitCalculator {
    */
   private generateSummary(
     significantTransits: Transit[],
-    houseTransits: HouseTransit[]
+    _houseTransits: HouseTransit[]
   ): string {
     if (significantTransits.length === 0) {
       return 'Спокойный день без значительных транзитных аспектов.';

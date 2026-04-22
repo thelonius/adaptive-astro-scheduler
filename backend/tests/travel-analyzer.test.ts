@@ -57,6 +57,7 @@ class MockEphemeris implements IEphemerisCalculator {
     async getMoonPhase() { return 0; }
     async getLunarDay() { return {} as any; }
     async getVoidOfCourseMoon() { return {} as any; }
+    async getDispositorChains() { return {} as any; }
 }
 
 describe('Travel Analyzer & Relocation Calculator', () => {

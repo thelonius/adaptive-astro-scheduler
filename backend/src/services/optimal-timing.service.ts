@@ -3,7 +3,6 @@ import {
     CelestialEvent,
     TimingWindow,
     IntentionCategory,
-    CelestialEventType
 } from '@adaptive-astro/shared/types/astrology';
 import { TIMING_RULES, IntentionRules } from '../config/timing-rules';
 import { CelestialEventsDetector } from './celestial-events-detector';
@@ -74,7 +73,6 @@ export class OptimalTimingService {
         const warnings: string[] = [];
 
         // Check Moon Sign
-        const moonIngress = events.find(e => e.type === 'ingress' && e.planets?.includes('Moon'));
         // Note: This matches ingresses on that day. Ideally we'd know the sign for the whole day.
         // For now, let's assume if there's no ingress, we might miss the sign bonus unless we fetch it separately.
         // Optimization: The detector events might not include "Moon is in X" state, only changes.

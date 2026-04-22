@@ -102,7 +102,7 @@ export class InterpretationService {
     /**
      * Map lunar day + phase to energy type (Light/Dark/Neutral)
      */
-    private getEnergyType(num: number, phase: LunarPhaseType): LunarEnergyType {
+    private getEnergyType(num: number, _phase: LunarPhaseType): LunarEnergyType {
         const darkDays = [9, 15, 23, 29];
         if (darkDays.includes(num)) return 'Dark';
         

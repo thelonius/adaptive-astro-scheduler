@@ -8,7 +8,7 @@
     "shared"
   ],
   "scripts": {
-    "dev": "./dev-start.sh",
+    "dev": "./dev-start.sh && ./QUICK_START.sh",
     "dev:backend": "cd backend && PORT=3001 npm run dev",
     "dev:frontend": "cd frontend && npm run dev", 
     "dev:parallel": "npm run dev --workspaces",

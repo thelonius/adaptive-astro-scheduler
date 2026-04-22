@@ -1,4 +1,4 @@
-import { Telegraf, Context, Markup, session } from 'telegraf';
+import { Telegraf, Context, Markup } from 'telegraf';
 import LocalSession from 'telegraf-session-local';
 import { UserRepository } from '../database/repositories/user.repository';
 import { NatalChartRepository } from '../database/repositories/natal-chart.repository';
@@ -17,7 +17,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const WEBHOOK_URL = process.env.TELEGRAM_WEBHOOK_URL;
 const EPHEMERIS_API_URL = process.env.EPHEMERIS_API_URL || 'http://localhost:8000';
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (!TOKEN) {
   console.warn('TELEGRAM_BOT_TOKEN is not set. Bot will not start.');

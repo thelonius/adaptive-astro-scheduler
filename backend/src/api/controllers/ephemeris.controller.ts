@@ -35,7 +35,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
+        date: new Date(`${date}T${time}Z`), // time is UTC from frontend
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),
@@ -74,7 +74,7 @@ export class EphemerisController {
       } = req.query;
 
       const dateTime: DateTime = {
-        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
+        date: new Date(`${date}T${time}Z`), // time is UTC from frontend
         timezone: timezone as string,
         location: { latitude: 0, longitude: 0 }, // Not needed for aspects
       };
@@ -122,7 +122,7 @@ export class EphemerisController {
       }
 
       const dateTime: DateTime = {
-        date: zonedTimeToUtc(`${date}T${time}`, timezone as string),
+        date: new Date(`${date}T${time}Z`), // time is UTC from frontend
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),

@@ -225,6 +225,24 @@ class MoonPhase:
 
 
 @dataclass
+class LunarDayCharacteristics:
+    """Detailed characteristics for a specific lunar day."""
+    number: int
+    symbol: str
+    energy: LunarDayEnergy
+    base_colors: List[str]
+    affected_organs: List[str]
+    affected_body_parts: List[str]
+    health_tips: List[str]
+    recommended: List[str]
+    not_recommended: List[str]
+    dominant_planet: str
+    additional_influences: List[str]
+    planetary_description: str
+    general_description: str
+
+
+@dataclass
 class LunarDay:
     """Lunar day information (1-30)."""
     number: int              # 1-30
@@ -232,6 +250,9 @@ class LunarDay:
     starts_at: datetime      # When this lunar day begins
     ends_at: datetime        # When this lunar day ends
     duration_hours: float    # Duration in hours
+    symbol: Optional[str] = None
+    energy: Optional[LunarDayEnergy] = None
+    characteristics: Optional[LunarDayCharacteristics] = None
 
 
 # ============================================================================

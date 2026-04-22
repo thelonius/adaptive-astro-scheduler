@@ -16,7 +16,6 @@ import {
     Progress,
     Alert,
     AlertIcon,
-    useColorModeValue,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import type { CalendarDay } from '../../services/dayService';
@@ -34,7 +33,7 @@ export const DayAnalysis: React.FC<DayAnalysisProps> = ({
     data,
     isLoading,
     error,
-    selectedDate,
+    selectedDate: _selectedDate,
 }) => {
     const cardBg = 'var(--ag-surface)';
     const borderColor = 'var(--ag-border)';

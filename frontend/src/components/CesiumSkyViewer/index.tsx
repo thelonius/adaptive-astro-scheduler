@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import type { CelestialBody, NatalChart } from '@adaptive-astro/shared/types';
+import type { CelestialBody } from '@adaptive-astro/shared/types';
 import type { ZodiacWheelData } from '../ZodiacWheel/types';
 import './CesiumSkyViewer.css';
 
@@ -29,7 +29,7 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
     planetData,
     currentTime,
     height = 600,
-    autoRotate = false,
+    autoRotate: _autoRotate = false,
     activeBodies = [],
     loading = false,
     eventTitle,
@@ -43,7 +43,7 @@ export const CesiumSkyViewer: React.FC<CesiumSkyViewerProps> = ({
 
     // State
     // Removed internal isPlaying state in favor of props
-    const [viewMode, setViewMode] = useState<'3d' | '2d' | 'both'>('3d');
+    const [_viewMode, _setViewMode] = useState<'3d' | '2d' | 'both'>('3d');
     const [cinematicMode, setCinematicMode] = useState(false);
     const [selectedPlanet, setSelectedPlanet] = useState<CelestialBody | null>(null);
     const [luckZones, setLuckZones] = useState<any[]>([]);

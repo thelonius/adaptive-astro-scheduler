@@ -104,7 +104,7 @@ export const ChartInterpretation: React.FC<ChartInterpretationProps> = ({ planet
   const venus = planets.find(p => p.name === 'Venus');
   const mars = planets.find(p => p.name === 'Mars');
 
-  const personalPlanets = [sun, moon, mercury, venus, mars].filter(Boolean) as CelestialBody[];
+  const _personalPlanets = [sun, moon, mercury, venus, mars].filter(Boolean) as CelestialBody[];
 
   return (
     <Card>
