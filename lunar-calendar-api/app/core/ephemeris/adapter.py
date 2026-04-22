@@ -577,58 +577,59 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
             pos = ephemeris_core.get_planet_position("Moon", curr_dt)
             curr_lon = pos[0]
             speed = pos[3] / 24.0  # degrees per hour
-            
+
             diff = (target_lon - curr_lon)
             if diff < -180: diff += 360
             if diff > 180: diff -= 360
-            
+
+            if abs(speed) < 1e-6:
+                # Moon stationary — step forward half a day and retry
+                curr_dt += timedelta(hours=12)
+                continue
+
             dt_diff = diff / speed
+            # Clamp to avoid diverging steps
+            dt_diff = max(-48.0, min(48.0, dt_diff))
             curr_dt += timedelta(hours=dt_diff)
-            
+
         return curr_dt
 
     async def _find_last_moon_aspect(self, start_dt: datetime, end_dt: datetime, planet_name: str, angles: List[float]) -> Tuple[Optional[datetime], Optional[float]]:
         """Find the time of the last aspect between Moon and planet before end_dt."""
-        # This is a bit complex for a single step. 
-        # We'll check the end state and work backwards slightly or use a root finder.
-        # Simplified for now: Check every 2 hours between start and end and find transitions.
-        
+        import time as _time
+
         last_found_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
         last_found_angle = None
-        
-        # Step through the period to find when an aspect occurs
-        # Moon speed is ~13-15 deg/day, Planet speed is < 2 deg/day.
-        # Max relative speed is ~15 deg/day. 
-        # Checking every 2 hours (1.2 deg) won't miss any aspects (orbs don't matter, we want exact).
-        
+
         curr_dt = start_dt
         step = timedelta(hours=2)
-        
+        deadline = _time.monotonic() + 8.0  # 8-second hard limit per planet
+
         prev_diff = self._get_moon_planet_diff(start_dt, planet_name)
-        
+
         while curr_dt < end_dt:
+            if _time.monotonic() > deadline:
+                break
+
             next_dt = min(curr_dt + step, end_dt)
             next_diff = self._get_moon_planet_diff(next_dt, planet_name)
-            
-            # Check if any major angle was crossed
+
             for angle in angles:
-                # Normalizing diffs around the target angle
                 d1 = (prev_diff - angle + 180) % 360 - 180
                 d2 = (next_diff - angle + 180) % 360 - 180
-                
-                if d1 * d2 < 0: # Sign change means we crossed the exact angle
-                    # Refine the time
+
+                if d1 * d2 < 0:
                     exact_time = curr_dt + (next_dt - curr_dt) * (abs(d1) / (abs(d1) + abs(d2)))
                     if exact_time > last_found_time:
                         last_found_time = exact_time
                         last_found_angle = angle
-            
+
             curr_dt = next_dt
             prev_diff = next_diff
-            
+
         if last_found_time.year == 1900:
             return None, None
-            
+
         return last_found_time, last_found_angle
 
     def _get_moon_planet_diff(self, dt: datetime, planet_name: str) -> float:

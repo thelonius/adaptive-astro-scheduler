@@ -2,9 +2,10 @@ from pydantic_settings import BaseSettings
 from typing import List
 import os
 
-# Configure Skyfield cache to use a writable directory
-os.environ['SKYFIELD_DATA'] = '/tmp/skyfield-data'
-os.makedirs('/tmp/skyfield-data', exist_ok=True)
+# Use persistent data dir (set by Dockerfile as /app/data); fallback to /tmp
+_data_dir = os.environ.get('EPHEMERIS_DATA_DIR', '/tmp/skyfield-data')
+os.makedirs(_data_dir, exist_ok=True)
+os.environ['SKYFIELD_DATA'] = _data_dir
 
 
 class Settings(BaseSettings):

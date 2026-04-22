@@ -2,6 +2,10 @@
 Lunar Calendar API - Main Application
 """
 
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,6 +20,26 @@ chart_router    = importlib.import_module("app.api.v1.endpoints.chart")
 planning_router = importlib.import_module("app.api.v1.endpoints.planning")
 reference_router = importlib.import_module("app.api.v1.endpoints.reference")
 
+logger = logging.getLogger(__name__)
+
+_ephemeris_ready = False
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _ephemeris_ready
+    try:
+        from app.calculators.ephemeris_core import ephemeris_core
+        # Smoke-test: calculate current Sun position
+        now = datetime.now(timezone.utc)
+        ephemeris_core.get_planet_position("Sun", now)
+        _ephemeris_ready = True
+        logger.info("Ephemeris engine initialised successfully")
+    except Exception as e:
+        logger.error(f"Ephemeris engine failed to initialise: {e}")
+    yield
+
+
 # Create FastAPI application
 app = FastAPI(
     title="Ephemeris & Astro-Planning API",
@@ -26,6 +50,7 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -61,11 +86,18 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
+    """Health check — verifies ephemeris engine is operational."""
+    if not _ephemeris_ready:
+        from fastapi import Response
+        return Response(
+            content='{"status":"unhealthy","reason":"ephemeris engine not ready"}',
+            status_code=503,
+            media_type="application/json",
+        )
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
-        "version": settings.VERSION
+        "version": settings.VERSION,
     }
 
 

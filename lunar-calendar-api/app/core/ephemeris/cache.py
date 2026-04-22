@@ -53,36 +53,39 @@ class ICacheService(ABC):
 
 
 class MemoryCacheService(ICacheService):
-    """Simple in-memory cache service (default)."""
+    """In-memory LRU cache with bounded size to prevent OOM."""
+
+    MAX_SIZE = 2000
 
     def __init__(self):
-        self._cache: Dict[str, tuple[Any, Optional[datetime]]] = {}
+        from collections import OrderedDict
+        self._cache: OrderedDict[str, tuple[Any, Optional[datetime]]] = OrderedDict()
 
     def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
-        if key in self._cache:
-            value, expires_at = self._cache[key]
-            if expires_at is None or datetime.utcnow() < expires_at:
-                return value
-            else:
-                # Expired
-                self._cache.pop(key, None)
-        return None
+        if key not in self._cache:
+            return None
+        value, expires_at = self._cache[key]
+        if expires_at is not None and datetime.utcnow() >= expires_at:
+            del self._cache[key]
+            return None
+        # Move to end (most recently used)
+        self._cache.move_to_end(key)
+        return value
 
     def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None):
-        """Set value in cache with optional TTL."""
-        # Use UTC for expires_at
         expires_at = None
         if ttl_seconds is not None and ttl_seconds > 0:
             expires_at = datetime.utcnow() + timedelta(seconds=ttl_seconds)
         self._cache[key] = (value, expires_at)
+        self._cache.move_to_end(key)
+        # Evict oldest entries when over limit
+        while len(self._cache) > self.MAX_SIZE:
+            self._cache.popitem(last=False)
 
     def clear(self):
-        """Clear all cache entries."""
         self._cache.clear()
 
     def size(self) -> int:
-        """Get number of cached items."""
         return len(self._cache)
 
 
