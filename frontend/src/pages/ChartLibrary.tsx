@@ -43,11 +43,13 @@ import {
   InfoIcon
 } from '@chakra-ui/icons';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { SavedChart } from '../types/chart';
 import { useChartStore } from '../store/chartStore';
 import { ChartCreator } from '../components/common/ChartCreator';
 
 const ChartLibrary: React.FC = () => {
+  const { t } = useTranslation();
   const { charts, isLoading, error, loadCharts, deleteChart } = useChartStore();
   const [showCreator, setShowCreator] = useState(false);
   const [_selectedChart, _setSelectedChart] = useState<SavedChart | null>(null);
@@ -68,15 +70,15 @@ const ChartLibrary: React.FC = () => {
     try {
       await deleteChart(chartToDelete.id);
       toast({
-        title: 'Chart deleted',
-        description: `"${chartToDelete.name}" has been removed`,
+        title: t('chartLibrary.toastDeleted'),
+        description: t('chartLibrary.toastDeletedDesc', { name: chartToDelete.name }),
         status: 'success',
         duration: 3000,
       });
     } catch (error) {
       toast({
-        title: 'Delete failed',
-        description: 'Unable to delete the chart',
+        title: t('chartLibrary.toastDeleteFailed'),
+        description: t('chartLibrary.toastDeleteFailedDesc'),
         status: 'error',
         duration: 3000,
       });
@@ -133,14 +135,14 @@ const ChartLibrary: React.FC = () => {
         
         {/* Header */}
         <HStack justify="space-between" align="center">
-          <Heading size="xl">📚 Chart Library</Heading>
+          <Heading size="xl">📚 {t('chartLibrary.title')}</Heading>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="green"
             size="lg"
             onClick={() => setShowCreator(true)}
           >
-            New Chart
+            {t('chartLibrary.newChart')}
           </Button>
         </HStack>
 
@@ -156,7 +158,7 @@ const ChartLibrary: React.FC = () => {
         {isLoading && (
           <VStack spacing={4} py={8}>
             <Spinner size="xl" />
-            <Text>Loading your charts...</Text>
+            <Text>{t('chartLibrary.loadingCharts')}</Text>
           </VStack>
         )}
 
@@ -167,11 +169,10 @@ const ChartLibrary: React.FC = () => {
               <VStack spacing={4}>
                 <Text fontSize="6xl">📊</Text>
                 <Heading size="md" color="gray.600">
-                  No charts yet
+                  {t('chartLibrary.noChartsYet')}
                 </Heading>
                 <Text color="gray.500" maxW="md">
-                  Create your first chart to start exploring astrological insights. 
-                  You can create natal charts, event charts, or horary question charts.
+                  {t('chartLibrary.emptyDescription')}
                 </Text>
                 <Button
                   leftIcon={<AddIcon />}
@@ -180,7 +181,7 @@ const ChartLibrary: React.FC = () => {
                   onClick={() => setShowCreator(true)}
                   mt={4}
                 >
-                  Create Your First Chart
+                  {t('chartLibrary.createFirst')}
                 </Button>
               </VStack>
             </CardBody>
@@ -205,7 +206,7 @@ const ChartLibrary: React.FC = () => {
                           </Heading>
                         </HStack>
                         <Badge colorScheme={getTypeColor(chart.type)} size="sm">
-                          {chart.type}
+                          {t(`chartLibrary.types.${chart.type}`, chart.type)}
                         </Badge>
                       </VStack>
                       
@@ -217,25 +218,25 @@ const ChartLibrary: React.FC = () => {
                           size="sm"
                         />
                         <MenuList>
-                          <MenuItem 
+                          <MenuItem
                             icon={<ViewIcon />}
                             onClick={() => handleViewChart(chart)}
                           >
-                            View Chart
+                            {t('chartLibrary.viewChart')}
                           </MenuItem>
                           <MenuItem icon={<EditIcon />}>
-                            Edit Details
+                            {t('chartLibrary.editDetails')}
                           </MenuItem>
                           <MenuItem icon={<CalendarIcon />}>
-                            Daily Reading
+                            {t('chartLibrary.dailyReading')}
                           </MenuItem>
                           <Divider />
-                          <MenuItem 
-                            icon={<DeleteIcon />} 
+                          <MenuItem
+                            icon={<DeleteIcon />}
                             color="red.500"
                             onClick={() => confirmDelete(chart)}
                           >
-                            Delete
+                            {t('chartLibrary.delete')}
                           </MenuItem>
                         </MenuList>
                       </Menu>
@@ -282,22 +283,22 @@ const ChartLibrary: React.FC = () => {
 
                     {/* Action Buttons */}
                     <HStack spacing={2} pt={2}>
-                      <Button 
-                        size="sm" 
-                        colorScheme="blue" 
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
                         flex={1}
                         onClick={() => handleViewChart(chart)}
                       >
-                        View Chart
+                        {t('chartLibrary.viewChart')}
                       </Button>
                       <Button size="sm" variant="outline" flex={1}>
-                        Daily Reading
+                        {t('chartLibrary.dailyReading')}
                       </Button>
                     </HStack>
 
                     {/* Created Date */}
                     <Text fontSize="xs" color="gray.400" textAlign="right">
-                      Created {format(new Date(chart.createdAt), 'MMM d, yyyy')}
+                      {t('chartLibrary.createdOn', { date: format(new Date(chart.createdAt), 'MMM d, yyyy') })}
                     </Text>
 
                   </VStack>
@@ -314,25 +315,25 @@ const ChartLibrary: React.FC = () => {
               <HStack justify="center" spacing={8}>
                 <VStack>
                   <Text fontSize="2xl" fontWeight="bold">{charts.length}</Text>
-                  <Text fontSize="sm" color="gray.600">Total Charts</Text>
+                  <Text fontSize="sm" color="gray.600">{t('chartLibrary.totalCharts')}</Text>
                 </VStack>
                 <VStack>
                   <Text fontSize="2xl" fontWeight="bold">
                     {charts.filter(c => c.type === 'natal').length}
                   </Text>
-                  <Text fontSize="sm" color="gray.600">Natal Charts</Text>
+                  <Text fontSize="sm" color="gray.600">{t('chartLibrary.natalCharts')}</Text>
                 </VStack>
                 <VStack>
                   <Text fontSize="2xl" fontWeight="bold">
                     {charts.filter(c => c.type === 'event').length}
                   </Text>
-                  <Text fontSize="sm" color="gray.600">Event Charts</Text>
+                  <Text fontSize="sm" color="gray.600">{t('chartLibrary.eventCharts')}</Text>
                 </VStack>
                 <VStack>
                   <Text fontSize="2xl" fontWeight="bold">
                     {charts.filter(c => c.type === 'question').length}
                   </Text>
-                  <Text fontSize="sm" color="gray.600">Horary Charts</Text>
+                  <Text fontSize="sm" color="gray.600">{t('chartLibrary.horaryCharts')}</Text>
                 </VStack>
               </HStack>
             </CardBody>
@@ -350,20 +351,19 @@ const ChartLibrary: React.FC = () => {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Delete Chart
+              {t('chartLibrary.deleteChart')}
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Are you sure you want to delete "{chartToDelete?.name}"? 
-              This action cannot be undone.
+              {t('chartLibrary.deleteConfirm', { name: chartToDelete?.name ?? '' })}
             </AlertDialogBody>
 
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onClose}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button colorScheme="red" onClick={handleDeleteChart} ml={3}>
-                Delete
+                {t('chartLibrary.delete')}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

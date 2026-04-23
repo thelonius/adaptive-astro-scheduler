@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCelestialEvents } from '../hooks/useCelestialEvents';
 import { EventTimeline } from '../components/CelestialEvents/EventTimeline';
 import type { CelestialEventType } from '@adaptive-astro/shared/types';
 import './CelestialEvents.css';
 
 export const CelestialEvents: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [selectedTypes, setSelectedTypes] = useState<CelestialEventType[]>([]);
     const [monthsAhead, setMonthsAhead] = useState(2); // Default: 2 months ahead
     const [monthsBack, setMonthsBack] = useState(0); // Default: current month only
@@ -27,13 +29,13 @@ export const CelestialEvents: React.FC = () => {
     const { events, loading, error } = useCelestialEvents(startDate, endDate);
 
     const eventTypes: { type: CelestialEventType; label: string; icon: string }[] = [
-        { type: 'lunar-phase', label: 'Lunar Phases', icon: '🌙' },
-        { type: 'lunar-eclipse', label: 'Lunar Eclipses', icon: '🌑' },
-        { type: 'solar-eclipse', label: 'Solar Eclipses', icon: '☀️' },
-        { type: 'planetary-alignment', label: 'Alignments', icon: '✨' },
-        { type: 'occultation', label: 'Occultations', icon: '🌓' },
-        { type: 'retrograde-start', label: 'Retrogrades', icon: '↩️' },
-        { type: 'ingress', label: 'Ingresses', icon: '➡️' },
+        { type: 'lunar-phase', label: t('celestialEvents.types.lunarPhases'), icon: '🌙' },
+        { type: 'lunar-eclipse', label: t('celestialEvents.types.lunarEclipses'), icon: '🌑' },
+        { type: 'solar-eclipse', label: t('celestialEvents.types.solarEclipses'), icon: '☀️' },
+        { type: 'planetary-alignment', label: t('celestialEvents.types.alignments'), icon: '✨' },
+        { type: 'occultation', label: t('celestialEvents.types.occultations'), icon: '🌓' },
+        { type: 'retrograde-start', label: t('celestialEvents.types.retrogrades'), icon: '↩️' },
+        { type: 'ingress', label: t('celestialEvents.types.ingresses'), icon: '➡️' },
     ];
 
     const toggleType = (type: CelestialEventType) => {
@@ -48,54 +50,59 @@ export const CelestialEvents: React.FC = () => {
         ? events.filter(e => selectedTypes.includes(e.type))
         : events;
 
+    const dateLocale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+
     return (
         <div className="celestial-events">
             <div className="celestial-events__header">
-                <h1>Celestial Events</h1>
+                <h1>{t('celestialEvents.title')}</h1>
                 <p className="celestial-events__subtitle">
-                    Explore upcoming astronomical phenomena and their astrological significance
+                    {t('celestialEvents.subtitle')}
                 </p>
             </div>
 
             <div className="celestial-events__time-range">
                 <div className="time-range__control">
-                    <label htmlFor="months-back">Look back:</label>
+                    <label htmlFor="months-back">{t('celestialEvents.lookBack')}</label>
                     <select
                         id="months-back"
                         value={monthsBack}
                         onChange={(e) => setMonthsBack(parseInt(e.target.value))}
                     >
-                        <option value="0">Current month</option>
-                        <option value="1">1 month</option>
-                        <option value="2">2 months</option>
-                        <option value="3">3 months</option>
-                        <option value="6">6 months</option>
-                        <option value="12">1 year</option>
+                        <option value="0">{t('celestialEvents.currentMonth')}</option>
+                        <option value="1">{t('celestialEvents.month1')}</option>
+                        <option value="2">{t('celestialEvents.month2')}</option>
+                        <option value="3">{t('celestialEvents.month3')}</option>
+                        <option value="6">{t('celestialEvents.month6')}</option>
+                        <option value="12">{t('celestialEvents.year1')}</option>
                     </select>
                 </div>
 
                 <div className="time-range__control">
-                    <label htmlFor="months-ahead">Look ahead:</label>
+                    <label htmlFor="months-ahead">{t('celestialEvents.lookAhead')}</label>
                     <select
                         id="months-ahead"
                         value={monthsAhead}
                         onChange={(e) => setMonthsAhead(parseInt(e.target.value))}
                     >
-                        <option value="1">1 month</option>
-                        <option value="2">2 months</option>
-                        <option value="3">3 months</option>
-                        <option value="6">6 months</option>
-                        <option value="12">1 year</option>
+                        <option value="1">{t('celestialEvents.month1')}</option>
+                        <option value="2">{t('celestialEvents.month2')}</option>
+                        <option value="3">{t('celestialEvents.month3')}</option>
+                        <option value="6">{t('celestialEvents.month6')}</option>
+                        <option value="12">{t('celestialEvents.year1')}</option>
                     </select>
                 </div>
 
                 <div className="time-range__info">
-                    Showing events from {startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} to {endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    {t('celestialEvents.showingRange', {
+                        start: startDate.toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' }),
+                        end: endDate.toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' })
+                    })}
                 </div>
             </div>
 
             <div className="celestial-events__filters">
-                <div className="celestial-events__filter-label">Filter by type:</div>
+                <div className="celestial-events__filter-label">{t('celestialEvents.filterByType')}</div>
                 <div className="celestial-events__filter-chips">
                     {eventTypes.map(({ type, label, icon }) => (
                         <button
@@ -113,7 +120,7 @@ export const CelestialEvents: React.FC = () => {
                         className="celestial-events__clear-filters"
                         onClick={() => setSelectedTypes([])}
                     >
-                        Clear filters
+                        {t('celestialEvents.clearFilters')}
                     </button>
                 )}
             </div>
@@ -121,25 +128,25 @@ export const CelestialEvents: React.FC = () => {
             <div className="celestial-events__stats">
                 <div className="stat-card">
                     <div className="stat-card__value">{filteredEvents.length}</div>
-                    <div className="stat-card__label">Total Events</div>
+                    <div className="stat-card__label">{t('celestialEvents.totalEvents')}</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card__value">
                         {filteredEvents.filter(e => e.rarity === 'rare' || e.rarity === 'very-rare').length}
                     </div>
-                    <div className="stat-card__label">Rare Events</div>
+                    <div className="stat-card__label">{t('celestialEvents.rareEvents')}</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card__value">
                         {filteredEvents.filter(e => e.type.includes('eclipse')).length}
                     </div>
-                    <div className="stat-card__label">Eclipses</div>
+                    <div className="stat-card__label">{t('celestialEvents.eclipses')}</div>
                 </div>
             </div>
 
             {error && (
                 <div className="celestial-events__error">
-                    <p>Error loading events: {error.message}</p>
+                    <p>{t('celestialEvents.errorLoading', { message: error.message })}</p>
                 </div>
             )}
 

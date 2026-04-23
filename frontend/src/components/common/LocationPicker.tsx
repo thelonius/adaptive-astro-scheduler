@@ -11,6 +11,7 @@ import {
   Text,
   useToast,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { ChartFormData, GeocodeResult } from '../../types/chart';
 import { geocodingService } from '../../services/chartService';
 
@@ -20,6 +21,7 @@ interface LocationPickerProps {
 }
 
 export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState(value.city || '');
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -41,8 +43,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
       
       if (results.length === 0) {
         toast({
-          title: 'No results found',
-          description: 'Try a different search term or city name',
+          title: t('location.searchNoResultsToastTitle'),
+          description: t('location.searchNoResultsToastDesc'),
           status: 'info',
           duration: 3000,
         });
@@ -50,8 +52,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
     } catch (error) {
       console.error('Location search failed:', error);
       toast({
-        title: 'Search failed',
-        description: 'Unable to search for locations. Please try again.',
+        title: t('location.searchFailedToastTitle'),
+        description: t('location.searchFailedToastDesc'),
         status: 'error',
         duration: 3000,
       });
@@ -92,7 +94,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
     setShowResults(false);
     
     toast({
-      title: 'Location set',
+      title: t('location.locationSet'),
       description: `${newLocation.city}`,
       status: 'success',
       duration: 2000,
@@ -101,10 +103,10 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange 
 
   return (
     <FormControl position="relative">
-      <FormLabel>City</FormLabel>
+      <FormLabel>{t('location.cityLabel')}</FormLabel>
       <InputGroup>
         <Input
-          placeholder="Enter city name..."
+          placeholder={t('location.cityInputPlaceholder')}
           value={searchQuery}
           onChange={handleInputChange}
         />

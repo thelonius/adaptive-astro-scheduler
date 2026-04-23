@@ -51,6 +51,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon, InfoIcon } from '@chakra-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { themes, type ThemeName } from '../components/ZodiacWheel/themes';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
@@ -65,6 +66,7 @@ interface TestResult {
 }
 
 export const ZodiacWheelTest: React.FC = () => {
+  const { t } = useTranslation();
   const toast = useToast();
 
   // Configuration state
@@ -119,11 +121,11 @@ export const ZodiacWheelTest: React.FC = () => {
     const testDataLoaded = () => {
       const passed = currentData !== null;
       results.push({
-        name: 'Data Loaded',
+        name: t('zodiacWheel.testName_dataLoaded'),
         passed,
         message: passed
-          ? `Successfully loaded ${currentData?.planets.length} planets`
-          : 'Failed to load data',
+          ? t('zodiacWheel.testMsg_dataLoadedPass', { count: currentData?.planets.length })
+          : t('zodiacWheel.testMsg_dataLoadedFail'),
       });
     };
 
@@ -134,11 +136,11 @@ export const ZodiacWheelTest: React.FC = () => {
       const allPresent = expectedPlanets.every((p) => loadedPlanets.includes(p));
 
       results.push({
-        name: 'All Planets Present',
+        name: t('zodiacWheel.testName_allPlanets'),
         passed: allPresent,
         message: allPresent
-          ? `All ${expectedPlanets.length} planets loaded`
-          : `Missing planets: ${expectedPlanets.filter((p) => !loadedPlanets.includes(p)).join(', ')}`,
+          ? t('zodiacWheel.testMsg_allPlanetsPass', { count: expectedPlanets.length })
+          : t('zodiacWheel.testMsg_allPlanetsFail', { list: expectedPlanets.filter((p) => !loadedPlanets.includes(p)).join(', ') }),
       });
     };
 
@@ -148,11 +150,11 @@ export const ZodiacWheelTest: React.FC = () => {
       const passed = aspectCount > 0;
 
       results.push({
-        name: 'Aspects Calculated',
+        name: t('zodiacWheel.testName_aspectsCalc'),
         passed,
         message: passed
-          ? `Found ${aspectCount} active aspects`
-          : 'No aspects found (may need to increase orb)',
+          ? t('zodiacWheel.testMsg_aspectsPass', { count: aspectCount })
+          : t('zodiacWheel.testMsg_aspectsFail'),
       });
     };
 
@@ -163,11 +165,11 @@ export const ZodiacWheelTest: React.FC = () => {
       ) || false;
 
       results.push({
-        name: 'Longitude Ranges Valid',
+        name: t('zodiacWheel.testName_longRanges'),
         passed: allValid,
         message: allValid
-          ? 'All planet longitudes in valid range (0-360°)'
-          : 'Some planets have invalid longitudes',
+          ? t('zodiacWheel.testMsg_longPass')
+          : t('zodiacWheel.testMsg_longFail'),
       });
     };
 
@@ -176,9 +178,9 @@ export const ZodiacWheelTest: React.FC = () => {
       const retrogradeCount = currentData?.planets.filter((p) => p.isRetrograde).length || 0;
 
       results.push({
-        name: 'Retrograde Detection',
+        name: t('zodiacWheel.testName_retroDetect'),
         passed: true,
-        message: `${retrogradeCount} planet(s) retrograde`,
+        message: t('zodiacWheel.testMsg_retroMsg', { count: retrogradeCount }),
       });
     };
 
@@ -189,11 +191,11 @@ export const ZodiacWheelTest: React.FC = () => {
       ) || false;
 
       results.push({
-        name: 'Zodiac Signs Assigned',
+        name: t('zodiacWheel.testName_zodiacSigns'),
         passed: allHaveSigns,
         message: allHaveSigns
-          ? 'All planets have zodiac sign assignments'
-          : 'Some planets missing zodiac signs',
+          ? t('zodiacWheel.testMsg_zodiacPass')
+          : t('zodiacWheel.testMsg_zodiacFail'),
       });
     };
 
@@ -202,9 +204,11 @@ export const ZodiacWheelTest: React.FC = () => {
       const passed = loadTime < 1000;
 
       results.push({
-        name: 'Performance (Load Time)',
+        name: t('zodiacWheel.testName_performance'),
         passed,
-        message: `Load time: ${loadTime}ms ${passed ? '(Good)' : '(Needs optimization)'}`,
+        message: passed
+          ? t('zodiacWheel.testMsg_perfGood', { ms: loadTime })
+          : t('zodiacWheel.testMsg_perfBad', { ms: loadTime }),
         duration: loadTime,
       });
     };
@@ -224,8 +228,8 @@ export const ZodiacWheelTest: React.FC = () => {
     // Show summary toast
     const passedCount = results.filter((r) => r.passed).length;
     toast({
-      title: 'Tests Complete',
-      description: `${passedCount}/${results.length} tests passed`,
+      title: t('zodiacWheel.testsCompleteTitle'),
+      description: t('zodiacWheel.testsCompleteDesc', { passed: passedCount, total: results.length }),
       status: passedCount === results.length ? 'success' : 'warning',
       duration: 3000,
       isClosable: true,
@@ -292,21 +296,18 @@ export const ZodiacWheelTest: React.FC = () => {
         {/* Header */}
         <Box>
           <Heading size="xl" mb={2}>
-            Zodiac Wheel Component - Test Suite
+            {t('zodiacWheel.testTitle')}
           </Heading>
           <Text color="gray.500" mb={4}>
-            Comprehensive testing interface for the ZodiacWheel component with automated tests,
-            configuration options, and visual validation.
+            {t('zodiacWheel.testSubtitle')}
           </Text>
 
           <Alert status="info" mb={4}>
             <AlertIcon />
             <Box>
-              <AlertTitle>Test Instructions</AlertTitle>
+              <AlertTitle>{t('zodiacWheel.testInstructionsTitle')}</AlertTitle>
               <AlertDescription>
-                Configure the wheel using controls below, then click "Run Tests" to validate
-                functionality. Hover over planets to test tooltips. Try different themes and
-                configurations to ensure everything works correctly.
+                {t('zodiacWheel.testInstructionsDesc')}
               </AlertDescription>
             </Box>
           </Alert>
@@ -319,10 +320,10 @@ export const ZodiacWheelTest: React.FC = () => {
             <Card position="sticky" top={4}>
               <CardHeader>
                 <HStack justify="space-between">
-                  <Heading size="md">Live Component</Heading>
+                  <Heading size="md">{t('zodiacWheel.liveComponent')}</Heading>
                   <HStack>
-                    <Badge colorScheme="green">Live</Badge>
-                    <Badge colorScheme="blue">Updates: {updateCount}</Badge>
+                    <Badge colorScheme="green">{t('zodiacWheel.liveBadge')}</Badge>
+                    <Badge colorScheme="blue">{t('zodiacWheel.updatesCount', { count: updateCount })}</Badge>
                   </HStack>
                 </HStack>
               </CardHeader>
@@ -349,58 +350,44 @@ export const ZodiacWheelTest: React.FC = () => {
                       fontSize="sm"
                     >
                       <VStack align="stretch" spacing={2}>
-                        <Text fontWeight="bold" fontSize="md">What You're Seeing:</Text>
+                        <Text fontWeight="bold" fontSize="md">{t('zodiacWheel.whatYouSeeing')}</Text>
 
                         <Text>
-                          <strong>Zodiac Circle:</strong> The outer ring shows the 12 zodiac signs
-                          (Aries through Pisces) arranged in a 360° circle.
+                          <strong>{t('zodiacWheel.zodiacCircleLabel')}</strong> {t('zodiacWheel.zodiacCircleDesc')}
                         </Text>
 
                         {currentData.planets && (
                           <Text>
-                            <strong>Planets:</strong> {currentData.planets.length} celestial bodies
-                            are plotted at their current ecliptic positions. Each planet is positioned
-                            according to its longitude (0-360°) within the zodiac.
+                            <strong>{t('zodiacWheel.planetsLabelBold')}</strong> {t('zodiacWheel.planetsDesc', { count: currentData.planets.length })}
                           </Text>
                         )}
 
                         {showRetrogrades && currentData.planets && (
                           <Text>
-                            <strong>Retrograde Indicators:</strong> Planets marked with ℞ are in
-                            retrograde motion (appearing to move backward from Earth's perspective).
-                            Currently: {currentData.planets.filter(p => p.isRetrograde).length} retrograde.
+                            <strong>{t('zodiacWheel.retroIndicatorLabel')}</strong> {t('zodiacWheel.retroIndicatorDesc', { count: currentData.planets.filter(p => p.isRetrograde).length })}
                           </Text>
                         )}
 
                         {showAspects && currentData.aspects && (
                           <Text>
-                            <strong>Aspect Lines:</strong> Colored lines connecting planets show
-                            astrological aspects (angular relationships).
-                            {currentData.aspects.filter(a => a.isExact).length} active aspects
-                            within {aspectOrb}° orb. Line colors indicate aspect type: gold (conjunction),
-                            cyan (sextile), red (square), green (trine), pink (opposition), purple (quincunx).
+                            <strong>{t('zodiacWheel.aspectLinesLabel')}</strong> {t('zodiacWheel.aspectLinesDesc', { count: currentData.aspects.filter(a => a.isExact).length, orb: aspectOrb })}
                           </Text>
                         )}
 
                         {showHouses && currentData.houses && (
                           <Text>
-                            <strong>Houses:</strong> The 12 astrological houses are shown as divisions
-                            radiating from the center, calculated for {latitude.toFixed(2)}°N,
-                            {longitude.toFixed(2)}°E. Houses represent different life areas and are
-                            location-specific.
+                            <strong>{t('zodiacWheel.housesLabelBold')}</strong> {t('zodiacWheel.housesDesc', { lat: latitude.toFixed(2), lon: longitude.toFixed(2) })}
                           </Text>
                         )}
 
                         {showDegrees && (
                           <Text>
-                            <strong>Degree Markings:</strong> The circle is marked with degree indicators
-                            (0°, 30°, 60°, etc.) showing exact positions within the 360° zodiac wheel.
+                            <strong>{t('zodiacWheel.degreeMarksLabel')}</strong> {t('zodiacWheel.degreeMarksDesc')}
                           </Text>
                         )}
 
                         <Text color="gray.600" fontSize="xs" mt={2}>
-                          💡 Hover over any planet to see detailed information including exact position,
-                          speed, distance, and aspects to other planets.
+                          {t('zodiacWheel.hoverHint')}
                         </Text>
                       </VStack>
                     </Box>
@@ -414,17 +401,17 @@ export const ZodiacWheelTest: React.FC = () => {
                       overflow="hidden"
                     >
                       <Box bg="blue.50" px={4} py={2} borderBottomWidth={1}>
-                        <Text fontWeight="bold" fontSize="md">Текущие события на небе и их значения</Text>
+                        <Text fontWeight="bold" fontSize="md">{t('zodiacWheel.skyEventsTitle')}</Text>
                       </Box>
                       <Box maxH="300px" overflowY="auto">
                         <table style={{ width: '100%', fontSize: '0.875rem' }}>
                           <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f7fafc' }}>
                             <tr>
                               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '40%' }}>
-                                Небесное событие / Ситуация
+                                {t('zodiacWheel.skyEventCol')}
                               </th>
                               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '60%' }}>
-                                Астрологическое значение
+                                {t('zodiacWheel.skyMeaningCol')}
                               </th>
                             </tr>
                           </thead>
@@ -434,7 +421,7 @@ export const ZodiacWheelTest: React.FC = () => {
                               <tr key={`planet-${idx}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                   <Text fontWeight="semibold">
-                                    {planet.name} в {planet.zodiacSign.name}
+                                    {t('zodiacWheel.planetInSign', { planet: planet.name, sign: planet.zodiacSign.name })}
                                   </Text>
                                   <Text fontSize="xs" color="gray.600">
                                     {planet.longitude.toFixed(2)}° {planet.isRetrograde ? '℞' : ''}
@@ -442,11 +429,11 @@ export const ZodiacWheelTest: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                   <Text fontSize="sm">
-                                    {planet.name === 'Sun' && `Основная индивидуальность и жизненная сила проявляются через энергию ${planet.zodiacSign.element} знака ${planet.zodiacSign.name}`}
-                                    {planet.name === 'Moon' && `Эмоциональные потребности и инстинкты соответствуют ${planet.zodiacSign.quality} природе ${planet.zodiacSign.name}`}
-                                    {planet.name === 'Mercury' && `Общение и мышление под влиянием подхода ${planet.zodiacSign.name}`}
-                                    {!['Sun', 'Moon', 'Mercury'].includes(planet.name) && `Энергия ${planet.name} фильтруется через качества ${planet.zodiacSign.name}`}
-                                    {planet.isRetrograde && ' (Ретроградная: период внутреннего пересмотра и корректировки)'}
+                                    {planet.name === 'Sun' && t('zodiacWheel.sunMeaning', { element: planet.zodiacSign.element, sign: planet.zodiacSign.name })}
+                                    {planet.name === 'Moon' && t('zodiacWheel.moonMeaning', { quality: planet.zodiacSign.quality, sign: planet.zodiacSign.name })}
+                                    {planet.name === 'Mercury' && t('zodiacWheel.mercuryMeaning', { sign: planet.zodiacSign.name })}
+                                    {!['Sun', 'Moon', 'Mercury'].includes(planet.name) && t('zodiacWheel.genericPlanetMeaning', { planet: planet.name, sign: planet.zodiacSign.name })}
+                                    {planet.isRetrograde && t('zodiacWheel.retroSuffix')}
                                   </Text>
                                 </td>
                               </tr>
@@ -465,22 +452,22 @@ export const ZodiacWheelTest: React.FC = () => {
                                     {aspect.type === 'quincunx' && '⚻'} {aspect.body2.name}
                                   </Text>
                                   <Text fontSize="xs" color="gray.600">
-                                    {aspect.type === 'conjunction' && 'Соединение'}
-                                    {aspect.type === 'sextile' && 'Секстиль'}
-                                    {aspect.type === 'square' && 'Квадрат'}
-                                    {aspect.type === 'trine' && 'Трин'}
-                                    {aspect.type === 'opposition' && 'Оппозиция'}
-                                    {aspect.type === 'quincunx' && 'Квинконс'} ({aspect.angle.toFixed(1)}°, орб {aspect.orb.toFixed(1)}°)
+                                    {aspect.type === 'conjunction' && t('zodiacWheel.conjunctionName')}
+                                    {aspect.type === 'sextile' && t('zodiacWheel.sextileName')}
+                                    {aspect.type === 'square' && t('zodiacWheel.squareName')}
+                                    {aspect.type === 'trine' && t('zodiacWheel.trineName')}
+                                    {aspect.type === 'opposition' && t('zodiacWheel.oppositionName')}
+                                    {aspect.type === 'quincunx' && t('zodiacWheel.quincunxName')} {t('zodiacWheel.aspectOrbSuffix', { angle: aspect.angle.toFixed(1), orb: aspect.orb.toFixed(1) })}
                                   </Text>
                                 </td>
                                 <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                   <Text fontSize="sm">
-                                    {aspect.type === 'conjunction' && 'Энергии объединяются и усиливаются; новые начинания и единое выражение'}
-                                    {aspect.type === 'opposition' && 'Полярность и напряжение; необходимость баланса и интеграции противоположностей'}
-                                    {aspect.type === 'trine' && 'Гармоничный поток и естественные таланты; лёгкость и поддержка'}
-                                    {aspect.type === 'square' && 'Динамическое напряжение и вызов; мотивация для роста и действия'}
-                                    {aspect.type === 'sextile' && 'Возможность и потенциал; сотрудничество через усилие'}
-                                    {aspect.type === 'quincunx' && 'Требуется корректировка; разные энергии ищут интеграцию'}
+                                    {aspect.type === 'conjunction' && t('zodiacWheel.conjunctionMeaning')}
+                                    {aspect.type === 'opposition' && t('zodiacWheel.oppositionMeaning')}
+                                    {aspect.type === 'trine' && t('zodiacWheel.trineMeaning')}
+                                    {aspect.type === 'square' && t('zodiacWheel.squareMeaning')}
+                                    {aspect.type === 'sextile' && t('zodiacWheel.sextileMeaning')}
+                                    {aspect.type === 'quincunx' && t('zodiacWheel.quincunxMeaning')}
                                   </Text>
                                 </td>
                               </tr>
@@ -491,19 +478,19 @@ export const ZodiacWheelTest: React.FC = () => {
                               <tr key={`retro-${idx}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                   <Text fontWeight="semibold">
-                                    {planet.name} Ретроградная ℞
+                                    {t('zodiacWheel.retroPlanetLabel', { planet: planet.name })}
                                   </Text>
                                   <Text fontSize="xs" color="gray.600">
-                                    Скорость: {planet.speed.toFixed(4)}°/день
+                                    {t('zodiacWheel.speedLabel', { speed: planet.speed.toFixed(4) })}
                                   </Text>
                                 </td>
                                 <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                   <Text fontSize="sm">
-                                    {planet.name === 'Mercury' && 'Общение, технологии и путешествия требуют дополнительного внимания; время для пересмотра и корректировки'}
-                                    {planet.name === 'Venus' && 'Отношения и ценности на пересмотре; переосмысление того, что приносит удовольствие и ценность'}
-                                    {planet.name === 'Mars' && 'Энергия и действия обращены внутрь; переоценка целей и стратегий'}
+                                    {planet.name === 'Mercury' && t('zodiacWheel.mercuryRetroMeaning')}
+                                    {planet.name === 'Venus' && t('zodiacWheel.venusRetroMeaning')}
+                                    {planet.name === 'Mars' && t('zodiacWheel.marsRetroMeaning')}
                                     {['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'].includes(planet.name) &&
-                                      `Темы ${planet.name} требуют внутренней обработки и философского пересмотра`}
+                                      t('zodiacWheel.outerRetroMeaning', { planet: planet.name })}
                                   </Text>
                                 </td>
                               </tr>
@@ -515,32 +502,30 @@ export const ZodiacWheelTest: React.FC = () => {
                                 <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                   <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                     <Text fontWeight="semibold">
-                                      Асцендент (1-й дом)
+                                      {t('zodiacWheel.ascendantLabel')}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">
-                                      {currentData.houses[0]?.sign.name} в {currentData.houses[0]?.cusp.toFixed(1)}°
+                                      {t('zodiacWheel.signAtDeg', { sign: currentData.houses[0]?.sign.name, deg: currentData.houses[0]?.cusp.toFixed(1) })}
                                     </Text>
                                   </td>
                                   <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                     <Text fontSize="sm">
-                                      Самопрезентация и подход к жизни окрашены качествами {currentData.houses[0]?.sign.name};
-                                      первое впечатление и личный стиль
+                                      {t('zodiacWheel.ascendantMeaning', { sign: currentData.houses[0]?.sign.name })}
                                     </Text>
                                   </td>
                                 </tr>
                                 <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                   <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                     <Text fontWeight="semibold">
-                                      Середина неба (10-й дом)
+                                      {t('zodiacWheel.midheavenLabel')}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">
-                                      {currentData.houses[9]?.sign.name} в {currentData.houses[9]?.cusp.toFixed(1)}°
+                                      {t('zodiacWheel.signAtDeg', { sign: currentData.houses[9]?.sign.name, deg: currentData.houses[9]?.cusp.toFixed(1) })}
                                     </Text>
                                   </td>
                                   <td style={{ padding: '8px', verticalAlign: 'top' }}>
                                     <Text fontSize="sm">
-                                      Направление карьеры и публичная репутация под влиянием {currentData.houses[9]?.sign.name};
-                                      жизненные цели и достижения
+                                      {t('zodiacWheel.midheavenMeaning', { sign: currentData.houses[9]?.sign.name })}
                                     </Text>
                                   </td>
                                 </tr>
@@ -560,10 +545,10 @@ export const ZodiacWheelTest: React.FC = () => {
           <GridItem>
             <Tabs variant="enclosed" colorScheme="blue">
               <TabList>
-                <Tab fontSize="sm">🎛️ Controls</Tab>
-                <Tab fontSize="sm">🧪 Tests</Tab>
-                <Tab fontSize="sm">📊 Stats</Tab>
-                <Tab fontSize="sm">📖 Scenarios</Tab>
+                <Tab fontSize="sm">{t('zodiacWheel.controlsTab')}</Tab>
+                <Tab fontSize="sm">{t('zodiacWheel.testsTab')}</Tab>
+                <Tab fontSize="sm">{t('zodiacWheel.statsTab')}</Tab>
+                <Tab fontSize="sm">{t('zodiacWheel.scenariosTab')}</Tab>
               </TabList>
 
               <TabPanels>
@@ -573,13 +558,13 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Quick Toggles */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Quick Toggles</Heading>
+                        <Heading size="sm">{t('zodiacWheel.quickToggles')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <VStack align="stretch" spacing={3}>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel fontSize="sm" mb={0} flex={1}>
-                              Show Aspects
+                              {t('zodiacWheel.showAspects')}
                             </FormLabel>
                             <Switch
                               isChecked={showAspects}
@@ -589,7 +574,7 @@ export const ZodiacWheelTest: React.FC = () => {
                           </FormControl>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel fontSize="sm" mb={0} flex={1}>
-                              Show Houses
+                              {t('zodiacWheel.showHouses')}
                             </FormLabel>
                             <Switch
                               isChecked={showHouses}
@@ -599,7 +584,7 @@ export const ZodiacWheelTest: React.FC = () => {
                           </FormControl>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel fontSize="sm" mb={0} flex={1}>
-                              Show Degrees
+                              {t('zodiacWheel.showDegrees')}
                             </FormLabel>
                             <Switch
                               isChecked={showDegrees}
@@ -609,7 +594,7 @@ export const ZodiacWheelTest: React.FC = () => {
                           </FormControl>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel fontSize="sm" mb={0} flex={1}>
-                              Show Retrogrades
+                              {t('zodiacWheel.showRetrogrades')}
                             </FormLabel>
                             <Switch
                               isChecked={showRetrogrades}
@@ -624,7 +609,7 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Quick Presets */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Quick Presets</Heading>
+                        <Heading size="sm">{t('zodiacWheel.quickPresets')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <VStack spacing={2}>
@@ -633,7 +618,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             width="100%"
                             onClick={() => applyPreset('minimal')}
                           >
-                            Minimal (400px, no extras)
+                            {t('zodiacWheel.presetMinimal')}
                           </Button>
                           <Button
                             size="sm"
@@ -641,7 +626,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             onClick={() => applyPreset('standard')}
                             colorScheme="blue"
                           >
-                            Standard (600px, with aspects)
+                            {t('zodiacWheel.presetStandard')}
                           </Button>
                           <Button
                             size="sm"
@@ -649,7 +634,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             onClick={() => applyPreset('full')}
                             colorScheme="purple"
                           >
-                            Full (800px, all features)
+                            {t('zodiacWheel.presetFull')}
                           </Button>
                         </VStack>
                       </CardBody>
@@ -658,41 +643,41 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Test Checklist */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Manual Test Checklist</Heading>
+                        <Heading size="sm">{t('zodiacWheel.manualChecklist')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <List spacing={2} fontSize="sm">
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Hover planets to test tooltips
+                            {t('zodiacWheel.checklist_hoverTooltips')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Check retrograde indicators (℞)
+                            {t('zodiacWheel.checklist_checkRetro')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Verify aspect lines appear
+                            {t('zodiacWheel.checklist_verifyAspects')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Toggle houses on/off
+                            {t('zodiacWheel.checklist_toggleHouses')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Try different themes
+                            {t('zodiacWheel.checklist_tryThemes')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Test different sizes
+                            {t('zodiacWheel.checklist_testSizes')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Check animations are smooth
+                            {t('zodiacWheel.checklist_checkAnim')}
                           </ListItem>
                           <ListItem>
                             <ListIcon as={InfoIcon} color="blue.500" />
-                            Verify refresh button works
+                            {t('zodiacWheel.checklist_verifyRefresh')}
                           </ListItem>
                         </List>
                       </CardBody>
@@ -701,30 +686,30 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Appearance */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Appearance</Heading>
+                        <Heading size="sm">{t('zodiacWheel.appearance')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <VStack align="stretch" spacing={4}>
                           <FormControl>
-                            <FormLabel fontSize="sm">Theme</FormLabel>
+                            <FormLabel fontSize="sm">{t('zodiacWheel.theme')}</FormLabel>
                             <Select
                               value={themeName}
                               onChange={(e) => setThemeName(e.target.value as ThemeName)}
                               size="sm"
                             >
-                              <option value="dark">Dark (Classic)</option>
-                              <option value="light">Light (Clean)</option>
-                              <option value="cosmic">Cosmic (Purple)</option>
-                              <option value="solar">Solar (Warm)</option>
-                              <option value="lunar">Lunar (Cool)</option>
+                              <option value="dark">{t('zodiacWheel.themeDark')}</option>
+                              <option value="light">{t('zodiacWheel.themeLight')}</option>
+                              <option value="cosmic">{t('zodiacWheel.themeCosmic')}</option>
+                              <option value="solar">{t('zodiacWheel.themeSolar')}</option>
+                              <option value="lunar">{t('zodiacWheel.themeLunar')}</option>
                             </Select>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                              Choose a color scheme for the wheel
+                              {t('zodiacWheel.chooseColorScheme')}
                             </Text>
                           </FormControl>
 
                           <FormControl>
-                            <FormLabel fontSize="sm">Wheel Size: {size}px</FormLabel>
+                            <FormLabel fontSize="sm">{t('zodiacWheel.wheelSize', { size })}</FormLabel>
                             <Slider
                               value={size}
                               onChange={setSize}
@@ -738,7 +723,7 @@ export const ZodiacWheelTest: React.FC = () => {
                               <SliderThumb />
                             </Slider>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                              Recommended: 400-800px
+                              {t('zodiacWheel.recommendedSize')}
                             </Text>
                           </FormControl>
                         </VStack>
@@ -748,12 +733,12 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Advanced Settings */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Advanced Settings</Heading>
+                        <Heading size="sm">{t('zodiacWheel.advancedSettings')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <VStack align="stretch" spacing={4}>
                           <FormControl>
-                            <FormLabel fontSize="sm">Aspect Orb: {aspectOrb}°</FormLabel>
+                            <FormLabel fontSize="sm">{t('zodiacWheel.aspectOrb', { orb: aspectOrb })}</FormLabel>
                             <Slider
                               value={aspectOrb}
                               onChange={setAspectOrb}
@@ -767,13 +752,13 @@ export const ZodiacWheelTest: React.FC = () => {
                               <SliderThumb />
                             </Slider>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                              Tolerance for aspect detection (1-15°, standard: 8°)
+                              {t('zodiacWheel.orbHint')}
                             </Text>
                           </FormControl>
 
                           <FormControl>
                             <FormLabel fontSize="sm">
-                              Refresh Interval: {refreshInterval} min
+                              {t('zodiacWheel.refreshInterval', { minutes: refreshInterval })}
                             </FormLabel>
                             <Slider
                               value={refreshInterval}
@@ -790,8 +775,8 @@ export const ZodiacWheelTest: React.FC = () => {
                             </Slider>
                             <Text fontSize="xs" color="gray.500" mt={1}>
                               {useAdaptiveRefresh
-                                ? 'Using adaptive refresh (auto-adjusted)'
-                                : 'Fixed refresh interval'}
+                                ? t('zodiacWheel.usingAdaptive')
+                                : t('zodiacWheel.fixedRefresh')}
                             </Text>
                           </FormControl>
                         </VStack>
@@ -801,12 +786,12 @@ export const ZodiacWheelTest: React.FC = () => {
                     {/* Location & Advanced */}
                     <Card>
                       <CardHeader>
-                        <Heading size="sm">Location & Advanced</Heading>
+                        <Heading size="sm">{t('zodiacWheel.locationAdvanced')}</Heading>
                       </CardHeader>
                       <CardBody>
                         <VStack align="stretch" spacing={3}>
                           <FormControl>
-                            <FormLabel fontSize="sm">Latitude</FormLabel>
+                            <FormLabel fontSize="sm">{t('zodiacWheel.latitude')}</FormLabel>
                             <NumberInput
                               value={latitude}
                               onChange={(_, val) => setLatitude(val)}
@@ -823,12 +808,12 @@ export const ZodiacWheelTest: React.FC = () => {
                               </NumberInputStepper>
                             </NumberInput>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                              -90 to 90 (default: 55.7558 Moscow)
+                              {t('zodiacWheel.latDefaultMoscow')}
                             </Text>
                           </FormControl>
 
                           <FormControl>
-                            <FormLabel fontSize="sm">Longitude</FormLabel>
+                            <FormLabel fontSize="sm">{t('zodiacWheel.longitude')}</FormLabel>
                             <NumberInput
                               value={longitude}
                               onChange={(_, val) => setLongitude(val)}
@@ -845,7 +830,7 @@ export const ZodiacWheelTest: React.FC = () => {
                               </NumberInputStepper>
                             </NumberInput>
                             <Text fontSize="xs" color="gray.500" mt={1}>
-                              -180 to 180 (default: 37.6173 Moscow)
+                              {t('zodiacWheel.lonDefaultMoscow')}
                             </Text>
                           </FormControl>
 
@@ -853,7 +838,7 @@ export const ZodiacWheelTest: React.FC = () => {
 
                           <FormControl display="flex" alignItems="center">
                             <FormLabel fontSize="sm" mb={0} flex={1}>
-                              Adaptive Refresh
+                              {t('zodiacWheel.adaptiveRefresh')}
                             </FormLabel>
                             <Switch
                               isChecked={useAdaptiveRefresh}
@@ -862,7 +847,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             />
                           </FormControl>
                           <Text fontSize="xs" color="gray.500" mt={-2}>
-                            Auto-adjust refresh rate based on planet speeds
+                            {t('zodiacWheel.adaptiveRefreshDesc')}
                           </Text>
                         </VStack>
                       </CardBody>
@@ -876,14 +861,14 @@ export const ZodiacWheelTest: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <HStack justify="space-between">
-                      <Heading size="md">Automated Test Suite</Heading>
+                      <Heading size="md">{t('zodiacWheel.automatedTestSuite')}</Heading>
                       <Button
                         colorScheme="blue"
                         onClick={runTests}
                         isLoading={isRunningTests}
                         isDisabled={!currentData}
                       >
-                        Run Tests
+                        {t('zodiacWheel.runTests')}
                       </Button>
                     </HStack>
                   </CardHeader>
@@ -891,7 +876,7 @@ export const ZodiacWheelTest: React.FC = () => {
                     {testResults.length === 0 ? (
                       <Alert status="info">
                         <AlertIcon />
-                        Click "Run Tests" to validate component functionality
+                        {t('zodiacWheel.runTestsHint')}
                       </Alert>
                     ) : (
                       <VStack align="stretch" spacing={3}>
@@ -914,7 +899,7 @@ export const ZodiacWheelTest: React.FC = () => {
                                 <Text fontWeight="bold">{result.name}</Text>
                               </HStack>
                               <Badge colorScheme={result.passed ? 'green' : 'red'}>
-                                {result.passed ? 'PASS' : 'FAIL'}
+                                {result.passed ? t('zodiacWheel.pass') : t('zodiacWheel.fail')}
                               </Badge>
                             </HStack>
                             <Text fontSize="sm" mt={2} ml={6}>
@@ -922,7 +907,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             </Text>
                             {result.duration && (
                               <Text fontSize="xs" color="gray.600" ml={6} mt={1}>
-                                Duration: {result.duration}ms
+                                {t('zodiacWheel.duration', { ms: result.duration })}
                               </Text>
                             )}
                           </Box>
@@ -932,8 +917,7 @@ export const ZodiacWheelTest: React.FC = () => {
 
                         <HStack justify="space-between">
                           <Text fontWeight="bold">
-                            Summary: {testResults.filter((r) => r.passed).length}/
-                            {testResults.length} Passed
+                            {t('zodiacWheel.summary', { passed: testResults.filter((r) => r.passed).length, total: testResults.length })}
                           </Text>
                           <Badge
                             colorScheme={
@@ -944,8 +928,8 @@ export const ZodiacWheelTest: React.FC = () => {
                             py={1}
                           >
                             {testResults.every((r) => r.passed)
-                              ? '✓ All Tests Passed'
-                              : '⚠ Some Tests Failed'}
+                              ? t('zodiacWheel.allPassed')
+                              : t('zodiacWheel.someFailed')}
                           </Badge>
                         </HStack>
                       </VStack>
@@ -960,48 +944,48 @@ export const ZodiacWheelTest: React.FC = () => {
               <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
                 <Card>
                   <CardHeader>
-                    <Heading size="sm">Data Statistics</Heading>
+                    <Heading size="sm">{t('zodiacWheel.dataStats')}</Heading>
                   </CardHeader>
                   <CardBody>
                     <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                       <Stat>
-                        <StatLabel>Planets</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statPlanets')}</StatLabel>
                         <StatNumber>{currentData?.planets.length || 0}</StatNumber>
-                        <StatHelpText>Total loaded</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statTotalLoaded')}</StatHelpText>
                       </Stat>
 
                       <Stat>
-                        <StatLabel>Active Aspects</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statActiveAspects')}</StatLabel>
                         <StatNumber>
                           {currentData?.aspects.filter((a) => a.isExact).length || 0}
                         </StatNumber>
-                        <StatHelpText>Within orb</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statWithinOrb')}</StatHelpText>
                       </Stat>
 
                       <Stat>
-                        <StatLabel>Retrogrades</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statRetrogrades')}</StatLabel>
                         <StatNumber>
                           {currentData?.planets.filter((p) => p.isRetrograde).length || 0}
                         </StatNumber>
-                        <StatHelpText>Currently retrograde</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statCurrentlyRetro')}</StatHelpText>
                       </Stat>
 
                       <Stat>
-                        <StatLabel>Houses</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statHouses')}</StatLabel>
                         <StatNumber>{currentData?.houses?.length || 0}</StatNumber>
-                        <StatHelpText>Calculated</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statCalculated')}</StatHelpText>
                       </Stat>
 
                       <Stat>
-                        <StatLabel>Load Time</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statLoadTime')}</StatLabel>
                         <StatNumber>{loadTime}ms</StatNumber>
-                        <StatHelpText>Initial render</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statInitialRender')}</StatHelpText>
                       </Stat>
 
                       <Stat>
-                        <StatLabel>Updates</StatLabel>
+                        <StatLabel>{t('zodiacWheel.statUpdates')}</StatLabel>
                         <StatNumber>{updateCount}</StatNumber>
-                        <StatHelpText>Data refreshes</StatHelpText>
+                        <StatHelpText>{t('zodiacWheel.statDataRefreshes')}</StatHelpText>
                       </Stat>
                     </Grid>
                   </CardBody>
@@ -1009,7 +993,7 @@ export const ZodiacWheelTest: React.FC = () => {
 
                 <Card>
                   <CardHeader>
-                    <Heading size="sm">Planet Details</Heading>
+                    <Heading size="sm">{t('zodiacWheel.planetDetails')}</Heading>
                   </CardHeader>
                   <CardBody>
                     <VStack align="stretch" spacing={2} maxH="400px" overflowY="auto">
@@ -1037,7 +1021,7 @@ export const ZodiacWheelTest: React.FC = () => {
                             />
                           </HStack>
                           <Text fontSize="xs" color="gray.600">
-                            {planet.longitude.toFixed(2)}° • Speed: {planet.speed.toFixed(4)}°/day
+                            {t('zodiacWheel.speedDay', { deg: planet.longitude.toFixed(2), speed: planet.speed.toFixed(4) })}
                           </Text>
                         </Box>
                       ))}
@@ -1047,7 +1031,7 @@ export const ZodiacWheelTest: React.FC = () => {
 
                 <Card>
                   <CardHeader>
-                    <Heading size="sm">Aspect Breakdown</Heading>
+                    <Heading size="sm">{t('zodiacWheel.aspectBreakdown')}</Heading>
                   </CardHeader>
                   <CardBody>
                     <VStack align="stretch" spacing={2}>
@@ -1081,42 +1065,31 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          📋 Scenario 1: Basic Functionality
+                          {t('zodiacWheel.scenario1Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>
-                          Verify that the component loads and displays all essential elements
-                        </Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario1Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Load the page with default configuration</ListItem>
-                          <ListItem>2. Wait for data to load (spinner should disappear)</ListItem>
-                          <ListItem>3. Verify zodiac circle is visible with 12 signs</ListItem>
-                          <ListItem>4. Check that 10 planets are displayed</ListItem>
-                          <ListItem>5. Verify "Live" badge appears at bottom</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario1Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario1Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario1Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario1Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario1Step5')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Wheel renders completely within 1 second, all planets visible, smooth
-                          animations
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario1Expected')}</Text>
 
                         <Alert status="success" mt={2}>
                           <AlertIcon />
-                          <Text fontSize="sm">
-                            ✓ This is the baseline test - if this passes, core functionality works
-                          </Text>
+                          <Text fontSize="sm">{t('zodiacWheel.scenario1Note')}</Text>
                         </Alert>
                       </VStack>
                     </AccordionPanel>
@@ -1126,42 +1099,32 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🔗 Scenario 2: Aspect Visualization
+                          {t('zodiacWheel.scenario2Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test aspect calculation and visual representation</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario2Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Enable "Show Aspects" toggle</ListItem>
-                          <ListItem>2. Set aspect orb to 8° (standard)</ListItem>
-                          <ListItem>3. Look for colored lines connecting planets</ListItem>
-                          <ListItem>4. Verify different line styles (solid, dashed, dotted)</ListItem>
-                          <ListItem>5. Check aspect symbols at line midpoints</ListItem>
-                          <ListItem>6. Try increasing orb to 12° - more aspects should appear</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario2Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Lines appear between aspecting planets, different colors for different
-                          aspects, aspect count increases with larger orb
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario2Expected')}</Text>
 
                         <Alert status="info" mt={2}>
                           <AlertIcon />
-                          <Text fontSize="sm">
-                            💡 Aspect types: Conjunction (gold), Sextile (cyan), Square (red),
-                            Trine (green), Opposition (pink), Quincunx (purple)
-                          </Text>
+                          <Text fontSize="sm">{t('zodiacWheel.scenario2Note')}</Text>
                         </Alert>
                       </VStack>
                     </AccordionPanel>
@@ -1171,34 +1134,27 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          ℞ Scenario 3: Retrograde Detection
+                          {t('zodiacWheel.scenario3Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Verify retrograde planet identification and display</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario3Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Enable "Show Retrogrades" toggle</ListItem>
-                          <ListItem>2. Look for ℞ symbol near planet labels</ListItem>
-                          <ListItem>3. Check Statistics tab for retrograde count</ListItem>
-                          <ListItem>4. Hover over retrograde planet for tooltip</ListItem>
-                          <ListItem>5. Verify tooltip shows "Retrograde" badge</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario3Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario3Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario3Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario3Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario3Step5')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Retrograde planets marked with ℞ symbol and red border, tooltip confirms
-                          retrograde status with badge
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario3Expected')}</Text>
                       </VStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1207,45 +1163,32 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🏠 Scenario 4: Houses System
+                          {t('zodiacWheel.scenario4Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test houses calculation and overlay display</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario4Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Set location (lat/long) if not already set</ListItem>
-                          <ListItem>2. Enable "Show Houses" toggle</ListItem>
-                          <ListItem>3. Wait for houses to load</ListItem>
-                          <ListItem>
-                            4. Verify 12 house cusps appear as lines from center
-                          </ListItem>
-                          <ListItem>5. Check house numbers (1-12) are displayed</ListItem>
-                          <ListItem>
-                            6. Verify angular houses (1, 4, 7, 10) are highlighted
-                          </ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario4Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          12 houses visible with cusps, numbers displayed, angular houses have
-                          bolder lines
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario4Expected')}</Text>
 
                         <Alert status="warning" mt={2}>
                           <AlertIcon />
-                          <Text fontSize="sm">
-                            ⚠️ Houses require accurate location data. Default is Moscow.
-                          </Text>
+                          <Text fontSize="sm">{t('zodiacWheel.scenario4Note')}</Text>
                         </Alert>
                       </VStack>
                     </AccordionPanel>
@@ -1255,35 +1198,28 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🎨 Scenario 5: Theme Switching
+                          {t('zodiacWheel.scenario5Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Verify all themes render correctly with proper colors</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario5Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Start with "Dark" theme</ListItem>
-                          <ListItem>2. Switch to "Light" theme - verify colors invert</ListItem>
-                          <ListItem>3. Try "Cosmic" - check for purple/space theme</ListItem>
-                          <ListItem>4. Try "Solar" - verify warm yellow/orange tones</ListItem>
-                          <ListItem>5. Try "Lunar" - check for cool blue/grey tones</ListItem>
-                          <ListItem>6. Verify aspect line colors change appropriately</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario5Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Each theme applies distinct color palette, all elements visible and
-                          readable in all themes
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario5Expected')}</Text>
                       </VStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1292,34 +1228,28 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          📏 Scenario 6: Size Responsiveness
+                          {t('zodiacWheel.scenario6Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test component at different sizes</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario6Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Set size to 300px (minimum)</ListItem>
-                          <ListItem>2. Verify all elements still visible and readable</ListItem>
-                          <ListItem>3. Set size to 600px (standard)</ListItem>
-                          <ListItem>4. Set size to 900px (maximum)</ListItem>
-                          <ListItem>5. Check that labels scale appropriately</ListItem>
-                          <ListItem>6. Verify aspect lines remain visible at all sizes</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario6Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Component scales smoothly, text remains readable, proportions maintained
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario6Expected')}</Text>
                       </VStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1328,43 +1258,32 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🔄 Scenario 7: Real-time Updates
+                          {t('zodiacWheel.scenario7Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test auto-refresh and adaptive refresh functionality</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario7Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Enable "Adaptive Refresh"</ListItem>
-                          <ListItem>2. Watch the "Updates" counter in header</ListItem>
-                          <ListItem>3. Wait for automatic refresh (should see toast)</ListItem>
-                          <ListItem>4. Click manual refresh button</ListItem>
-                          <ListItem>5. Check Statistics tab for update count</ListItem>
-                          <ListItem>
-                            6. Disable adaptive, set fixed interval to 1 min, wait for update
-                          </ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario7Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Updates occur automatically, counter increments, toast notifications
-                          appear, manual refresh works
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario7Expected')}</Text>
 
                         <Alert status="info" mt={2}>
                           <AlertIcon />
-                          <Text fontSize="sm">
-                            💡 Adaptive refresh adjusts from 5-60 minutes based on planet speeds
-                          </Text>
+                          <Text fontSize="sm">{t('zodiacWheel.scenario7Note')}</Text>
                         </Alert>
                       </VStack>
                     </AccordionPanel>
@@ -1374,37 +1293,28 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🖱️ Scenario 8: Interactive Tooltips
+                          {t('zodiacWheel.scenario8Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test hover interactions and tooltip content</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario8Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Hover over Sun - tooltip should appear</ListItem>
-                          <ListItem>2. Verify tooltip shows: position, sign, speed, distance</ListItem>
-                          <ListItem>
-                            3. If planet has aspects, they should be listed in tooltip
-                          </ListItem>
-                          <ListItem>4. Move to Moon - tooltip should update smoothly</ListItem>
-                          <ListItem>5. Hover over retrograde planet - check for ℞ badge</ListItem>
-                          <ListItem>6. Move mouse away - tooltip should disappear</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario8Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Tooltips appear instantly on hover, show complete information, smooth
-                          transitions, accurate data
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario8Expected')}</Text>
                       </VStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1413,41 +1323,32 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          ⚡ Scenario 9: Performance Test
+                          {t('zodiacWheel.scenario9Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Verify component meets performance targets</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario9Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Check Statistics tab for Load Time</ListItem>
-                          <ListItem>2. Verify load time is under 1000ms</ListItem>
-                          <ListItem>3. Enable all features (aspects, houses, degrees)</ListItem>
-                          <ListItem>4. Set size to 800px</ListItem>
-                          <ListItem>5. Verify animations remain smooth (no jank)</ListItem>
-                          <ListItem>6. Run automated tests - check durations</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario9Step6')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Load time &lt;1s, 60fps animations, no lag during interactions, test
-                          durations all &lt;100ms
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario9Expected')}</Text>
 
                         <Alert status="success" mt={2}>
                           <AlertIcon />
-                          <Text fontSize="sm">
-                            ✓ Target: Load &lt;1s, 60fps, &lt;10MB memory
-                          </Text>
+                          <Text fontSize="sm">{t('zodiacWheel.scenario9Note')}</Text>
                         </Alert>
                       </VStack>
                     </AccordionPanel>
@@ -1457,36 +1358,29 @@ export const ZodiacWheelTest: React.FC = () => {
                     <h2>
                       <AccordionButton>
                         <Box flex="1" textAlign="left" fontWeight="bold">
-                          🌍 Scenario 10: Location Change
+                          {t('zodiacWheel.scenario10Title')}
                         </Box>
                         <AccordionIcon />
                       </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="bold">Objective:</Text>
-                        <Text>Test houses recalculation with different locations</Text>
+                        <Text fontWeight="bold">{t('zodiacWheel.objective')}</Text>
+                        <Text>{t('zodiacWheel.scenario10Obj')}</Text>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Steps:
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.steps')}</Text>
                         <List spacing={2}>
-                          <ListItem>1. Enable "Show Houses"</ListItem>
-                          <ListItem>2. Note current house cusps positions</ListItem>
-                          <ListItem>3. Change latitude to 40.7128 (New York)</ListItem>
-                          <ListItem>4. Change longitude to -74.0060</ListItem>
-                          <ListItem>5. Wait for data refresh</ListItem>
-                          <ListItem>6. Verify house cusps have moved</ListItem>
-                          <ListItem>7. Planet positions should remain the same</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step1')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step2')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step3')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step4')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step5')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step6')}</ListItem>
+                          <ListItem>{t('zodiacWheel.scenario10Step7')}</ListItem>
                         </List>
 
-                        <Text fontWeight="bold" mt={2}>
-                          Expected Result:
-                        </Text>
-                        <Text>
-                          Houses recalculate for new location, planet positions unchanged (they're
-                          geocentric)
-                        </Text>
+                        <Text fontWeight="bold" mt={2}>{t('zodiacWheel.expectedResult')}</Text>
+                        <Text>{t('zodiacWheel.scenario10Expected')}</Text>
                       </VStack>
                     </AccordionPanel>
                   </AccordionItem>
@@ -1495,14 +1389,14 @@ export const ZodiacWheelTest: React.FC = () => {
                 <Alert status="info">
                   <AlertIcon />
                   <Box>
-                    <AlertTitle>Testing Tips</AlertTitle>
+                    <AlertTitle>{t('zodiacWheel.testingTipsTitle')}</AlertTitle>
                     <AlertDescription>
                       <List spacing={1} mt={2} fontSize="sm">
-                        <ListItem>• Test each scenario independently</ListItem>
-                        <ListItem>• Check browser console for errors</ListItem>
-                        <ListItem>• Use automated tests to verify core functionality</ListItem>
-                        <ListItem>• Try edge cases (very small/large sizes, extreme orbs)</ListItem>
-                        <ListItem>• Test on different browsers if possible</ListItem>
+                        <ListItem>{t('zodiacWheel.tip1')}</ListItem>
+                        <ListItem>{t('zodiacWheel.tip2')}</ListItem>
+                        <ListItem>{t('zodiacWheel.tip3')}</ListItem>
+                        <ListItem>{t('zodiacWheel.tip4')}</ListItem>
+                        <ListItem>{t('zodiacWheel.tip5')}</ListItem>
                       </List>
                     </AlertDescription>
                   </Box>

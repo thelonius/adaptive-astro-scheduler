@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -32,6 +33,7 @@ import { ChartInterpretation } from '../components/NatalChart/ChartInterpretatio
 import { useNatalChart } from '../hooks/useNatalChart';
 
 export const NatalChart: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, calculateChart, loadSavedChart } = useNatalChart();
 
@@ -85,10 +87,10 @@ export const NatalChart: React.FC = () => {
         {/* Header */}
         <Box>
           <Heading size="xl" mb={2}>
-            Натальная карта
+            {t('natalChart.title')}
           </Heading>
           <Text color="gray.600">
-            Рассчитайте и изучите вашу астрологическую карту рождения
+            {t('natalChart.subtitle')}
           </Text>
         </Box>
 
@@ -102,32 +104,32 @@ export const NatalChart: React.FC = () => {
             {data && (
               <Card mt={6}>
                 <CardHeader>
-                  <Heading size="sm">Данные рождения</Heading>
+                  <Heading size="sm">{t('natalChart.birthDataTitle')}</Heading>
                 </CardHeader>
                 <CardBody>
                   <VStack align="stretch" spacing={2} fontSize="sm">
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">Дата:</Text>
-                      <Text>{new Date(data.birthData.date).toLocaleDateString('ru-RU')}</Text>
+                      <Text fontWeight="semibold">{t('natalChart.dateLabel')}</Text>
+                      <Text>{new Date(data.birthData.date).toLocaleDateString(i18n.language)}</Text>
                     </HStack>
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">Время:</Text>
+                      <Text fontWeight="semibold">{t('natalChart.timeLabel')}</Text>
                       <Text>{data.birthData.time}</Text>
                     </HStack>
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">Координаты:</Text>
+                      <Text fontWeight="semibold">{t('natalChart.coordsLabel')}</Text>
                       <Text>
                         {data.birthData.location.latitude.toFixed(2)}°N,{' '}
                         {data.birthData.location.longitude.toFixed(2)}°E
                       </Text>
                     </HStack>
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">Часовой пояс:</Text>
+                      <Text fontWeight="semibold">{t('natalChart.timezoneLabel')}</Text>
                       <Text>{data.birthData.location.timezone}</Text>
                     </HStack>
                     <Divider my={2} />
                     <HStack justify="space-between">
-                      <Text fontWeight="semibold">Фаза Луны:</Text>
+                      <Text fontWeight="semibold">{t('natalChart.moonPhaseLabel')}</Text>
                       <Badge colorScheme="purple">{data.moonPhase}</Badge>
                     </HStack>
                   </VStack>
@@ -142,7 +144,7 @@ export const NatalChart: React.FC = () => {
               <Alert status="error" borderRadius="md">
                 <AlertIcon />
                 <Box>
-                  <AlertTitle>Ошибка расчета</AlertTitle>
+                  <AlertTitle>{t('natalChart.calculationError')}</AlertTitle>
                   <AlertDescription>{error.message}</AlertDescription>
                 </Box>
               </Alert>
@@ -154,7 +156,7 @@ export const NatalChart: React.FC = () => {
                   <VStack spacing={4} color="gray.500">
                     <Text fontSize="4xl">🌟</Text>
                     <Text textAlign="center">
-                      Введите данные рождения и нажмите "Рассчитать натальную карту"
+                      {t('natalChart.emptyHint')}
                     </Text>
                   </VStack>
                 </CardBody>
@@ -166,7 +168,7 @@ export const NatalChart: React.FC = () => {
                 <CardBody display="flex" alignItems="center" justifyContent="center">
                   <VStack spacing={4}>
                     <Text fontSize="4xl">⏳</Text>
-                    <Text>Расчет натальной карты...</Text>
+                    <Text>{t('natalChart.calculating')}</Text>
                   </VStack>
                 </CardBody>
               </Card>
@@ -191,17 +193,17 @@ export const NatalChart: React.FC = () => {
                 {/* Planet Positions Table */}
                 <Card>
                   <CardHeader>
-                    <Heading size="sm">Положения планет</Heading>
+                    <Heading size="sm">{t('natalChart.planetPositions')}</Heading>
                   </CardHeader>
                   <CardBody>
                     <TableContainer>
                       <Table size="sm" variant="simple">
                         <Thead>
                           <Tr>
-                            <Th>Планета</Th>
-                            <Th>Знак</Th>
-                            <Th isNumeric>Долгота</Th>
-                            <Th>Статус</Th>
+                            <Th>{t('natalChart.planetCol')}</Th>
+                            <Th>{t('natalChart.signCol')}</Th>
+                            <Th isNumeric>{t('natalChart.longitudeCol')}</Th>
+                            <Th>{t('natalChart.statusCol')}</Th>
                           </Tr>
                         </Thead>
                         <Tbody>
@@ -213,7 +215,7 @@ export const NatalChart: React.FC = () => {
                               <Td>
                                 {planet.isRetrograde && (
                                   <Badge colorScheme="orange" fontSize="xs">
-                                    ℞ Ретроградная
+                                    {t('natalChart.retrograde')}
                                   </Badge>
                                 )}
                               </Td>
@@ -229,22 +231,22 @@ export const NatalChart: React.FC = () => {
                 {data.houses && data.houses.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <Heading size="sm">Дома (система Placidus)</Heading>
+                      <Heading size="sm">{t('natalChart.housesTitle')}</Heading>
                     </CardHeader>
                     <CardBody>
                       <TableContainer>
                         <Table size="sm" variant="simple">
                           <Thead>
                             <Tr>
-                              <Th>Дом</Th>
-                              <Th>Куспид</Th>
-                              <Th isNumeric>Долгота</Th>
+                              <Th>{t('natalChart.houseCol')}</Th>
+                              <Th>{t('natalChart.cuspCol')}</Th>
+                              <Th isNumeric>{t('natalChart.longitudeCol')}</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
                             {data.houses.map((house, idx) => (
                               <Tr key={idx}>
-                                <Td fontWeight="semibold">{house.number}-й дом</Td>
+                                <Td fontWeight="semibold">{t('natalChart.houseNumber', { number: house.number })}</Td>
                                 <Td>{house.sign?.name || 'N/A'}</Td>
                                 <Td isNumeric>{house.cusp.toFixed(2)}°</Td>
                               </Tr>
@@ -263,17 +265,17 @@ export const NatalChart: React.FC = () => {
                 {data.aspects && data.aspects.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <Heading size="sm">Главные аспекты</Heading>
+                      <Heading size="sm">{t('natalChart.majorAspects')}</Heading>
                     </CardHeader>
                     <CardBody>
                       <TableContainer>
                         <Table size="sm" variant="simple">
                           <Thead>
                             <Tr>
-                              <Th>Планеты</Th>
-                              <Th>Аспект</Th>
-                              <Th isNumeric>Угол</Th>
-                              <Th isNumeric>Орб</Th>
+                              <Th>{t('natalChart.planetsCol')}</Th>
+                              <Th>{t('natalChart.aspectCol')}</Th>
+                              <Th isNumeric>{t('natalChart.angleCol')}</Th>
+                              <Th isNumeric>{t('natalChart.orbCol')}</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
@@ -297,12 +299,12 @@ export const NatalChart: React.FC = () => {
                                       }
                                       fontSize="xs"
                                     >
-                                      {aspect.type === 'conjunction' && 'Соединение ☌'}
-                                      {aspect.type === 'sextile' && 'Секстиль ⚹'}
-                                      {aspect.type === 'square' && 'Квадрат □'}
-                                      {aspect.type === 'trine' && 'Трин △'}
-                                      {aspect.type === 'opposition' && 'Оппозиция ☍'}
-                                      {aspect.type === 'quincunx' && 'Квинконс ⚻'}
+                                      {aspect.type === 'conjunction' && t('natalChart.aspect.conjunction')}
+                                      {aspect.type === 'sextile' && t('natalChart.aspect.sextile')}
+                                      {aspect.type === 'square' && t('natalChart.aspect.square')}
+                                      {aspect.type === 'trine' && t('natalChart.aspect.trine')}
+                                      {aspect.type === 'opposition' && t('natalChart.aspect.opposition')}
+                                      {aspect.type === 'quincunx' && t('natalChart.aspect.quincunx')}
                                     </Badge>
                                   </Td>
                                   <Td isNumeric>{aspect.angle.toFixed(1)}°</Td>
