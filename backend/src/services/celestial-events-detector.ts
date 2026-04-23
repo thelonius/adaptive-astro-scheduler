@@ -216,8 +216,8 @@ export class CelestialEventsDetector {
 
             const key = currentDate.toISOString().split('T')[0];
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
-            const sun = planets.planets.find(p => p.name === 'Sun');
-            const moon = planets.planets.find(p => p.name === 'Moon');
+            const sun = planets.planets.find((p: any) => p.name ==='Sun');
+            const moon = planets.planets.find((p: any) => p.name ==='Moon');
 
             if (sun && moon) {
                 const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
@@ -419,7 +419,7 @@ export class CelestialEventsDetector {
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
 
             for (const planetName of retrogradeablePlanets) {
-                const planet = planets.planets.find(p => p.name === planetName);
+                const planet = planets.planets.find((p: any) => p.name ===planetName);
                 if (!planet) continue;
 
                 const wasRetrograde = previousStates.get(planetName);
@@ -490,7 +490,7 @@ export class CelestialEventsDetector {
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
 
             for (const planetName of trackedPlanets) {
-                const planet = planets.planets.find(p => p.name === planetName);
+                const planet = planets.planets.find((p: any) => p.name ===planetName);
                 if (!planet) continue;
 
                 const currentSign = planet.zodiacSign;
@@ -541,8 +541,8 @@ export class CelestialEventsDetector {
 
             const key = currentDate.toISOString().split('T')[0];
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
-            const sun = planets.planets.find(p => p.name === 'Sun');
-            const moon = planets.planets.find(p => p.name === 'Moon');
+            const sun = planets.planets.find((p: any) => p.name ==='Sun');
+            const moon = planets.planets.find((p: any) => p.name ==='Moon');
 
             if (sun && moon) {
                 const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
@@ -658,14 +658,14 @@ export class CelestialEventsDetector {
 
             const key = currentDate.toISOString().split('T')[0];
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
-            const moon = planets.planets.find(p => p.name === 'Moon');
+            const moon = planets.planets.find((p: any) => p.name ==='Moon');
 
             if (moon) {
                 // Check Moon-planet occultations
                 const innerPlanets = ['Mercury', 'Venus', 'Mars'];
 
                 for (const planetName of innerPlanets) {
-                    const planet = planets.planets.find(p => p.name === planetName);
+                    const planet = planets.planets.find((p: any) => p.name ===planetName);
                     if (!planet) continue;
 
                     // Calculate angular separation
