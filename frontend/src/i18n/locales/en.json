@@ -1,0 +1,65 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try again"
+  },
+  "optimalTiming": {
+    "title": "Optimal Timing Engine",
+    "subtitle": "Discover favorable cosmic windows for your intentions",
+    "locationHint": "Calculations for <strong>{{city}}</strong>, {{country}}",
+    "intentionQuestion": "What is your intention?",
+    "recommendedWindows": "Recommended Windows",
+    "calculationInProgress": "Calculation in progress...",
+    "lookAhead": "Look ahead:",
+    "range": {
+      "month1": "1 Month",
+      "month3": "3 Months",
+      "month6": "6 Months",
+      "year1": "1 Year"
+    },
+    "noResults": "No favorable windows found in this time range. Try extending the range or choosing a new intention.",
+    "fetchError": "Failed to calculate optimal timing windows. Please try again."
+  },
+  "intentions": {
+    "drop-habits": {
+      "label": "Drop Habits",
+      "description": "Release patterns, quit addictions, detox"
+    },
+    "start-project": {
+      "label": "Start Project",
+      "description": "Launch business, begin creative work"
+    },
+    "make-decision": {
+      "label": "Make Decision",
+      "description": "Clarity for important choices"
+    },
+    "career-change": {
+      "label": "Career Change",
+      "description": "Job applications, interviews, promotions"
+    },
+    "relationship": {
+      "label": "Love & Social",
+      "description": "Dating, deepening bonds, social events"
+    },
+    "financial": {
+      "label": "Financial",
+      "description": "Investments, asking for raises"
+    },
+    "creative": {
+      "label": "Creative Flow",
+      "description": "Artistic expression and inspiration"
+    },
+    "health-wellness": {
+      "label": "Health & Wellness",
+      "description": "Diet changes, detox, medical procedures"
+    },
+    "spiritual": {
+      "label": "Spiritual",
+      "description": "Meditation, rituals, inner work"
+    }
+  },
+  "timingWindow": {
+    "moonIn": "in {{sign}}"
+  }
+}

@@ -298,7 +298,7 @@ export class CelestialEventsDetector {
 
             const key = currentDate.toISOString().split('T')[0];
             const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
-            const majorPlanets = planets.planets.filter(p =>
+            const majorPlanets = planets.planets.filter((p: any) =>
                 ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(p.name)
             );
 
@@ -345,7 +345,7 @@ export class CelestialEventsDetector {
 
             // Compare planets in current session vs new detection
             const samePlanets = det.planets.length === prevDet.planets.length &&
-                det.planets.every(p => prevDet.planets.some(prevP => prevP.name === p.name));
+                det.planets.every((p: any) => prevDet.planets.some((prevP: any) => prevP.name === p.name));
 
             if (daysDiff <= 4 && samePlanets) {
                 currentSession.push(det);
@@ -369,7 +369,7 @@ export class CelestialEventsDetector {
         // Find peak day (day with the tightest grouping/smallest arc)
         const peak = session.reduce((min, current) => current.arc < min.arc ? current : min, session[0]);
 
-        const planetNames = peak.planets.map(p => p.name);
+        const planetNames = peak.planets.map((p: any) => p.name);
         const startDate = session[0].date.date;
         const endDate = session[session.length - 1].date.date;
         const durationDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
