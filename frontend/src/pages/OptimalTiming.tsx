@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { IntentionSelector } from '../components/OptimalTiming/IntentionSelector';
 import { TimingWindowCard } from '../components/OptimalTiming/TimingWindowCard';
 import { optimalTimingService } from '../services/optimalTimingService';
@@ -8,6 +9,7 @@ import { useLocationStore } from '../store/locationStore';
 import './OptimalTiming.css';
 
 export const OptimalTiming: React.FC = () => {
+    const { t } = useTranslation();
     const [selectedIntention, setSelectedIntention] = useState<IntentionCategory | null>(null);
     const [windows, setWindows] = useState<TimingWindow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export const OptimalTiming: React.FC = () => {
                 setWindows(response.windows);
             } catch (err) {
                 console.error('Failed to fetch optimal timing:', err);
-                setError('Failed to calculate optimal timing windows. Please try again.');
+                setError(t('optimalTiming.fetchError'));
             } finally {
                 setLoading(false);
             }
@@ -56,21 +58,25 @@ export const OptimalTiming: React.FC = () => {
         <div className="optimal-timing">
             <div className="optimal-timing__header">
                 <div className="optimal-timing__header-top">
-                    <h1>Optimal Timing Engine</h1>
+                    <h1>{t('optimalTiming.title')}</h1>
                     <LocationBar />
                 </div>
                 <p className="optimal-timing__subtitle">
-                    Discover favorable cosmic windows for your intentions
+                    {t('optimalTiming.subtitle')}
                 </p>
                 {userLocation.city && (
                     <p className="optimal-timing__location-hint">
-                        📍 Calculations for <strong>{userLocation.city}</strong>, {userLocation.country}
+                        📍 <Trans
+                            i18nKey="optimalTiming.locationHint"
+                            values={{ city: userLocation.city, country: userLocation.country }}
+                            components={{ strong: <strong /> }}
+                        />
                     </p>
                 )}
             </div>
 
             <div className="optimal-timing__section">
-                <h2 className="section-title">What is your intention?</h2>
+                <h2 className="section-title">{t('optimalTiming.intentionQuestion')}</h2>
                 <IntentionSelector
                     selected={selectedIntention}
                     onSelect={setSelectedIntention}
@@ -81,20 +87,20 @@ export const OptimalTiming: React.FC = () => {
                 <div className="optimal-timing__results">
                     <div className="results-header">
                         <h2 className="section-title">
-                            Recommended Windows
-                            {loading && <span className="loading-spinner">Calculation in progress...</span>}
+                            {t('optimalTiming.recommendedWindows')}
+                            {loading && <span className="loading-spinner">{t('optimalTiming.calculationInProgress')}</span>}
                         </h2>
 
                         <div className="time-range-control">
-                            <label>Look ahead:</label>
+                            <label>{t('optimalTiming.lookAhead')}</label>
                             <select
                                 value={monthsAhead}
                                 onChange={(e) => setMonthsAhead(Number(e.target.value))}
                             >
-                                <option value={1}>1 Month</option>
-                                <option value={3}>3 Months</option>
-                                <option value={6}>6 Months</option>
-                                <option value={12}>1 Year</option>
+                                <option value={1}>{t('optimalTiming.range.month1')}</option>
+                                <option value={3}>{t('optimalTiming.range.month3')}</option>
+                                <option value={6}>{t('optimalTiming.range.month6')}</option>
+                                <option value={12}>{t('optimalTiming.range.year1')}</option>
                             </select>
                         </div>
                     </div>
@@ -103,8 +109,7 @@ export const OptimalTiming: React.FC = () => {
 
                     {!loading && windows.length === 0 && (
                         <div className="no-results">
-                            No favorable windows found in this time range.
-                            Try extending the range or choosing a new intention.
+                            {t('optimalTiming.noResults')}
                         </div>
                     )}
 

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { ChakraProvider, extendTheme, ColorModeScript } from '@chakra-ui/react';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import './i18n';
 import './theme/antigravity.css';
 
 // Расширяем Chakra тему для dark mode

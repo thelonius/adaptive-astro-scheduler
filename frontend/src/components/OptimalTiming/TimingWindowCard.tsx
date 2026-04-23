@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TimingWindow } from '@adaptive-astro/shared/types/astrology';
 import './TimingWindowCard.css';
 
@@ -7,8 +8,10 @@ interface TimingWindowCardProps {
 }
 
 export const TimingWindowCard: React.FC<TimingWindowCardProps> = ({ window }) => {
+    const { t, i18n } = useTranslation();
     const scoreColor = getScoreColor(window.score);
     const date = new Date(window.date.date);
+    const locale = i18n.language || 'en';
 
     return (
         <div className="timing-window-card" style={{ borderColor: scoreColor }}>
@@ -16,10 +19,10 @@ export const TimingWindowCard: React.FC<TimingWindowCardProps> = ({ window }) =>
                 <div className="timing-window__date">
                     <span className="window-date__day">{date.getDate()}</span>
                     <span className="window-date__month">
-                        {date.toLocaleDateString('en-US', { month: 'short' })}
+                        {date.toLocaleDateString(locale, { month: 'short' })}
                     </span>
                     <span className="window-date__weekday">
-                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                        {date.toLocaleDateString(locale, { weekday: 'short' })}
                     </span>
                 </div>
 
@@ -36,7 +39,7 @@ export const TimingWindowCard: React.FC<TimingWindowCardProps> = ({ window }) =>
                 {window.moonPhase && (
                     <div className="timing-window__moon">
                         <span className="moon-icon">🌙</span>
-                        {window.moonPhase} {window.moonSign && `in ${window.moonSign}`}
+                        {window.moonPhase} {window.moonSign && t('timingWindow.moonIn', { sign: window.moonSign })}
                     </div>
                 )}
 
