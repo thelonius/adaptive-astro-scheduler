@@ -13,6 +13,35 @@ import type { IEphemerisCalculator } from '../core/ephemeris';
 export class CelestialEventsDetector {
     constructor(private ephemeris: IEphemerisCalculator) { }
 
+    /** Prefetch planet positions for all dates in range in parallel batches. */
+    private async prefetchPlanets(
+        start: Date,
+        end: Date,
+        stepDays: number = 1
+    ): Promise<Map<string, any>> {
+        const dates: Date[] = [];
+        const cur = new Date(start);
+        while (cur <= end) {
+            dates.push(new Date(cur));
+            cur.setDate(cur.getDate() + stepDays);
+        }
+        const cache = new Map<string, any>();
+        const BATCH = 12;
+        for (let i = 0; i < dates.length; i += BATCH) {
+            const batch = dates.slice(i, i + BATCH);
+            const results = await Promise.all(
+                batch.map(date =>
+                    this.ephemeris.getPlanetsPositions({ date, timezone: 'UTC', location: { latitude: 0, longitude: 0 } })
+                        .catch(() => null)
+                )
+            );
+            for (let j = 0; j < batch.length; j++) {
+                if (results[j]) cache.set(batch[j].toISOString().split('T')[0], results[j]);
+            }
+        }
+        return cache;
+    }
+
     /**
      * Get all celestial events in a date range
      */
@@ -21,6 +50,13 @@ export class CelestialEventsDetector {
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
+
+        // Prefetch all daily planet positions once, share across all detectors
+        const planetsCache = await this.prefetchPlanets(
+            new Date(startDate.date),
+            new Date(endDate.date),
+            1
+        );
 
         // Detect all event types
         const [
@@ -32,12 +68,12 @@ export class CelestialEventsDetector {
             ingresses,
             voidMoons
         ] = await Promise.all([
-            this.detectLunarPhases(startDate, endDate),
-            this.detectEclipses(startDate, endDate),
-            this.detectOccultations(startDate, endDate),
-            this.detectPlanetaryAlignments(startDate, endDate),
-            this.detectRetrogrades(startDate, endDate),
-            this.detectIngresses(startDate, endDate),
+            this.detectLunarPhases(startDate, endDate, planetsCache),
+            this.detectEclipses(startDate, endDate, planetsCache),
+            this.detectOccultations(startDate, endDate, planetsCache),
+            this.detectPlanetaryAlignments(startDate, endDate, planetsCache),
+            this.detectRetrogrades(startDate, endDate, planetsCache),
+            this.detectIngresses(startDate, endDate, planetsCache),
             this.detectVoidMoons(startDate, endDate)
         ]);
 
@@ -163,7 +199,8 @@ export class CelestialEventsDetector {
      */
     private async detectLunarPhases(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
         const currentDate = new Date(startDate.date);
@@ -177,7 +214,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
             const sun = planets.planets.find(p => p.name === 'Sun');
             const moon = planets.planets.find(p => p.name === 'Moon');
 
@@ -243,7 +281,8 @@ export class CelestialEventsDetector {
      */
     private async detectPlanetaryAlignments(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const rawDetections: { date: DateTime; planets: any[]; arc: number }[] = [];
         const currentDate = new Date(startDate.date);
@@ -257,7 +296,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
             const majorPlanets = planets.planets.filter(p =>
                 ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(p.name)
             );
@@ -357,7 +397,8 @@ export class CelestialEventsDetector {
      */
     private async detectRetrogrades(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
         const currentDate = new Date(startDate.date);
@@ -374,7 +415,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
 
             for (const planetName of retrogradeablePlanets) {
                 const planet = planets.planets.find(p => p.name === planetName);
@@ -426,7 +468,8 @@ export class CelestialEventsDetector {
      */
     private async detectIngresses(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
         const currentDate = new Date(startDate.date);
@@ -443,7 +486,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
 
             for (const planetName of trackedPlanets) {
                 const planet = planets.planets.find(p => p.name === planetName);
@@ -480,7 +524,8 @@ export class CelestialEventsDetector {
      */
     private async detectEclipses(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
         const currentDate = new Date(startDate.date);
@@ -494,7 +539,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
             const sun = planets.planets.find(p => p.name === 'Sun');
             const moon = planets.planets.find(p => p.name === 'Moon');
 
@@ -595,13 +641,14 @@ export class CelestialEventsDetector {
      */
     private async detectOccultations(
         startDate: DateTime,
-        endDate: DateTime
+        endDate: DateTime,
+        cache: Map<string, any> = new Map()
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
         const currentDate = new Date(startDate.date);
         const end = new Date(endDate.date);
 
-        // Check every 6 hours (occultations are brief events)
+        // Check daily (occultations are rare enough that daily resolution is sufficient)
         while (currentDate <= end) {
             const dateTime: DateTime = {
                 date: new Date(currentDate),
@@ -609,7 +656,8 @@ export class CelestialEventsDetector {
                 location: { latitude: 0, longitude: 0 }
             };
 
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+            const key = currentDate.toISOString().split('T')[0];
+            const planets = cache.get(key) ?? await this.ephemeris.getPlanetsPositions(dateTime);
             const moon = planets.planets.find(p => p.name === 'Moon');
 
             if (moon) {
@@ -649,8 +697,7 @@ export class CelestialEventsDetector {
                 }
             }
 
-            // Advance by 6 hours
-            currentDate.setHours(currentDate.getHours() + 6);
+            currentDate.setDate(currentDate.getDate() + 1);
         }
 
         return events;
@@ -719,49 +766,49 @@ export class CelestialEventsDetector {
         startDate: DateTime,
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
-        const events: CelestialEvent[] = [];
-        let currentDate = new Date(startDate.date);
+        // Build list of dates to check
+        const dates: Date[] = [];
+        const cur = new Date(startDate.date);
         const endDay = new Date(endDate.date);
+        while (cur <= endDay) {
+            dates.push(new Date(cur));
+            cur.setDate(cur.getDate() + 1);
+        }
 
-        // Check every day - if void of course is active, fetch the window
-        while (currentDate <= endDay) {
-            const dateTime: DateTime = {
-                date: new Date(currentDate),
-                timezone: 'UTC',
-                location: { latitude: 0, longitude: 0 }
-            };
+        // Fetch all VoC data in parallel batches
+        const BATCH = 10;
+        const seen = new Set<string>();
+        const events: CelestialEvent[] = [];
 
-            try {
-                const voidData = await this.ephemeris.getVoidOfCourseMoon(dateTime);
-                if (voidData.isVoidOfCourse && voidData.voidPeriod) {
-                    const start = new Date(voidData.voidPeriod.startTime);
-                    const eventEnd = new Date(voidData.voidPeriod.endTime);
-                    
-                    events.push({
-                        id: `void-moon-${voidData.voidPeriod.startTime}`,
-                        type: 'void-moon',
-                        name: 'Void of Course Moon',
-                        description: `Moon is void of course from ${start.toLocaleTimeString()} to ${eventEnd.toLocaleTimeString()}`,
-                        date: { ...dateTime, date: start },
-                        endDate: { ...dateTime, date: eventEnd },
-                        planets: ['Moon'],
-                        rarity: 'common',
-                        significance: 'Traditional period of "nothing comes of it" - avoid important new beginnings',
-                        durationDays: voidData.voidPeriod.durationHours / 24,
-                        eventRange: {
-                            start,
-                            end: eventEnd
-                        }
-                    });
-                    
-                    // Jump past the end of this void period to avoid redundant detections
-                    currentDate = new Date(eventEnd.getTime() + 1000 * 3600); // 1 hour buffer
-                } else {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-            } catch (error) {
-                console.error('Failed to detect void moons for date:', currentDate, error);
-                currentDate.setDate(currentDate.getDate() + 1);
+        for (let i = 0; i < dates.length; i += BATCH) {
+            const batch = dates.slice(i, i + BATCH);
+            const results = await Promise.all(
+                batch.map(date => {
+                    const dateTime: DateTime = { date, timezone: 'UTC', location: { latitude: 0, longitude: 0 } };
+                    return this.ephemeris.getVoidOfCourseMoon(dateTime).catch(() => null);
+                })
+            );
+            for (const voidData of results) {
+                if (!voidData?.isVoidOfCourse || !voidData.voidPeriod) continue;
+                const id = `void-moon-${voidData.voidPeriod.startTime}`;
+                if (seen.has(id)) continue;
+                seen.add(id);
+                const start = new Date(voidData.voidPeriod.startTime);
+                const eventEnd = new Date(voidData.voidPeriod.endTime);
+                const dateTime: DateTime = { date: start, timezone: 'UTC', location: { latitude: 0, longitude: 0 } };
+                events.push({
+                    id,
+                    type: 'void-moon',
+                    name: 'Void of Course Moon',
+                    description: `Moon is void of course from ${start.toLocaleTimeString()} to ${eventEnd.toLocaleTimeString()}`,
+                    date: dateTime,
+                    endDate: { ...dateTime, date: eventEnd },
+                    planets: ['Moon'],
+                    rarity: 'common',
+                    significance: 'Traditional period of "nothing comes of it" - avoid important new beginnings',
+                    durationDays: voidData.voidPeriod.durationHours / 24,
+                    eventRange: { start, end: eventEnd }
+                });
             }
         }
 
