@@ -15,6 +15,7 @@ import {
   Wrap,
   WrapItem,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { ChartFormData, ChartData } from '../../types/chart';
 import { LocationPicker } from '../common/LocationPicker';
 import { chartService } from '../../services/chartService';
@@ -31,6 +32,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
   onCancel,
   initialData
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ChartFormData>({
     name: initialData?.name || '',
     type: initialData?.type || 'natal',
@@ -73,8 +75,8 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
       addChart(savedChart);
 
       toast({
-        title: 'Chart Saved',
-        description: `"${savedChart.name}" created successfully`,
+        title: t('chartCreator.toastSaved'),
+        description: t('chartCreator.toastSavedDesc', { name: savedChart.name }),
         status: 'success',
         duration: 3000,
       });
@@ -101,8 +103,8 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
     } catch (error) {
       console.error('Error creating chart:', error);
       toast({
-        title: 'Save Failed',
-        description: 'Unable to save chart. Please try again.',
+        title: t('chartCreator.toastSaveFailed'),
+        description: t('chartCreator.toastSaveFailedDesc'),
         status: 'error',
         duration: 5000,
       });
@@ -132,29 +134,29 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
           <VStack spacing={4} align="stretch">
             
             <FormControl isRequired>
-              <FormLabel>Chart Name</FormLabel>
+              <FormLabel>{t('chartCreator.chartName')}</FormLabel>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="My Birth Chart"
+                placeholder={t('chartCreator.chartNamePlaceholder')}
               />
             </FormControl>
 
             <FormControl>
-              <FormLabel>Chart Type</FormLabel>
+              <FormLabel>{t('chartCreator.chartType')}</FormLabel>
               <Select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
               >
-                <option value="natal">Natal Chart</option>
-                <option value="event">Event Chart</option>
-                <option value="horary">Horary Chart</option>
+                <option value="natal">{t('chartCreator.typeNatal')}</option>
+                <option value="event">{t('chartCreator.typeEvent')}</option>
+                <option value="horary">{t('chartCreator.typeHorary')}</option>
               </Select>
             </FormControl>
 
             <HStack spacing={4}>
               <FormControl isRequired flex="1">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>{t('chartCreator.date')}</FormLabel>
                 <Input
                   type="date"
                   value={formatDateForInput(formData.date)}
@@ -163,7 +165,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
               </FormControl>
 
               <FormControl isRequired flex="1">
-                <FormLabel>Time</FormLabel>
+                <FormLabel>{t('chartCreator.time')}</FormLabel>
                 <VStack spacing={2} align="stretch">
                   <Input
                     type="time"
@@ -177,7 +179,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                         variant="outline"
                         onClick={() => setFormData(prev => ({ ...prev, time: '00:00' }))}
                       >
-                        Midnight
+                        {t('chartCreator.midnight')}
                       </Button>
                     </WrapItem>
                     <WrapItem>
@@ -186,7 +188,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                         variant="outline"
                         onClick={() => setFormData(prev => ({ ...prev, time: '06:00' }))}
                       >
-                        Dawn
+                        {t('chartCreator.dawn')}
                       </Button>
                     </WrapItem>
                     <WrapItem>
@@ -195,7 +197,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                         variant="outline"
                         onClick={() => setFormData(prev => ({ ...prev, time: '12:00' }))}
                       >
-                        Noon
+                        {t('chartCreator.noon')}
                       </Button>
                     </WrapItem>
                     <WrapItem>
@@ -204,7 +206,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                         variant="outline"
                         onClick={() => setFormData(prev => ({ ...prev, time: '18:00' }))}
                       >
-                        Evening
+                        {t('chartCreator.evening')}
                       </Button>
                     </WrapItem>
                     <WrapItem>
@@ -218,7 +220,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                           setFormData(prev => ({ ...prev, time: `${hours}:${minutes}` }));
                         }}
                       >
-                        Now
+                        {t('chartCreator.now')}
                       </Button>
                     </WrapItem>
                   </Wrap>
@@ -245,13 +247,13 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                 type="submit"
                 colorScheme="blue"
                 isLoading={isSubmitting}
-                loadingText="Saving..."
+                loadingText={t('chartCreator.saving')}
                 size="lg"
                 flex="1"
               >
-                Save Chart
+                {t('chartCreator.saveChart')}
               </Button>
-              
+
               {onCancel && (
                 <Button
                   variant="outline"
@@ -259,7 +261,7 @@ export const ChartCreator: React.FC<ChartCreatorProps> = ({
                   size="lg"
                   flex="1"
                 >
-                  Cancel
+                  {t('chartCreator.cancel')}
                 </Button>
               )}
             </HStack>

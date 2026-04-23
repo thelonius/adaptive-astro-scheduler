@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocationStore, UserLocation } from '../../store/locationStore';
 import { useLocationDetect, searchCity } from '../../hooks/useLocationDetect';
 import './LocationBar.css';
@@ -25,6 +26,7 @@ interface LocationBarProps {
 }
 
 export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onChange }) => {
+    const { t } = useTranslation();
     const { location, isDetecting, detectionError } = useLocationStore();
     const { setLocation } = useLocationStore();
     const { detectLocation } = useLocationDetect();
@@ -73,9 +75,9 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
             try {
                 const found = await searchCity(q);
                 setResults(found);
-                if (found.length === 0) setSearchError('No cities found. Try another name.');
+                if (found.length === 0) setSearchError(t('location.noResults'));
             } catch {
-                setSearchError('Search failed. Check your connection.');
+                setSearchError(t('location.searchFailed'));
             } finally {
                 setSearching(false);
             }
@@ -101,8 +103,8 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
             <button
                 className="location-bar__trigger"
                 onClick={() => setOpen((v) => !v)}
-                title="Change location"
-                aria-label="Change location"
+                title={t('location.changeLocation')}
+                aria-label={t('location.changeLocation')}
             >
                 <span className="location-bar__flag">{countryFlag(location.countryCode)}</span>
                 <span className="location-bar__city">{location.city || `${location.latitude.toFixed(2)}°`}</span>
@@ -114,11 +116,11 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
             {open && (
                 <div className="location-bar__popup">
                     <div className="location-bar__popup-header">
-                        <span className="location-bar__popup-title">📍 Location for calculations</span>
+                        <span className="location-bar__popup-title">📍 {t('location.popupTitle')}</span>
                         <button
                             className="location-bar__popup-close"
                             onClick={() => setOpen(false)}
-                            aria-label="Close"
+                            aria-label={t('location.close')}
                         >
                             ✕
                         </button>
@@ -128,7 +130,7 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
                     <div className="location-bar__current">
                         <span className="location-bar__current-flag">{countryFlag(location.countryCode)}</span>
                         <div className="location-bar__current-info">
-                            <span className="location-bar__current-city">{location.city || 'Unknown'}</span>
+                            <span className="location-bar__current-city">{location.city || t('location.unknown')}</span>
                             <span className="location-bar__current-coords">
                                 {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
                                 &nbsp;·&nbsp;{location.timezone}
@@ -145,10 +147,10 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
                         {isDetecting ? (
                             <>
                                 <span className="location-bar__spinner location-bar__spinner--inline" />
-                                Detecting...
+                                {t('location.detecting')}
                             </>
                         ) : (
-                            <>🛰️ Detect my location</>
+                            <>🛰️ {t('location.detectMyLocation')}</>
                         )}
                     </button>
 
@@ -162,7 +164,7 @@ export const LocationBar: React.FC<LocationBarProps> = ({ compact = false, onCha
                             ref={inputRef}
                             className="location-bar__search"
                             type="text"
-                            placeholder="Search city…"
+                            placeholder={t('location.searchPlaceholder')}
                             value={query}
                             onChange={(e) => handleSearch(e.target.value)}
                             autoComplete="off"

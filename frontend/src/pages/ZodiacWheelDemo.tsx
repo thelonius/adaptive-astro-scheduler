@@ -27,6 +27,7 @@ import {
   Button,
   useColorMode,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { LunarSection } from '../components/LunarSection';
 import { CesiumSkyViewer } from '../components/CesiumSkyViewer';
@@ -39,6 +40,7 @@ import { GeoLuckMap } from '../components/GeoLuckMap';
 import axios from 'axios';
 
 export const ZodiacWheelDemo: React.FC = () => {
+  const { t } = useTranslation();
   const { colorMode: _colorMode } = useColorMode();
 
   // Configuration state
@@ -237,10 +239,10 @@ export const ZodiacWheelDemo: React.FC = () => {
           <HStack justify="space-between" align="flex-start">
             <Box>
               <Heading size="xl" mb={2}>
-                Zodiac Wheel - Real-time Celestial Visualization
+                {t('zodiacWheel.title')}
               </Heading>
               <Text color="gray.500">
-                Interactive astrological chart with live planetary positions and aspects
+                {t('zodiacWheel.subtitle')}
               </Text>
 
               {/* Featured Events Carousel */}
@@ -261,7 +263,7 @@ export const ZodiacWheelDemo: React.FC = () => {
             <Card>
               <CardBody p={3}>
                 <FormControl>
-                  <FormLabel fontSize="sm" mb={2}>View Mode</FormLabel>
+                  <FormLabel fontSize="sm" mb={2}>{t('zodiacWheel.viewMode')}</FormLabel>
                   <HStack spacing={2}>
                     <button
                       onClick={() => setViewMode('2d')}
@@ -316,7 +318,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <CardBody py={2}>
                   <FormControl>
                     <FormLabel fontSize="sm" mb={1} color="purple.700">
-                      ⏱️ Time Flow Speed
+                      {t('zodiacWheel.timeFlowSpeed')}
                     </FormLabel>
                     <HStack spacing={2}>
                       <button
@@ -333,7 +335,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                           color: isPlaying ? '#B7791F' : '#276749',
                         }}
                       >
-                        {isPlaying ? '⏸ Pause' : '▶ Play'}
+                        {isPlaying ? t('zodiacWheel.pause') : t('zodiacWheel.play')}
                       </button>
                       {[
                         { value: 1, label: '1x' },
@@ -370,7 +372,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                           setEventTitle(undefined);
                         }}
                       >
-                        ✕ Exit
+                        {t('zodiacWheel.exit')}
                       </Button>
                     </HStack>
                   </FormControl>
@@ -442,9 +444,9 @@ export const ZodiacWheelDemo: React.FC = () => {
                 {/* 2D Geo Luck Projection */}
                 <Box>
                   <Heading size="sm" mb={3} color="gray.400" display="flex" justifyContent="space-between" alignItems="center">
-                    2D Luck Projection
+                    {t('zodiacWheel.luckProjection')}
                     <Button size="xs" colorScheme="teal" onClick={handleGeoScan} isLoading={isScanningGeo}>
-                      Refresh Scan
+                      {t('zodiacWheel.refreshScan')}
                     </Button>
                   </Heading>
                   <GeoLuckMap
@@ -466,28 +468,28 @@ export const ZodiacWheelDemo: React.FC = () => {
                   <Card>
                     <CardBody>
                       <Heading size="sm" mb={4}>
-                        Current Data
+                        {t('zodiacWheel.currentData')}
                       </Heading>
                       <VStack align="stretch" spacing={2}>
                         <HStack justify="space-between">
-                          <Text fontSize="sm">Planets:</Text>
+                          <Text fontSize="sm">{t('zodiacWheel.planetsLabel')}</Text>
                           <Badge colorScheme="blue">{currentData.planets.length}</Badge>
                         </HStack>
                         <HStack justify="space-between">
-                          <Text fontSize="sm">Active Aspects:</Text>
+                          <Text fontSize="sm">{t('zodiacWheel.activeAspectsLabel')}</Text>
                           <Badge colorScheme="green">
                             {currentData.aspects?.filter(a => a.orb <= 8).length || 0}
                           </Badge>
                         </HStack>
                         <HStack justify="space-between">
-                          <Text fontSize="sm">Retrogrades:</Text>
+                          <Text fontSize="sm">{t('zodiacWheel.retrogradesLabel')}</Text>
                           <Badge colorScheme="red">
                             {currentData.planets.filter(p => p.isRetrograde).length}
                           </Badge>
                         </HStack>
                         {currentData.houses && (
                           <HStack justify="space-between">
-                            <Text fontSize="sm">Houses:</Text>
+                            <Text fontSize="sm">{t('zodiacWheel.housesLabel')}</Text>
                             <Badge colorScheme="purple">{currentData.houses.length}</Badge>
                           </HStack>
                         )}
@@ -500,17 +502,17 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <Card>
                   <CardBody>
                     <FormControl>
-                      <FormLabel fontSize="sm">Theme</FormLabel>
+                      <FormLabel fontSize="sm">{t('zodiacWheel.theme')}</FormLabel>
                       <Select
                         value={themeName}
                         onChange={(e) => setThemeName(e.target.value as ThemeName)}
                         size="sm"
                       >
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                        <option value="cosmic">Cosmic</option>
-                        <option value="solar">Solar</option>
-                        <option value="lunar">Lunar</option>
+                        <option value="dark">{t('zodiacWheel.themeDark')}</option>
+                        <option value="light">{t('zodiacWheel.themeLight')}</option>
+                        <option value="cosmic">{t('zodiacWheel.themeCosmic')}</option>
+                        <option value="solar">{t('zodiacWheel.themeSolar')}</option>
+                        <option value="lunar">{t('zodiacWheel.themeLunar')}</option>
                       </Select>
                     </FormControl>
                   </CardBody>
@@ -520,17 +522,17 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <Card>
                   <CardBody>
                     <Heading size="sm" mb={4}>
-                      Display Options
+                      {t('zodiacWheel.displayOptions')}
                     </Heading>
                     <VStack align="stretch" spacing={4}>
                       <FormControl display="flex" alignItems="center">
                         <FormLabel fontSize="sm" mb={0} flex={1}>
-                          Show Aspects
+                          {t('zodiacWheel.showAspects')}
                           {currentData && (
                             <Text fontSize="xs" color="gray.500" mt={1}>
                               {currentData.aspects?.filter(a => a.orb <= 8).length || 0 > 0
-                                ? `${currentData.aspects?.filter(a => a.orb <= 8).length || 0} available`
-                                : 'No aspects currently'}
+                                ? t('zodiacWheel.aspectsAvailable', { count: currentData.aspects?.filter(a => a.orb <= 8).length || 0 })
+                                : t('zodiacWheel.noAspectsCurrently')}
                             </Text>
                           )}
                         </FormLabel>
@@ -543,7 +545,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl display="flex" alignItems="center">
                         <FormLabel fontSize="sm" mb={0} flex={1}>
-                          Show Houses
+                          {t('zodiacWheel.showHouses')}
                         </FormLabel>
                         <Switch
                           isChecked={showHouses}
@@ -553,7 +555,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl display="flex" alignItems="center">
                         <FormLabel fontSize="sm" mb={0} flex={1}>
-                          Show Degrees
+                          {t('zodiacWheel.showDegrees')}
                         </FormLabel>
                         <Switch
                           isChecked={showDegrees}
@@ -563,12 +565,12 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl display="flex" alignItems="center">
                         <FormLabel fontSize="sm" mb={0} flex={1}>
-                          Show Retrogrades
+                          {t('zodiacWheel.showRetrogrades')}
                           {currentData && (
                             <Text fontSize="xs" color="gray.500" mt={1}>
                               {currentData.planets?.filter(p => p.isRetrograde).length || 0 > 0
-                                ? `${currentData.planets?.filter(p => p.isRetrograde).length || 0} retrograde planets`
-                                : 'No retrogrades currently'}
+                                ? t('zodiacWheel.retrogradePlanets', { count: currentData.planets?.filter(p => p.isRetrograde).length || 0 })
+                                : t('zodiacWheel.noRetrogradesCurrently')}
                             </Text>
                           )}
                         </FormLabel>
@@ -581,7 +583,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl display="flex" alignItems="center">
                         <FormLabel fontSize="sm" mb={0} flex={1}>
-                          Adaptive Refresh
+                          {t('zodiacWheel.adaptiveRefresh')}
                         </FormLabel>
                         <Switch
                           isChecked={useAdaptiveRefresh}
@@ -596,12 +598,12 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <Card>
                   <CardBody>
                     <Heading size="sm" mb={4}>
-                      Advanced Settings
+                      {t('zodiacWheel.advancedSettings')}
                     </Heading>
                     <VStack align="stretch" spacing={4}>
                       <FormControl>
                         <FormLabel fontSize="sm">
-                          Wheel Size: {size}px
+                          {t('zodiacWheel.wheelSize', { size })}
                         </FormLabel>
                         <Slider
                           value={size}
@@ -619,7 +621,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl>
                         <FormLabel fontSize="sm">
-                          Aspect Orb: {aspectOrb}°
+                          {t('zodiacWheel.aspectOrb', { orb: aspectOrb })}
                         </FormLabel>
                         <Slider
                           value={aspectOrb}
@@ -637,7 +639,7 @@ export const ZodiacWheelDemo: React.FC = () => {
 
                       <FormControl>
                         <FormLabel fontSize="sm">
-                          Refresh Interval: {refreshInterval} min
+                          {t('zodiacWheel.refreshInterval', { minutes: refreshInterval })}
                         </FormLabel>
                         <Slider
                           value={refreshInterval}
@@ -654,7 +656,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                         </Slider>
                         {useAdaptiveRefresh && (
                           <Text fontSize="xs" color="gray.500" mt={1}>
-                            Using adaptive refresh (auto-adjusted)
+                            {t('zodiacWheel.usingAdaptive')}
                           </Text>
                         )}
                       </FormControl>
@@ -666,11 +668,11 @@ export const ZodiacWheelDemo: React.FC = () => {
                 <Card>
                   <CardBody>
                     <Heading size="sm" mb={4}>
-                      Location
+                      {t('zodiacWheel.location')}
                     </Heading>
                     <VStack align="stretch" spacing={3}>
                       <FormControl>
-                        <FormLabel fontSize="sm">Latitude</FormLabel>
+                        <FormLabel fontSize="sm">{t('zodiacWheel.latitude')}</FormLabel>
                         <NumberInput
                           value={latitude}
                           onChange={(_, val) => setLatitude(val)}
@@ -689,7 +691,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                       </FormControl>
 
                       <FormControl>
-                        <FormLabel fontSize="sm">Longitude</FormLabel>
+                        <FormLabel fontSize="sm">{t('zodiacWheel.longitude')}</FormLabel>
                         <NumberInput
                           value={longitude}
                           onChange={(_, val) => setLongitude(val)}
@@ -708,7 +710,7 @@ export const ZodiacWheelDemo: React.FC = () => {
                       </FormControl>
 
                       <Text fontSize="xs" color="gray.500">
-                        Timezone: {timezone}
+                        {t('zodiacWheel.timezone', { timezone })}
                       </Text>
                     </VStack>
                   </CardBody>
@@ -729,55 +731,55 @@ export const ZodiacWheelDemo: React.FC = () => {
         <Card>
           <CardBody>
             <Heading size="sm" mb={4}>
-              Features
+              {t('zodiacWheel.features')}
             </Heading>
             <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  🎯 Real-time Updates
+                  {t('zodiacWheel.feature_realTimeTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  Auto-refresh with adaptive intervals based on planet speeds
+                  {t('zodiacWheel.feature_realTimeDesc')}
                 </Text>
               </Box>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  🌟 Full Aspects
+                  {t('zodiacWheel.feature_aspectsTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  Conjunction, sextile, square, trine, opposition, quincunx
+                  {t('zodiacWheel.feature_aspectsDesc')}
                 </Text>
               </Box>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  ℞ Retrogrades
+                  {t('zodiacWheel.feature_retrogradesTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  Visual indicators for retrograde planets
+                  {t('zodiacWheel.feature_retrogradesDesc')}
                 </Text>
               </Box>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  🏠 Houses
+                  {t('zodiacWheel.feature_housesTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  Optional astrological houses overlay (Placidus system)
+                  {t('zodiacWheel.feature_housesDesc')}
                 </Text>
               </Box>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  💫 Smooth Animations
+                  {t('zodiacWheel.feature_animationsTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  Framer Motion powered transitions
+                  {t('zodiacWheel.feature_animationsDesc')}
                 </Text>
               </Box>
               <Box>
                 <Text fontWeight="bold" fontSize="sm" mb={1}>
-                  🎨 Custom Themes
+                  {t('zodiacWheel.feature_themesTitle')}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  5 built-in themes + full customization
+                  {t('zodiacWheel.feature_themesDesc')}
                 </Text>
               </Box>
             </Grid>

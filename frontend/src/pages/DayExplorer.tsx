@@ -16,6 +16,7 @@ import {
     FormLabel,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { dayService, type CalendarDay } from '../services/dayService';
@@ -29,6 +30,7 @@ const MotionCard = motion(Card);
 import { useSearchParams } from 'react-router-dom';
 
 const DayExplorer: React.FC = () => {
+    const { t } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Initialize state from URL or default to now
@@ -68,8 +70,8 @@ const DayExplorer: React.FC = () => {
         const url = window.location.href;
         navigator.clipboard.writeText(url);
         toast({
-            title: "Link copied!",
-            description: "Time and date configuration saved to clipboard.",
+            title: t('dayExplorer.linkCopied'),
+            description: t('dayExplorer.linkCopiedDesc'),
             status: "success",
             duration: 2000,
             isClosable: true,
@@ -92,7 +94,7 @@ const DayExplorer: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            const message = err instanceof Error ? err.message : 'Failed to load day data';
+            const message = err instanceof Error ? err.message : t('dayExplorer.failedLoad');
             setError(message);
         } finally {
             setIsLoading(false);
@@ -120,7 +122,7 @@ const DayExplorer: React.FC = () => {
                 <VStack spacing={8}>
                     {/* Header */}
                     <VStack spacing={3}>
-                        <Heading size="xl">🔮 Day Explorer</Heading>
+                        <Heading size="xl">🔮 {t('dayExplorer.title')}</Heading>
                         <HStack spacing={3} wrap="wrap" justify="center">
                             <LocationBar />
                             <Button
@@ -130,13 +132,17 @@ const DayExplorer: React.FC = () => {
                                 onClick={handleCopyLink}
                                 leftIcon={<span>🔗</span>}
                             >
-                                Share Configuration
+                                {t('dayExplorer.shareConfiguration')}
                             </Button>
                         </HStack>
                         {userLocation.city && (
                             <Text fontSize="xs" color="gray.500">
-                                Calculations for {userLocation.city}, {userLocation.country}
-                                &nbsp;({userLocation.latitude.toFixed(2)}°N, {userLocation.longitude.toFixed(2)}°E)
+                                {t('dayExplorer.calculationsFor', {
+                                    city: userLocation.city,
+                                    country: userLocation.country,
+                                    lat: userLocation.latitude.toFixed(2),
+                                    lon: userLocation.longitude.toFixed(2)
+                                })}
                             </Text>
                         )}
                     </VStack>
@@ -155,7 +161,7 @@ const DayExplorer: React.FC = () => {
                         width="100%"
                         maxW="md"
                     >
-                        <Text fontSize="sm" color="gray.500" mb={2} fontWeight="medium" letterSpacing="wide">LOCAL TIME</Text>
+                        <Text fontSize="sm" color="gray.500" mb={2} fontWeight="medium" letterSpacing="wide">{t('dayExplorer.localTime')}</Text>
 
                         <HStack spacing={4} align="center">
                             <Button
@@ -168,7 +174,7 @@ const DayExplorer: React.FC = () => {
                                 fontSize="2xl"
                                 borderRadius="full"
                                 variant="ghost"
-                                aria-label="Decrease time"
+                                aria-label={t('dayExplorer.decreaseTime')}
                             >
                                 -
                             </Button>
@@ -210,7 +216,7 @@ const DayExplorer: React.FC = () => {
                                 fontSize="2xl"
                                 borderRadius="full"
                                 variant="ghost"
-                                aria-label="Increase time"
+                                aria-label={t('dayExplorer.increaseTime')}
                             >
                                 +
                             </Button>
@@ -229,12 +235,12 @@ const DayExplorer: React.FC = () => {
                         maxW="md"
                     >
                         <Text fontSize="sm" fontWeight="bold" color="gray.500" mb={3} textAlign="center">
-                            CHART SETTINGS
+                            {t('dayExplorer.chartSettings')}
                         </Text>
                         <HStack justify="space-between" spacing={4}>
                             <FormControl display="flex" alignItems="center" width="auto">
                                 <FormLabel htmlFor="aspects-switch" mb="0" fontSize="sm">
-                                    Aspects
+                                    {t('dayExplorer.aspects')}
                                 </FormLabel>
                                 <Switch
                                     id="aspects-switch"
@@ -247,7 +253,7 @@ const DayExplorer: React.FC = () => {
 
                             <FormControl display="flex" alignItems="center" width="auto">
                                 <FormLabel htmlFor="houses-switch" mb="0" fontSize="sm">
-                                    Houses
+                                    {t('dayExplorer.houses')}
                                 </FormLabel>
                                 <Switch
                                     id="houses-switch"
@@ -260,7 +266,7 @@ const DayExplorer: React.FC = () => {
 
                             <FormControl display="flex" alignItems="center" width="auto">
                                 <FormLabel htmlFor="retro-switch" mb="0" fontSize="sm">
-                                    Retrogrades
+                                    {t('dayExplorer.retrogrades')}
                                 </FormLabel>
                                 <Switch
                                     id="retro-switch"
@@ -294,7 +300,7 @@ const DayExplorer: React.FC = () => {
                             transition={{ duration: 0.5 }}
                         >
                             <CardHeader>
-                                <Heading size="md">✨ Planetary Positions</Heading>
+                                <Heading size="md">✨ {t('dayExplorer.planetaryPositions')}</Heading>
                             </CardHeader>
                             <CardBody display="flex" justifyContent="center">
                                 <ZodiacWheel

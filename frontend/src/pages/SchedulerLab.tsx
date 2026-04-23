@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Container, Heading, Text, VStack, SimpleGrid, Button, FormControl, FormLabel, Input, useToast, HStack } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import { IntentionSelector } from '../components/OptimalTiming/IntentionSelector';
 import { optimalTimingService } from '../services/optimalTimingService';
 import type { IntentionCategory, TimingWindow } from '@adaptive-astro/shared/types/astrology';
 
 export const SchedulerLab: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [intention, setIntention] = useState<IntentionCategory | null>(null);
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [durationDays, setDurationDays] = useState(30);
@@ -14,7 +16,7 @@ export const SchedulerLab: React.FC = () => {
 
     const handleAnalyze = async () => {
         if (!intention) {
-            toast({ title: "Please select an intention first", status: "warning" });
+            toast({ title: t('schedulerLab.selectIntentionFirst'), status: "warning" });
             return;
         }
 
@@ -37,10 +39,10 @@ export const SchedulerLab: React.FC = () => {
             );
 
             setResults(sortedByDate);
-            toast({ title: `Analysis Complete. Scanned ${durationDays} days.`, status: "success" });
+            toast({ title: t('schedulerLab.analysisComplete', { days: durationDays }), status: "success" });
         } catch (error) {
             console.error(error);
-            toast({ title: "Analysis Failed", description: "Could not fetch data.", status: "error" });
+            toast({ title: t('schedulerLab.analysisFailed'), description: t('schedulerLab.analysisFailedDesc'), status: "error" });
         } finally {
             setIsAnalyzing(false);
         }
@@ -50,23 +52,23 @@ export const SchedulerLab: React.FC = () => {
         <Container maxW="container.xl" py={10}>
             <VStack spacing={8} align="stretch">
                 <Box>
-                    <Heading size="xl">Scheduler Laboratory 🔬</Heading>
-                    <Text color="gray.600">Experimental interface for detailed timing analysis and rule testing.</Text>
+                    <Heading size="xl">{t('schedulerLab.title')} 🔬</Heading>
+                    <Text color="gray.600">{t('schedulerLab.subtitle')}</Text>
                 </Box>
 
                 <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10}>
                     {/* Control Panel */}
                     <Box bg="white" p={6} borderRadius="xl" boxShadow="md" height="fit-content">
-                        <Heading size="md" mb={4}>1. Configure Parameters</Heading>
+                        <Heading size="md" mb={4}>{t('schedulerLab.configureParameters')}</Heading>
                         <VStack spacing={5} align="stretch">
                             <Box>
-                                <FormLabel fontWeight="bold">Target Intention</FormLabel>
+                                <FormLabel fontWeight="bold">{t('schedulerLab.targetIntention')}</FormLabel>
                                 <IntentionSelector selected={intention} onSelect={setIntention} />
                             </Box>
 
                             <SimpleGrid columns={2} spacing={4}>
                                 <FormControl>
-                                    <FormLabel>Start Date</FormLabel>
+                                    <FormLabel>{t('schedulerLab.startDate')}</FormLabel>
                                     <Input
                                         type="date"
                                         value={startDate}
@@ -74,7 +76,7 @@ export const SchedulerLab: React.FC = () => {
                                     />
                                 </FormControl>
                                 <FormControl>
-                                    <FormLabel>Duration (Days)</FormLabel>
+                                    <FormLabel>{t('schedulerLab.durationDays')}</FormLabel>
                                     <Input
                                         type="number"
                                         value={durationDays}
@@ -90,10 +92,10 @@ export const SchedulerLab: React.FC = () => {
                                 size="lg"
                                 onClick={handleAnalyze}
                                 isLoading={isAnalyzing}
-                                loadingText="Analyzing Cosmos..."
+                                loadingText={t('schedulerLab.analyzingCosmos')}
                                 width="full"
                             >
-                                Run Analysis
+                                {t('schedulerLab.runAnalysis')}
                             </Button>
                         </VStack>
                     </Box>
@@ -101,14 +103,14 @@ export const SchedulerLab: React.FC = () => {
                     {/* Results / Inspector Panel */}
                     <Box bg="gray.50" p={6} borderRadius="xl" border="1px solid" borderColor="gray.200">
                         <Heading size="md" mb={4}>
-                            2. Timeline Inspector
-                            {results.length > 0 && <Text as="span" fontSize="sm" fontWeight="normal" ml={2}>({results.length} windows found)</Text>}
+                            {t('schedulerLab.timelineInspector')}
+                            {results.length > 0 && <Text as="span" fontSize="sm" fontWeight="normal" ml={2}>{t('schedulerLab.windowsFound', { count: results.length })}</Text>}
                         </Heading>
 
                         {results.length === 0 ? (
                             <Box textAlign="center" py={10} color="gray.500">
                                 <Text fontStyle="italic">
-                                    Configure parameters and run analysis to see detailed breakdown here.
+                                    {t('schedulerLab.emptyHint')}
                                 </Text>
                             </Box>
                         ) : (
@@ -130,7 +132,7 @@ export const SchedulerLab: React.FC = () => {
                                         >
                                             <HStack justify="space-between" mb={1}>
                                                 <VStack align="start" spacing={0}>
-                                                    <Text fontWeight="bold">{dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+                                                    <Text fontWeight="bold">{dateObj.toLocaleDateString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
                                                     <HStack fontSize="xs" color="gray.500" spacing={2}>
                                                         {win.moonPhase && <Text>🌑 {win.moonPhase}</Text>}
                                                         {win.moonSign && <Text>♐ {win.moonSign}</Text>}
@@ -138,7 +140,7 @@ export const SchedulerLab: React.FC = () => {
                                                 </VStack>
                                                 <VStack align="end" spacing={0}>
                                                     <Text fontWeight="bold" fontSize="lg" color={scoreColor}>{win.score}</Text>
-                                                    <Text fontSize="xs" color="gray.400">Score</Text>
+                                                    <Text fontSize="xs" color="gray.400">{t('schedulerLab.score')}</Text>
                                                 </VStack>
                                             </HStack>
 

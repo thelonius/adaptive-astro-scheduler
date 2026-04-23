@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { Box, Container, Heading, VStack, HStack, Button } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 import ZodiacWheelTest from './pages/ZodiacWheelTest';
 import ZodiacWheelDemo from './pages/ZodiacWheelDemo';
 import NatalChart from './pages/NatalChart';
@@ -13,15 +14,14 @@ import { DynamicThemeProvider } from './theme/DynamicThemeProvider';
 
 
 function Home() {
-  // We'll use the existing chakra-ui components imported at the top
-  // No need to redeclare Link, etc since they are imported
+  const { t } = useTranslation();
 
   return (
     <Container maxW="container.md" py={20}>
       <VStack spacing={8}>
-        <Heading size="2xl">Adaptive Astro-Scheduler</Heading>
+        <Heading size="2xl">{t('nav.appTitle')}</Heading>
         <Heading size="md" color="gray.600">
-          Cosmic Intelligence System
+          {t('nav.subtitle')}
         </Heading>
 
         <VStack spacing={4} mt={8} width="100%">
@@ -32,7 +32,7 @@ function Home() {
             colorScheme="orange"
             width="100%"
           >
-            ⚡ Optimal Timing Engine (Find Best Times)
+            ⚡ {t('nav.optimalTiming')}
           </Button>
 
           <Button
@@ -42,7 +42,7 @@ function Home() {
             colorScheme="cyan"
             width="100%"
           >
-            🔬 Scheduler Lab (Advanced Instruments)
+            🔬 {t('nav.schedulerLab')}
           </Button>
 
           <Button
@@ -52,7 +52,7 @@ function Home() {
             colorScheme="pink"
             width="100%"
           >
-            ✨ Celestial Events (Eclipses & Alignments)
+            ✨ {t('nav.celestialEvents')}
           </Button>
 
           <Button
@@ -62,7 +62,7 @@ function Home() {
             colorScheme="teal"
             width="100%"
           >
-            🔮 Day Explorer (Analyze Any Day)
+            🔮 {t('nav.dayExplorer')}
           </Button>
 
           <Button
@@ -72,7 +72,7 @@ function Home() {
             colorScheme="purple"
             width="100%"
           >
-            📚 Chart Library (Save & Manage Charts)
+            📚 {t('nav.chartLibrary')}
           </Button>
 
           <Button
@@ -82,7 +82,7 @@ function Home() {
             colorScheme="green"
             width="100%"
           >
-            🌟 Natal Chart (Натальная карта)
+            🌟 {t('nav.natalChart')}
           </Button>
 
           <Button
@@ -92,7 +92,7 @@ function Home() {
             colorScheme="blue"
             width="100%"
           >
-            🧪 Test Page (Full Testing Suite)
+            🧪 {t('nav.testPage')}
           </Button>
 
           <Button
@@ -102,41 +102,37 @@ function Home() {
             colorScheme="purple"
             width="100%"
           >
-            🎨 Demo Page (Interactive Demo)
+            🎨 {t('nav.demoPage')}
           </Button>
         </VStack>
 
         <Box mt={8} p={6} bg="var(--ag-surface)" border="1px solid" borderColor="var(--ag-border)" borderRadius="lg" width="100%">
           <Heading size="sm" mb={3} color="var(--ag-text)">
-            Quick Links:
+            {t('nav.quickLinks')}
           </Heading>
           <VStack align="stretch" spacing={2} fontSize="sm">
             <HStack>
               <Box>⚡</Box>
               <Box>
-                <strong>Optimal Timing:</strong> Find the perfect cosmic window for your habits,
-                projects, and decisions.
+                <strong>{t('nav.quickLinks_optimalTimingLabel')}</strong> {t('nav.quickLinks_optimalTimingDesc')}
               </Box>
             </HStack>
             <HStack>
               <Box>🔮</Box>
               <Box>
-                <strong>Day Explorer:</strong> Analyze any day, navigate through dates,
-                and save favorites
+                <strong>{t('nav.quickLinks_dayExplorerLabel')}</strong> {t('nav.quickLinks_dayExplorerDesc')}
               </Box>
             </HStack>
             <HStack>
               <Box>📋</Box>
               <Box>
-                <strong>Test Page:</strong> Comprehensive testing with automated tests, manual
-                scenarios, and configuration controls
+                <strong>{t('nav.quickLinks_testLabel')}</strong> {t('nav.quickLinks_testDesc')}
               </Box>
             </HStack>
             <HStack>
               <Box>🎨</Box>
               <Box>
-                <strong>Demo Page:</strong> Interactive demonstration with live controls and
-                theme switcher
+                <strong>{t('nav.quickLinks_demoLabel')}</strong> {t('nav.quickLinks_demoDesc')}
               </Box>
             </HStack>
           </VStack>
