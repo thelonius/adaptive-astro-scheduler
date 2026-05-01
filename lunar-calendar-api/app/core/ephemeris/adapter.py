@@ -677,9 +677,16 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                         if is_within_orb(separation, aspect_angle, use_orb):
                             actual_orb = abs(separation - aspect_angle)
 
-                            # Determine if applying or separating
-                            # (requires speed calculation - simplified here)
-                            is_applying = body2.speed > body1.speed
+                            # Applying ⇔ orb shrinks over time. Extrapolate
+                            # both bodies one hour forward using their daily
+                            # speed and compare future orb to current orb.
+                            # Speeds are in deg/day; 1h = 1/24 day.
+                            hour_in_days = 1.0 / 24.0
+                            fut_lon1 = (body1.longitude + body1.speed * hour_in_days) % 360
+                            fut_lon2 = (body2.longitude + body2.speed * hour_in_days) % 360
+                            fut_separation = angle_difference(fut_lon1, fut_lon2)
+                            fut_orb = abs(fut_separation - aspect_angle)
+                            is_applying = fut_orb < actual_orb
 
                             aspect = Aspect(
                                 body1=body1,
