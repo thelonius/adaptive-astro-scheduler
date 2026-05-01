@@ -1,0 +1,37 @@
+{
+  "date": "2026-05-01",
+  "score": 70,
+  "rank": 1,
+  "matched_predicates": [
+    {
+      "type": "moon_waxing",
+      "weight": 8,
+      "details": {
+        "phase": "full",
+        "illumination": 0.9978868783843199
+      }
+    },
+    {
+      "type": "no_aspect",
+      "weight": 12,
+      "details": {
+        "from": "Moon",
+        "to": "Saturn",
+        "forbiddenAspects": [
+          "square",
+          "opposition"
+        ],
+        "maxOrbDeg": 6,
+        "offendingAspect": null
+      }
+    }
+  ],
+  "moon": {
+    "sign": "Scorpio",
+    "phase": "full",
+    "illumination": 0.998,
+    "void_of_course": false
+  },
+  "sun_sign": "Taurus",
+  "retrograde_planets": []
+}
