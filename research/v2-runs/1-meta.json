@@ -1,0 +1,11 @@
+{
+  "request_id": "9103f4ad-d295-4ec6-9e05-6c59fe7d345c",
+  "recipe_id": "business_launch",
+  "summary": "Top recommendation: 2026-05-01 (score 70/100). 3/31 days disqualified.",
+  "cost": {
+    "total_usd": 0,
+    "latency_ms": 953
+  },
+  "num_windows": 10,
+  "num_disqualified": 3
+}

@@ -10,6 +10,7 @@ import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
 import { travelRoutes } from './api/routes/travel.routes';
 import { createChartRoutes } from './api/routes/chart.routes';
+import { createOptimalTimingV2Router } from './optimal-timing/v2/api/router';
 
 /**
  * Create and configure Express application
@@ -57,6 +58,8 @@ export function createApp(): Express {
   app.use('/api/custom-layers', customLayersRoutes);
   app.use('/api/celestial-events', celestialEventsRoutes);
   app.use('/api/optimal-timing', optimalTimingRoutes);
+  // v2 (phase 1: fixed-recipe scoring, no LLM yet) — mounted alongside v1
+  app.use('/api/optimal-timing/v2', createOptimalTimingV2Router());
   app.use('/api/travel', travelRoutes);
 
   // Chart management routes (requires repositories)
