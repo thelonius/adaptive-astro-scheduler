@@ -52,11 +52,13 @@ class MockEphemeris implements IEphemerisCalculator {
 
     // Stubs for other interface methods
     async getAspects() { return {} as any; }
+    async getAspectPerfections() { return { start: '', end: '', count: 0, perfections: [] } as any; }
     async getPlanetaryHours() { return {} as any; }
     async getRetrogradePlanets() { return { retrogradePlanets: [] } as any; }
     async getMoonPhase() { return 0; }
     async getLunarDay() { return {} as any; }
     async getVoidOfCourseMoon() { return {} as any; }
+    async getDispositorChains() { return {} as any; }
 }
 
 describe('Travel Analyzer & Relocation Calculator', () => {
