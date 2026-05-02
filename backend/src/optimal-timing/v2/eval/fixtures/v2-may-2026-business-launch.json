@@ -1,0 +1,8 @@
+{
+  "_status": "not_recorded",
+  "recorded_at": "",
+  "api_base": "",
+  "api_revision": null,
+  "note": "Placeholder. Run `npm run record:v2-may-2026` against a deployed Python ephemeris API (with commits 8607191 and afc2996 applied) to overwrite this file with a real recording. The matching jest test (tests/v2/v2-may-2026.test.ts) is a no-op until _status === 'recorded'.",
+  "records": []
+}

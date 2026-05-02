@@ -78,3 +78,64 @@ data ingestion and is a v2.5 feature.
 - CI: every PR that touches `optimal-timing/v2/`.
 - Nightly: full eval against latest model versions; alert on
   regression > 5% in any metric.
+
+## Phase 3 acceptance — recorded fixture replay
+
+Until the eval harness above is fully wired, a single recorded
+fixture covers the M3 Phase 3 acceptance criterion (Moon-Jupiter
+applying matches at least one of {2026-05-25, 2026-05-30} in the
+business_launch May 2026 query, with the perfection time recorded
+in the trace).
+
+Files:
+
+- `replay-calculator.ts` — `FixtureEphemerisCalculator` (replays a
+  recorded fixture offline) and `RecordingEphemerisCalculator`
+  (wraps the real adapter and captures every call into a fixture).
+- `in-memory-trace-store.ts` — `TraceStore` subclass for tests; no
+  filesystem writes.
+- `fixtures/v2-may-2026-business-launch.json` — the recorded fixture.
+  Until recorded, contains `_status: "not_recorded"` and the
+  matching jest test (`backend/tests/v2/v2-may-2026.test.ts`) skips.
+
+### Recording workflow
+
+Prerequisites:
+
+1. Python ephemeris API deployed with commits `8607191` (applying
+   formula fix in `core/ephemeris/adapter.py`) and `afc2996`
+   (signed-separation discriminator + `POST /api/v1/planning/aspect-perfections`).
+2. Network reach to the API from the recording machine.
+
+Steps:
+
+```bash
+EPHEMERIS_API_BASE=http://<host>:<port> \
+  API_REVISION=$(git -C lunar-calendar-api rev-parse --short HEAD) \
+  npm --prefix backend run record:v2-may-2026
+```
+
+The recorder runs the v2 pipeline through `RecordingEphemerisCalculator`,
+captures every ephemeris call, writes the fixture, and prints a
+human summary (top 5 days with a `moon-jupiter applying ✓` tag where
+applicable).
+
+### After recording
+
+1. Inspect the fixture diff. If `records.length` collapses or a top
+   day swaps unexpectedly, re-investigate before committing.
+2. Commit the fixture in the same PR as any code change that caused
+   the difference. Fixture and the code that produced it must move
+   together — otherwise replays drift.
+3. The jest test starts running automatically next time CI sees the
+   fixture with `_status: "recorded"`.
+
+### When to re-record
+
+- Upstream Python API algorithm change (applying, perfection search,
+  VoC, ingress detection, etc.).
+- v2 pipeline starts requesting a new endpoint or different args.
+- Canonical `business_launch` recipe is edited.
+- Schema/predicate engine version bumps that change the trace shape.
+  (Old fixtures still replay because we key by call args, but the
+  trace assertions might shift.)

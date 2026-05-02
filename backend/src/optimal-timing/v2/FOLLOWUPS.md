@@ -281,6 +281,14 @@ predicate with a `window` argument:
   Versions: `SCHEMA_VERSION` 1.0.0 → 1.1.0,
   `PREDICATE_ENGINE_VERSION` 0.1.0 → 0.2.0. Smoke test updated with
   perfection fixtures.
+- **M3 Phase 3 scaffold (closed; awaiting live recording):**
+  fixture-driven e2e test in `backend/tests/v2/v2-may-2026.test.ts`,
+  HTTP-level `FixtureEphemerisCalculator` + `RecordingEphemerisCalculator`
+  in `eval/replay-calculator.ts`, in-memory `TraceStore` for offline
+  tests, recorder script `backend/scripts/record-v2-may-2026.ts`
+  (npm script `record:v2-may-2026`). Test skips with a clear message
+  until the fixture is recorded against a deployed Python API.
+  Workflow documented in `eval/README.md`.
 - **M3:** implement the chosen strategy. Bump
   `PREDICATE_ENGINE_VERSION`. Add an integration smoke (item 6) that
   exercises the new applying logic over a real (or recorded) ephemeris.
@@ -459,12 +467,20 @@ Phase 2 — wire into v2 [DONE]:
    - Score for that day moves measurably from the baseline 70.
    - Trace's `match_details.exact_at` records the perfection moment.
 
-Phase 3 — eval/regression:
+Phase 3 — eval/regression [scaffold landed; live recording pending]:
 
-9. Add a fixture run of the May 2026 query (with response recorded)
-   and an end-to-end test that asserts the acceptance criteria above.
-   Catches regressions of either the upstream applying logic or the
-   v2 wiring in one shot.
+9. ~~Add a fixture run of the May 2026 query (with response recorded)
+   and an end-to-end test that asserts the acceptance criteria above.~~
+   **Test + recorder shipped.** Workflow:
+   - Deploy the Python API with commits `8607191` and `afc2996`.
+   - From a machine with network access:
+     `EPHEMERIS_API_BASE=http://<host>:<port> npm --prefix backend run record:v2-may-2026`
+   - The recorder runs the v2 pipeline through
+     `RecordingEphemerisCalculator`, captures every ephemeris call,
+     and overwrites
+     `backend/src/optimal-timing/v2/eval/fixtures/v2-may-2026-business-launch.json`.
+   - Commit the fixture. The jest test then runs offline on every CI.
+   - See `eval/README.md` for re-record triggers.
 
 ### Open decisions for the user
 
