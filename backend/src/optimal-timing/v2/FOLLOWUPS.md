@@ -265,10 +265,9 @@ predicate with a `window` argument:
 ## Milestone proposal
 
 - **M1 (closed):** applying-formula fix in Python adapter — done.
-- **M2 (next):** second-mine research — pick semantics, decide
-  strategy, write the eval case for the 2026-05 dataset. Output:
-  this section gets replaced with a concrete implementation plan
-  plus a new follow-up entry.
+- **M2 (in progress — research done, decision pending):** second-mine
+  research. See "Second mine — research findings" below for inventory
+  results, sizing, and recommendation.
 - **M3:** implement the chosen strategy. Bump
   `PREDICATE_ENGINE_VERSION`. Add an integration smoke (item 6) that
   exercises the new applying logic over a real (or recorded) ephemeris.
@@ -276,3 +275,170 @@ predicate with a `window` argument:
   `planet_debilitated`, then `planet_in_house` (with house cusps
   plumbed via item 4).
 - **M5:** drift cleanup — items 5, 7, 9, 10. Batch into one PR.
+
+---
+
+## Second mine — research findings
+
+### Inventory: what already exists in `lunar-calendar-api`
+
+Surveyed `app/calculators/` and `app/api/v1/`. Two competing aspect
+implementations live in this repo:
+
+| Module | Function | Behavior |
+|---|---|---|
+| `core/ephemeris/adapter.py` | `calculate_aspects` | Snapshot at one moment. Used by `/api/v1/ephemeris/aspects`. Now correct after `8607191`. |
+| `calculators/aspect_engine.py` | `calculate_aspect` (single pair, single moment) | Uses 1h-lookahead via `_is_applying`. Used by `aspect_engine.get_all_aspects` → `/api/v1/reference/aspects`. |
+| `calculators/aspect_engine.py` | `find_next_exact_aspect(planet_a, planet_b, aspect_name, start_dt, max_days=30)` | **Event-finder.** 2h coarse step + binary search to 1-min precision. Returns the first perfection moment in the window or `None`. Not exposed via HTTP. |
+| `calculators/lunar_engine.py` | `find_void_of_course_windows(start, end)` | Walks Moon's aspect timeline backwards from each ingress; reuses `_refine_aspect_crossing` (binary search). Exposed via `/api/v1/planning/void-of-course`. |
+
+**Verdict.** A working perfection-time search **already exists**
+(`find_next_exact_aspect`). It is not yet exposed via HTTP and has two
+known issues:
+
+- **Conjunction and opposition aren't reliably detected.** The function
+  finds aspects via sign change of `(angular_distance - target_angle)`.
+  `angular_distance ∈ [0, 180]`, so for target=0 (conjunction) the
+  expression is always `≥ 0` (touches zero, doesn't cross), and for
+  target=180 (opposition) it's always `≤ 0`. Sign change never fires
+  at the perfection of those aspects. Falls back to
+  `abs(curr_diff) < 0.01` which a 2h-step scan rarely hits cleanly.
+  Same bug in `lunar_engine._find_last_moon_aspect_before`. Practical
+  consequence in v1: VoC windows that should end at a Moon-Saturn
+  conjunction get extended back to an earlier sextile/square/trine.
+- The fix is to use **signed** separation. Define
+  `signed_sep(a, b) = ((lon_a - lon_b + 540) mod 360) - 180`, range
+  `(-180, 180]`. Then conjunction is the zero of `signed_sep`,
+  opposition is the zero of `signed_sep ± 180`, and sign change works
+  uniformly across all five major aspects.
+
+A "list all perfections in [t0, t1] for a set of pairs" wrapper does
+not exist and would need to be built atop the fixed search.
+
+### Sizing: applying-window widths and sampling cost
+
+Half-window (entering orb → perfection) for a few representative
+pairs, computed from canonical mean daily motion:
+
+```
+pair                  |v_rel| °/d   apply h@orb=2°  @4°  @6°  @8°
+Moon-Sun                  12.20         3.9          7.9  11.8 15.7
+Moon-Mercury              11.78         4.1          8.1  12.2 16.3
+Moon-Venus                11.98         4.0          8.0  12.0 16.0
+Moon-Mars                 12.66         3.8          7.6  11.4 15.2
+Moon-Jupiter              13.10         3.7          7.3  11.0 14.7
+Moon-Saturn               13.15         3.7          7.3  11.0 14.6
+Mars-Jupiter               0.44       109.8        219.7 329.5 439.4
+Saturn-Pluto               0.03      66.7d        133.3d 200d  266d
+```
+
+So:
+
+- **Moon vs anything**: applying half-window 7–12h at orb 4–6°. Single
+  noon snapshot lands inside ~50% of the time. Sampling every 4h
+  (6 snapshots/day) catches every applying window of width ≥ 4h with
+  near-100% probability — but breaks down for very tight orbs (≤ 2°)
+  where the window can be 3–4h.
+- **Slow-vs-slow**: applying window measured in days. Single noon
+  sample is fine; multi-sampling adds nothing.
+
+**Cost of strategy 2** (event-finder): for `business_launch` (4
+weighted aspect predicates × ~3 aspect types), 24h window, 2h coarse
+step + 7-iter bisection per crossing, 2 swisseph calls per step:
+~456 calls/day × 30 days ≈ 14K calls/month. Swisseph throughput is
+~50K calls/sec → **~0.3s of pure compute per 30-day query, single
+threaded**. HTTP overhead and serialization dominate.
+
+**Cost of strategy 1** (multi-sample): 6 snapshots/day × current per-day
+cost (4 ephemeris endpoints × 1 HTTP roundtrip each) = 24 HTTP calls/day,
+720/month. Already higher than strategy 2 once HTTP overhead is counted.
+
+### Semantics: what should `applying: true` mean in a v2 recipe
+
+| | Semantic | Fires when… | Match to traditional electional | Discrimination power |
+|---|---|---|---|---|
+| A | Snapshot at noon | aspect is applying at 12:00 UTC | weak — depends on arbitrary sample moment | poor (50% noise) |
+| B | Any moment in [00:00, 24:00) | aspect was applying at any t in the day | medium — captures "had a window" but every applying period is shared by ~2 calendar days | medium (most days near a perfection light up) |
+| C | Aspect perfects in [00:00, 24:00) | exact aspect happens this calendar day | strong — Stellium and traditional sources mean this | high (1–2 calendar days per Moon-pair perfection cycle) |
+
+Stellium's electional cookbook (the source of v2's canonical recipes)
+implicitly uses C — its predicates name specific perfecting events,
+not "in-orb-and-applying" generic states. Honoring that gets v2 to
+parity with the source rules and gives the most discrimination among
+days.
+
+**Recommended default: C.**
+
+To preserve the cheaper "approximate" mode for cost-sensitive callers,
+parameterize the predicate at the DSL level rather than hardcode:
+
+```jsonc
+{ "type": "aspect", "from": "Moon", "to": "Jupiter",
+  "aspects": ["trine", "sextile", "conjunction"],
+  "applying": true,
+  "window": "perfects_in_day"   // default
+  // | "applying_at_noon"       // strategy A — cheap fallback
+}
+```
+
+Drop semantic B unless an explicit use case appears. It blurs ranking
+without astrological grounding.
+
+### Recommended implementation path
+
+Phase 1 — fix and expose what exists:
+
+1. Patch `aspect_engine.find_next_exact_aspect` and
+   `lunar_engine._find_last_moon_aspect_before` to use signed
+   separation, so conjunction/opposition perfections are detected
+   correctly. Add a unit test with a Moon–Sun conjunction (trivially
+   findable: ~one per month).
+2. Add `aspect_engine.find_perfections_in_window(start_dt, end_dt,
+   pairs, aspect_names) -> List[{from, to, aspect, exact_at}]` —
+   thin loop calling the fixed `find_next_exact_aspect` for each
+   pair × aspect × stepping forward through the window.
+3. Expose via `POST /api/v1/planning/aspect-perfections` accepting
+   `{start, end, pairs[], aspects[]}`. 90-day cap matching VoC.
+4. Add the same applying-formula fix to `transit_engine` and
+   `chart_service` from FOLLOWUPS items 2 (separate PR — they're
+   not blocked by v2 but they leak the same wrong answer to other
+   callers).
+
+Phase 2 — wire into v2:
+
+5. Add `perfections: AspectPerfection[]` field to `DayContext`.
+   Populate it in `build-day-context` via the new endpoint, scoped
+   to the pairs/aspects actually referenced in the recipe.
+6. Extend `predicates/aspects.ts:evalAspect` to honor a
+   `window: "perfects_in_day" | "applying_at_noon"` parameter.
+   Default to `"perfects_in_day"`. For the perfects-in-day branch,
+   look up `ctx.perfections` instead of `ctx.aspects`.
+7. Update `schema/dsl.ts` aspect predicate Zod schema with the
+   optional `window` field. Bump `SCHEMA_VERSION` and
+   `PREDICATE_ENGINE_VERSION`.
+8. Re-run the May 2026 `business_launch` query. Acceptance criteria:
+   - Moon–Jupiter applying matches at least one of
+     {2026-05-25, 2026-05-30}.
+   - Score for that day moves measurably from baseline 70.
+   - Trace records the perfection time and which calendar day hosted
+     it.
+
+Phase 3 — eval/regression:
+
+9. Add a fixture run of the May 2026 query (with response recorded)
+   and an end-to-end test that asserts the acceptance criteria above.
+   Catches regressions of either the upstream applying logic or the
+   v2 wiring in one shot.
+
+### Open decisions for the user
+
+- **Confirm semantic C as default?** Or keep A as default and make C
+  opt-in via `window: "perfects_in_day"`?
+- **Conjunction/opposition fix scope**: ship as a separate PR (small,
+  isolated, also fixes VoC accuracy for v1) or bundle with the v2
+  endpoint work?
+- **Endpoint shape**: `POST /api/v1/planning/aspect-perfections` with
+  body `{start, end, pairs, aspects}`, or `GET` with query string?
+  POST scales better for arbitrary pair lists.
+- **Cap**: 30 days seems sufficient for v2 (matches typical query
+  range); 90 days matches the existing VoC cap. Pick one.
