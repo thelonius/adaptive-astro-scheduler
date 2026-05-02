@@ -12,7 +12,7 @@
 
 import { z } from 'zod';
 
-export const SCHEMA_VERSION = '1.0.0';
+export const SCHEMA_VERSION = '1.1.0';
 
 // ─── Closed enums ────────────────────────────────────────────────────────────
 
@@ -44,6 +44,25 @@ export const MoonPhaseSchema = z.enum(MOON_PHASES);
 export type MoonPhase = z.infer<typeof MoonPhaseSchema>;
 
 export const HouseSchema = z.number().int().min(1).max(12);
+
+/**
+ * Window semantic for `applying: true` aspect predicates.
+ *
+ * - `perfects_in_day` (default): the predicate matches when the aspect
+ *   reaches exactness within the calendar day. Uses the perfections
+ *   list pre-computed for the whole query window. This is what
+ *   traditional electional astrology means by "Moon applying to X" —
+ *   strongest day-level discrimination.
+ * - `applying_at_noon`: the predicate matches when, at the noon-UTC
+ *   snapshot, the aspect is in orb and applying. Cheap fallback;
+ *   misses applying windows that don't include noon.
+ *
+ * Has no effect when `applying` is false or omitted — those branches
+ * always use the noon snapshot.
+ */
+export const ASPECT_WINDOWS = ['perfects_in_day', 'applying_at_noon'] as const;
+export const AspectWindowSchema = z.enum(ASPECT_WINDOWS);
+export type AspectWindow = z.infer<typeof AspectWindowSchema>;
 
 // ─── Predicates ──────────────────────────────────────────────────────────────
 // Each predicate is a discriminated union member with a literal `type`.
@@ -117,8 +136,11 @@ const Aspect = z.object({
     aspects: z.array(AspectTypeSchema).min(1),
     /** require the aspect to be applying (perfecting), not separating */
     applying: z.boolean().optional(),
-    /** maximum allowed orb in degrees (default: 6° for major aspects) */
+    /** maximum allowed orb in degrees (default: 6° for major aspects).
+     *  Ignored when window === 'perfects_in_day' (perfection has zero orb). */
     max_orb_deg: z.number().positive().max(15).optional(),
+    /** Window semantic for applying:true. Default 'perfects_in_day'. */
+    window: AspectWindowSchema.optional(),
 });
 
 const NoAspect = z.object({

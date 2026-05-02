@@ -10,6 +10,7 @@ import type {
   PlanetsApiResponse,
   AspectsApiResponse,
   AspectApiData,
+  AspectPerfectionsApiResponse,
   HousesApiResponse,
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
@@ -142,6 +143,19 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   /**
    * Generate mock houses
    */
+  /**
+   * Mock perfection-time search. Returns an empty list — tests/smokes
+   * supply their own perfections via the v2 DayContext when needed.
+   */
+  async getAspectPerfections(
+    start: string,
+    end: string,
+    _pairs: ReadonlyArray<readonly [string, string]>,
+    _aspects: ReadonlyArray<string>,
+  ): Promise<AspectPerfectionsApiResponse> {
+    return { start, end, count: 0, perfections: [] };
+  }
+
   async getHouses(dateTime: DateTime, system: string = 'placidus'): Promise<HousesApiResponse> {
     // Calculate Ascendant (simplified - based on time and location)
     const hourAngle = (dateTime.date.getHours() + dateTime.date.getMinutes() / 60) * 15;

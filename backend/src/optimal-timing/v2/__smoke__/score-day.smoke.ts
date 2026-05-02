@@ -50,9 +50,11 @@ function assert(cond: boolean, msg: string): void {
 
 /**
  * A favorable synthetic day: waxing Moon in Taurus, no VoC,
- * Mercury direct, Moon in applying trine to Venus and Jupiter,
- * no Moon-Saturn affliction, Jupiter in 10th house (we treat that
- * as "matched: false" because planet_in_house is stubbed in phase 1).
+ * Mercury direct, Moon in applying trine to Venus and Jupiter
+ * (perfections supplied for predicate_engine 0.2.0+ which uses
+ * `perfects_in_day` semantics by default), no Moon-Saturn
+ * affliction, Jupiter in 10th house (we treat that as "matched:
+ * false" because planet_in_house is stubbed in phase 1).
  */
 function favorableDay(): DayContext {
     return {
@@ -82,6 +84,10 @@ function favorableDay(): DayContext {
         aspects: [
             { from: 'Moon', to: 'Venus', type: 'trine', orbDeg: 1.0, applying: true },
             { from: 'Moon', to: 'Jupiter', type: 'sextile', orbDeg: 0.5, applying: true },
+        ],
+        perfections: [
+            { from: 'Moon', to: 'Venus', type: 'trine', exactAt: new Date('2026-05-15T14:30:00Z') },
+            { from: 'Moon', to: 'Jupiter', type: 'sextile', exactAt: new Date('2026-05-15T18:45:00Z') },
         ],
         houseCusps: null,
     };

@@ -11,8 +11,9 @@
  */
 
 import type { IEphemerisCalculator } from '../../../core/ephemeris/interface';
-import type { Recipe } from '../schema/dsl';
+import type { Recipe, Predicate } from '../schema/dsl';
 import type { TraceRecord, StageDateRange } from '../schema/trace';
+import type { AspectPerfection } from '../predicates/types';
 import { TraceRecorder } from '../trace/recorder';
 import { TraceStore } from '../trace/store';
 import { buildDayContext, dateRangeISO } from './build-day-context';
@@ -97,6 +98,17 @@ export async function findWithFixedRecipe(
     // Stages 4-5: scoring + ranking.
     try {
         const dates = dateRangeISO(args.start_date, args.end_date);
+
+        // Pre-fetch aspect perfections for the entire window (one HTTP
+        // call). The recipe's `applying:true` predicates with the default
+        // `perfects_in_day` semantic look these up day-by-day.
+        const perfections = await fetchPerfectionsForRecipe(
+            args.recipe,
+            args.start_date,
+            args.end_date,
+            deps.ephemeris,
+        );
+
         const inputs: RankInput[] = [];
 
         // Score serially in chunks to avoid hammering the ephemeris.
@@ -108,6 +120,7 @@ export async function findWithFixedRecipe(
                     const ctx = await buildDayContext(date, {
                         ephemeris: deps.ephemeris,
                         location: args.location,
+                        perfections,
                     });
                     return scoreDay(args.recipe, ctx);
                 }),
@@ -135,6 +148,61 @@ export async function findWithFixedRecipe(
         try { await deps.traceStore.append(trace); } catch { /* swallow */ }
         throw e;
     }
+}
+
+/**
+ * Walk the recipe's predicates, collect every (pair, aspect-types)
+ * tuple whose predicate uses applying:true with the default
+ * 'perfects_in_day' window, and pre-fetch all perfections for the
+ * full query window in a single ephemeris call.
+ *
+ * Returns an empty list if no such predicate exists — the API call is
+ * skipped entirely in that case (most recipes that don't ask for
+ * applying:true incur zero cost from this stage).
+ */
+async function fetchPerfectionsForRecipe(
+    recipe: Recipe,
+    startDate: string,
+    endDate: string,
+    ephemeris: IEphemerisCalculator,
+): Promise<AspectPerfection[]> {
+    const pairsSet = new Set<string>();
+    const aspectsSet = new Set<string>();
+
+    const collect = (pred: Predicate): void => {
+        if (pred.type !== 'aspect') return;
+        if (pred.applying !== true) return;
+        const window = pred.window ?? 'perfects_in_day';
+        if (window !== 'perfects_in_day') return;
+        // Canonicalize the pair: sorted alphabetically so reverse pairs
+        // collide in the set. Order-independent for the API.
+        const pair = [pred.from, pred.to].sort().join('|');
+        pairsSet.add(pair);
+        for (const a of pred.aspects) aspectsSet.add(a);
+    };
+    for (const d of recipe.disqualifiers) collect(d);
+    for (const wc of recipe.weighted_conditions) collect(wc.predicate);
+
+    if (pairsSet.size === 0 || aspectsSet.size === 0) return [];
+
+    const pairs: ReadonlyArray<readonly [string, string]> = [...pairsSet]
+        .map((s) => s.split('|') as [string, string]);
+    const aspects = [...aspectsSet];
+
+    // The endpoint expects ISO 8601 timestamps. Use [start_date 00:00, end_date+1 00:00) UTC
+    // so the inclusive day range maps to a half-open instant range.
+    const startISO = `${startDate}T00:00:00Z`;
+    const endISO = new Date(`${endDate}T00:00:00Z`).getTime() + 24 * 60 * 60 * 1000;
+    const endISOStr = new Date(endISO).toISOString();
+
+    const resp = await ephemeris.getAspectPerfections(startISO, endISOStr, pairs, aspects);
+
+    return resp.perfections.map((p) => ({
+        from: p.planet_a as AspectPerfection['from'],
+        to: p.planet_b as AspectPerfection['to'],
+        type: p.aspect as AspectPerfection['type'],
+        exactAt: new Date(p.exact_at),
+    }));
 }
 
 /**

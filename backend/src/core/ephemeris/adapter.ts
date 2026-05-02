@@ -10,6 +10,7 @@ import type {
   LunarEnergyType,
   PlanetsApiResponse,
   AspectsApiResponse,
+  AspectPerfectionsApiResponse,
   HousesApiResponse,
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
@@ -87,6 +88,40 @@ export class EphemerisAdapter implements IEphemerisCalculator {
         'NETWORK_ERROR',
         `Failed to fetch from ephemeris API: ${error instanceof Error ? error.message : String(error)}`,
         { endpoint, originalError: error }
+      );
+    }
+  }
+
+  /**
+   * Helper for POST requests with a JSON body.
+   */
+  private async fetchPost<T>(
+    endpoint: string,
+    body: unknown,
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    try {
+      const response = await globalThis.fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new EphemerisError(
+          'API_ERROR',
+          `API request failed: ${response.status} ${response.statusText}`,
+          { endpoint, status: response.status },
+        );
+      }
+
+      return await response.json() as T;
+    } catch (error) {
+      if (error instanceof EphemerisError) throw error;
+      throw new EphemerisError(
+        'NETWORK_ERROR',
+        `Failed to POST to ephemeris API: ${error instanceof Error ? error.message : String(error)}`,
+        { endpoint, originalError: error },
       );
     }
   }
@@ -332,6 +367,27 @@ export class EphemerisAdapter implements IEphemerisCalculator {
     } catch {
       return { date: dateStr, retrogradePlanets: [] };
     }
+  }
+
+  /**
+   * Find every exact aspect perfection in [start, end) for the given pairs
+   * and aspect names. Calls POST /api/v1/planning/aspect-perfections.
+   */
+  async getAspectPerfections(
+    start: string,
+    end: string,
+    pairs: ReadonlyArray<readonly [string, string]>,
+    aspects: ReadonlyArray<string>,
+  ): Promise<AspectPerfectionsApiResponse> {
+    return this.fetchPost<AspectPerfectionsApiResponse>(
+      '/api/v1/planning/aspect-perfections',
+      {
+        start,
+        end,
+        pairs: pairs.map(([a, b]) => [a, b]),
+        aspects: [...aspects],
+      },
+    );
   }
 
   /**

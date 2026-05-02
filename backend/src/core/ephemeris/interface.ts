@@ -8,6 +8,7 @@ import type {
   PlanetaryHour,
   PlanetsApiResponse,
   AspectsApiResponse,
+  AspectPerfectionsApiResponse,
   HousesApiResponse,
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
@@ -37,6 +38,26 @@ export interface IEphemerisCalculator {
    * @returns Planetary aspects from API
    */
   getAspects(dateTime: DateTime, orb?: number): Promise<AspectsApiResponse>;
+
+  /**
+   * Find every exact aspect perfection between the given planet pairs and
+   * aspect types within [start, end). Each entry's `exact_at` is the UTC
+   * moment the aspect becomes exact, accurate to ~1 minute.
+   *
+   * Used by v2 optimal-timing to answer "did aspect X perfect on day D?"
+   * — a stronger signal than "is X applying at noon?".
+   *
+   * @param start ISO 8601 timestamp (UTC) — window start (inclusive)
+   * @param end   ISO 8601 timestamp (UTC) — window end (exclusive)
+   * @param pairs Planet pairs, e.g. [['Moon','Jupiter']]
+   * @param aspects Aspect names, e.g. ['trine','sextile','conjunction']
+   */
+  getAspectPerfections(
+    start: string,
+    end: string,
+    pairs: ReadonlyArray<readonly [string, string]>,
+    aspects: ReadonlyArray<string>,
+  ): Promise<AspectPerfectionsApiResponse>;
 
   /**
    * Get astrological houses for a given date/time/location

@@ -8,6 +8,7 @@ import type {
   PlanetaryHour,
   PlanetsApiResponse,
   AspectsApiResponse,
+  AspectPerfectionsApiResponse,
   HousesApiResponse,
   VoidMoonApiResponse,
   PlanetaryHoursApiResponse,
@@ -201,6 +202,34 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
 
     const result = await this.calculator.getAspects(dateTime, orb);
     await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
+
+    return result;
+  }
+
+  async getAspectPerfections(
+    start: string,
+    end: string,
+    pairs: ReadonlyArray<readonly [string, string]>,
+    aspects: ReadonlyArray<string>,
+  ): Promise<AspectPerfectionsApiResponse> {
+    // Build a stable cache key independent of input order so equivalent
+    // queries collide. The endpoint result is invariant to pair/aspect
+    // ordering.
+    const pairsKey = [...pairs]
+      .map(([a, b]) => [a, b].sort().join('|'))
+      .sort()
+      .join(',');
+    const aspectsKey = [...aspects].sort().join(',');
+    const cacheKey = `aspect-perfections:${start}:${end}:${pairsKey}:${aspectsKey}`;
+
+    const cached = await this.cache.get<AspectPerfectionsApiResponse>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.calculator.getAspectPerfections(start, end, pairs, aspects);
+
+    // Treat the window's end as the data freshness anchor for TTL.
+    const endDate = new Date(end);
+    await this.cache.set(cacheKey, result, this.getTTL(endDate));
 
     return result;
   }

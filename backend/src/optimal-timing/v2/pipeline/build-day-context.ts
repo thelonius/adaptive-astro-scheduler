@@ -13,7 +13,7 @@
 
 import type { IEphemerisCalculator } from '../../../core/ephemeris/interface';
 import type { DateTime as DT, AspectType as ApiAspectType } from '@adaptive-astro/shared/types/astrology';
-import type { DayContext, MoonSnapshot, PlanetSnapshot } from '../predicates/types';
+import type { DayContext, MoonSnapshot, PlanetSnapshot, AspectPerfection } from '../predicates/types';
 import type { Planet, AspectType } from '../schema/dsl';
 import { normalizeSign, signFromLongitude } from './sign-mapping';
 
@@ -63,6 +63,12 @@ function classifyMoonPhase(illumination: number, isWaxing: boolean): MoonSnapsho
 export interface BuildContextDeps {
     ephemeris: IEphemerisCalculator;
     location: { latitude: number; longitude: number; timezone: string };
+    /**
+     * Aspect perfections relevant to this query, pre-computed for the
+     * whole window. `buildDayContext` filters them down to the current
+     * day. Empty/undefined when the recipe doesn't request any.
+     */
+    perfections?: ReadonlyArray<AspectPerfection>;
 }
 
 export async function buildDayContext(
@@ -150,6 +156,17 @@ export async function buildDayContext(
         })
         .filter((a): a is NonNullable<typeof a> => a !== null);
 
+    // Slice the pre-computed perfections list to those falling within
+    // [00:00, 24:00) UTC of dateIso. The pipeline pre-fetches the full
+    // window in one call; per-day filtering here is O(n) and cheap.
+    const dayStart = new Date(`${dateIso}T00:00:00Z`).getTime();
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    const dayPerfections: AspectPerfection[] = [];
+    for (const p of deps.perfections ?? []) {
+        const t = p.exactAt.getTime();
+        if (t >= dayStart && t < dayEnd) dayPerfections.push(p);
+    }
+
     return {
         date: dateIso,
         referenceTime,
@@ -157,6 +174,7 @@ export async function buildDayContext(
         moon,
         planets,
         aspects,
+        perfections: dayPerfections,
         houseCusps: null,
     };
 }

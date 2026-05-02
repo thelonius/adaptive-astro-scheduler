@@ -25,7 +25,20 @@ import {
 } from './planet-state';
 import { evalAspect, evalNoAspect } from './aspects';
 
-export const PREDICATE_ENGINE_VERSION = '0.1.0';
+/**
+ * Bump this on any predicate-impl change (semantic shift, new branch,
+ * I/O dependency change). Traces record this version so old runs can
+ * be replayed against the engine that produced them.
+ *
+ * History:
+ *   0.1.0 — initial scaffold, all predicates against single noon snapshot.
+ *   0.2.0 — `aspect` predicate honors `window` parameter. Default
+ *           `perfects_in_day` reads from `DayContext.perfections`
+ *           (pre-computed for the whole window) instead of the noon
+ *           `aspects` snapshot. Old `applying_at_noon` semantic
+ *           remains available as opt-in. Schema bumped to 1.1.0.
+ */
+export const PREDICATE_ENGINE_VERSION = '0.2.0';
 
 type Registry = {
     [K in Predicate['type']]: (

@@ -29,6 +29,20 @@ export interface AspectSnapshot {
     applying: boolean | null;
 }
 
+/**
+ * Exact-perfection event: the moment a specific aspect between two
+ * planets becomes perfectly exact (orb = 0). Pre-computed once per
+ * query window from `IEphemerisCalculator.getAspectPerfections` and
+ * sliced per day into `DayContext.perfections`.
+ */
+export interface AspectPerfection {
+    from: Planet;
+    to: Planet;
+    type: AspectType;
+    /** UTC moment of perfection */
+    exactAt: Date;
+}
+
 export interface MoonSnapshot {
     sign: Sign;
     longitude: number;
@@ -53,6 +67,13 @@ export interface DayContext {
     moon: MoonSnapshot;
     planets: Record<Planet, PlanetSnapshot>;
     aspects: AspectSnapshot[];
+    /**
+     * Aspect perfections occurring within this calendar day, [00:00, 24:00) UTC.
+     * Filled by the pipeline from a single window-wide query against
+     * `getAspectPerfections`. Empty when the recipe asks for none, or when
+     * the day has none.
+     */
+    perfections: AspectPerfection[];
     /** Houses are optional — populated only when intent needs them. */
     houseCusps: number[] | null;
 }

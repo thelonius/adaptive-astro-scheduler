@@ -271,6 +271,16 @@ predicate with a `window` argument:
   (90-day cap). Side benefit: v1 VoC end detection now correctly sees
   Moon–planet conjunction perfections that the old unsigned scan
   missed. Unit tests for `_aspect_diff` cover conj/opp/trine/wrap.
+- **M3 Phase 2 (closed):** v2 wired to the new endpoint.
+  `IEphemerisCalculator.getAspectPerfections` added across interface +
+  HTTP/cached/mock adapters. `DayContext.perfections` populated from a
+  single window-wide pre-fetch in the pipeline, then sliced per day.
+  `evalAspect` honors a new `window` parameter on the aspect
+  predicate: `perfects_in_day` (default) reads from `perfections`,
+  `applying_at_noon` keeps the old noon-snapshot semantic as opt-in.
+  Versions: `SCHEMA_VERSION` 1.0.0 → 1.1.0,
+  `PREDICATE_ENGINE_VERSION` 0.1.0 → 0.2.0. Smoke test updated with
+  perfection fixtures.
 - **M3:** implement the chosen strategy. Bump
   `PREDICATE_ENGINE_VERSION`. Add an integration smoke (item 6) that
   exercises the new applying logic over a real (or recorded) ephemeris.
@@ -417,24 +427,37 @@ Phase 1 — fix and expose what exists [DONE]:
    `chart_service.py:161` is for ASC/MC angles and is out of scope
    for v2 (no angle predicates yet).
 
-Phase 2 — wire into v2:
+Phase 2 — wire into v2 [DONE]:
 
-5. Add `perfections: AspectPerfection[]` field to `DayContext`.
+5. ~~Add `perfections: AspectPerfection[]` field to `DayContext`.
    Populate it in `build-day-context` via the new endpoint, scoped
-   to the pairs/aspects actually referenced in the recipe.
-6. Extend `predicates/aspects.ts:evalAspect` to honor a
-   `window: "perfects_in_day" | "applying_at_noon"` parameter.
-   Default to `"perfects_in_day"`. For the perfects-in-day branch,
-   look up `ctx.perfections` instead of `ctx.aspects`.
-7. Update `schema/dsl.ts` aspect predicate Zod schema with the
-   optional `window` field. Bump `SCHEMA_VERSION` and
-   `PREDICATE_ENGINE_VERSION`.
-8. Re-run the May 2026 `business_launch` query. Acceptance criteria:
+   to the pairs/aspects actually referenced in the recipe.~~
+   **Landed.** Pre-fetch happens once per query in `pipeline/index.ts`
+   (`fetchPerfectionsForRecipe`); collects unique (pair × aspect)
+   tuples that use applying:true with the default
+   perfects_in_day window; calls `getAspectPerfections` once for the
+   full date range; `buildDayContext` filters to the day's
+   [00:00, 24:00) UTC slice.
+6. ~~Extend `predicates/aspects.ts:evalAspect` to honor a `window`
+   parameter.~~ **Landed.** Branch 1 (applying:true +
+   perfects_in_day): match against `ctx.perfections`. Branch 2
+   (everything else, including applying:false and
+   applying_at_noon): keep noon-snapshot logic. The match_details
+   record which window decided the outcome so the trace stays
+   debuggable.
+7. ~~Update `schema/dsl.ts` aspect predicate Zod schema. Bump
+   versions.~~ **Landed.** New `AspectWindowSchema = z.enum([
+   'perfects_in_day', 'applying_at_noon' ])`. Optional on `Aspect`
+   predicate. `SCHEMA_VERSION` 1.0.0 → 1.1.0,
+   `PREDICATE_ENGINE_VERSION` 0.1.0 → 0.2.0 with a history block
+   in `predicates/index.ts` documenting the bump policy.
+8. **Acceptance — pending Phase 3 deploy & rerun.** Re-run the May
+   2026 `business_launch` query against the deployed Python API
+   (with `8607191` + `afc2996` already on the API service). Expect:
    - Moon–Jupiter applying matches at least one of
      {2026-05-25, 2026-05-30}.
-   - Score for that day moves measurably from baseline 70.
-   - Trace records the perfection time and which calendar day hosted
-     it.
+   - Score for that day moves measurably from the baseline 70.
+   - Trace's `match_details.exact_at` records the perfection moment.
 
 Phase 3 — eval/regression:
 

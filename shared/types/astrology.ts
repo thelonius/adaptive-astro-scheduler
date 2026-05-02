@@ -177,6 +177,24 @@ export interface AspectApiData {
   interpretation: string;
 }
 
+/**
+ * Perfection-time data: when a specific aspect between two planets
+ * becomes exact. Returned by POST /api/v1/planning/aspect-perfections.
+ */
+export interface AspectPerfectionApiData {
+  planet_a: string;
+  planet_b: string;
+  aspect: string;             // 'conjunction' | 'sextile' | 'square' | 'trine' | 'opposition'
+  exact_at: string;           // ISO 8601 timestamp (UTC)
+}
+
+export interface AspectPerfectionsApiResponse {
+  start: string;              // ISO 8601 (UTC)
+  end: string;                // ISO 8601 (UTC)
+  count: number;
+  perfections: AspectPerfectionApiData[];
+}
+
 export interface HousesApiResponse {
   date: string;
   location: {
