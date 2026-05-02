@@ -7,10 +7,14 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 import pytz
 
-from app.models.domain_planning import VoCResponse, VoCWindow, VoCLastAspect, DispositorResponse
+from app.models.domain_planning import (
+    VoCResponse, VoCWindow, VoCLastAspect, DispositorResponse,
+    AspectPerfectionsRequest, AspectPerfectionEntry, AspectPerfectionsResponse,
+)
 from app.calculators.lunar_engine import lunar_engine
 from app.calculators.planetary_engine import planetary_engine
 from app.calculators.dispositor_engine import dispositor_engine
+from app.calculators.aspect_engine import aspect_engine
 
 router = APIRouter(prefix="/planning", tags=["planning"])
 
@@ -79,6 +83,49 @@ async def get_retrogrades(
             "retrograde_planets": retrograde_planets,
             "count": len(retrograde_planets)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/aspect-perfections",
+    response_model=AspectPerfectionsResponse,
+    summary="Aspect Perfections in a Time Window",
+)
+async def get_aspect_perfections(req: AspectPerfectionsRequest):
+    """
+    Returns every exact aspect perfection in the requested window for the
+    requested planet pairs and aspect names, sorted by time.
+
+    Each perfection is the moment when the chosen aspect (e.g. trine,
+    conjunction, opposition) becomes exact between the two bodies, accurate
+    to ~1 minute. Use this for electional / planning queries that need
+    "did aspect X perfect on day D?" rather than "what's in orb at noon?".
+    """
+    try:
+        start = req.start.replace(tzinfo=pytz.UTC) if req.start.tzinfo is None else req.start
+        end = req.end.replace(tzinfo=pytz.UTC) if req.end.tzinfo is None else req.end
+
+        if end <= start:
+            raise HTTPException(status_code=400, detail="`end` must be after `start`.")
+        if (end - start).days > 90:
+            raise HTTPException(status_code=400, detail="Date range cannot exceed 90 days.")
+
+        normalized_pairs = [(a, b) for a, b in req.pairs]
+
+        perfections_raw = aspect_engine.find_perfections_in_window(
+            start, end, normalized_pairs, req.aspects,
+        )
+
+        perfections = [AspectPerfectionEntry(**p) for p in perfections_raw]
+
+        return AspectPerfectionsResponse(
+            start=start, end=end,
+            count=len(perfections),
+            perfections=perfections,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

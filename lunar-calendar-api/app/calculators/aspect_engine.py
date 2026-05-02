@@ -228,6 +228,25 @@ class AspectEngine:
         aspects.sort(key=lambda a: a["orb"])
         return aspects
     
+    @staticmethod
+    def _aspect_diff(lon_a: float, lon_b: float, target_angle: float) -> float:
+        """
+        Signed discriminator whose sign change marks aspect perfection.
+
+        For target ∈ {0, 180} the unsigned `angular_distance - target`
+        only touches zero (it's a min/max) and never changes sign, so
+        scan-based perfection detection misses conjunctions and
+        oppositions. We use the signed longitude difference shifted by
+        the target instead, which crosses zero cleanly at the perfection
+        regardless of which side either body is on.
+
+        For target ∈ (0, 180) the unsigned discriminator works fine and
+        is kept as-is to preserve existing behavior.
+        """
+        if target_angle in (0, 180):
+            return ((lon_a - lon_b - target_angle + 180) % 360) - 180
+        return AspectEngine.angular_distance(lon_a, lon_b) - target_angle
+
     def find_next_exact_aspect(
         self,
         planet_a: str,
@@ -237,42 +256,36 @@ class AspectEngine:
         max_days: int = 30
     ) -> Optional[datetime]:
         """
-        Uses binary search to find when a specific aspect becomes exact.
-        
+        Uses scan + binary search to find when a specific aspect becomes exact.
+
         Returns the datetime of exact aspect, or None if not found within max_days.
         """
         target_angle = self.aspect_defs.get(aspect_name, {}).get("angle")
         if target_angle is None:
             return None
-        
-        # Step through time in 2-hour increments looking for the moment
-        # when the angular difference crosses through the target angle
+
         step_hours = 2
         dt = start_dt
         end_dt = start_dt + timedelta(days=max_days)
-        
+
         prev_diff = None
-        
+
         while dt < end_dt:
             lon_a = self._get_longitude(planet_a, dt)
             lon_b = self._get_longitude(planet_b, dt)
-            angle = self.angular_distance(lon_a, lon_b)
-            curr_diff = angle - target_angle
-            
-            if prev_diff is not None:
-                # Sign change means we crossed the exact aspect
-                if prev_diff * curr_diff < 0 or abs(curr_diff) < 0.01:
-                    # Binary search to refine
-                    return self._binary_search_exact(
-                        planet_a, planet_b, target_angle,
-                        dt - timedelta(hours=step_hours), dt
-                    )
-            
+            curr_diff = self._aspect_diff(lon_a, lon_b, target_angle)
+
+            if prev_diff is not None and prev_diff * curr_diff < 0:
+                return self._binary_search_exact(
+                    planet_a, planet_b, target_angle,
+                    dt - timedelta(hours=step_hours), dt
+                )
+
             prev_diff = curr_diff
             dt += timedelta(hours=step_hours)
-        
+
         return None
-    
+
     def _binary_search_exact(
         self,
         planet_a: str,
@@ -286,25 +299,76 @@ class AspectEngine:
         Refines the exact moment of an aspect using binary search.
         Default precision: 1 minute.
         """
+        diff_start = self._aspect_diff(
+            self._get_longitude(planet_a, t_start),
+            self._get_longitude(planet_b, t_start),
+            target_angle,
+        )
+
         while (t_end - t_start).total_seconds() > precision_seconds:
             t_mid = t_start + (t_end - t_start) / 2
-            
-            lon_a = self._get_longitude(planet_a, t_mid)
-            lon_b = self._get_longitude(planet_b, t_mid)
-            angle = self.angular_distance(lon_a, lon_b)
-            diff_mid = angle - target_angle
-            
-            lon_a_start = self._get_longitude(planet_a, t_start)
-            lon_b_start = self._get_longitude(planet_b, t_start)
-            angle_start = self.angular_distance(lon_a_start, lon_b_start)
-            diff_start = angle_start - target_angle
-            
+
+            diff_mid = self._aspect_diff(
+                self._get_longitude(planet_a, t_mid),
+                self._get_longitude(planet_b, t_mid),
+                target_angle,
+            )
+
             if diff_start * diff_mid < 0:
                 t_end = t_mid
             else:
                 t_start = t_mid
-        
+                diff_start = diff_mid
+
         return t_start + (t_end - t_start) / 2
+
+    def find_perfections_in_window(
+        self,
+        start_dt: datetime,
+        end_dt: datetime,
+        pairs: List[Tuple[str, str]],
+        aspect_names: List[str],
+    ) -> List[Dict]:
+        """
+        Returns every exact aspect perfection in [start_dt, end_dt] for
+        the requested planet pairs and aspect names, sorted by time.
+
+        Each entry: {"planet_a", "planet_b", "aspect", "exact_at"}.
+
+        Implementation: for each (pair, aspect) walks forward calling
+        find_next_exact_aspect; advances past each found perfection by
+        one minute (well below the 2h coarse step) until the window is
+        exhausted. Cost scales linearly with pairs × aspects × number
+        of perfections in window.
+        """
+        out: List[Dict] = []
+        if end_dt <= start_dt:
+            return out
+
+        for planet_a, planet_b in pairs:
+            for aspect_name in aspect_names:
+                if aspect_name not in self.aspect_defs:
+                    continue
+                cursor = start_dt
+                while cursor < end_dt:
+                    remaining_seconds = (end_dt - cursor).total_seconds()
+                    remaining_days = max(1, int(remaining_seconds // 86400) + 1)
+                    exact = self.find_next_exact_aspect(
+                        planet_a, planet_b, aspect_name, cursor,
+                        max_days=remaining_days,
+                    )
+                    if exact is None or exact >= end_dt:
+                        break
+                    out.append({
+                        "planet_a": planet_a,
+                        "planet_b": planet_b,
+                        "aspect": aspect_name,
+                        "exact_at": exact,
+                    })
+                    cursor = exact + timedelta(minutes=1)
+
+        out.sort(key=lambda x: x["exact_at"])
+        return out
 
 
 # Global singleton

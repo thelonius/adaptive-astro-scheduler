@@ -130,7 +130,9 @@ class LunarEngine:
         Scans backward from a Moon ingress to find the last exact major aspect
         the Moon made to any traditional planet while still in the previous sign.
 
-        Returns the latest zero-crossing of (angle - target_angle) before ingress_dt.
+        Returns the latest zero-crossing of the signed aspect discriminator
+        (see AspectEngine._aspect_diff) before ingress_dt — handling
+        conjunctions and oppositions correctly via signed separation.
         """
         from app.calculators.aspect_engine import AspectEngine
 
@@ -156,8 +158,7 @@ class LunarEngine:
                 while t <= ingress_dt:
                     moon_lon = self.get_moon_longitude(t)
                     planet_lon = self.core.get_planet_position(planet, t)[0]
-                    actual_angle = AspectEngine.angular_distance(moon_lon, planet_lon)
-                    curr_diff = actual_angle - target_angle
+                    curr_diff = AspectEngine._aspect_diff(moon_lon, planet_lon, target_angle)
 
                     if prev_diff is not None and prev_diff * curr_diff < 0:
                         exact_t = self._refine_aspect_crossing(
@@ -188,24 +189,29 @@ class LunarEngine:
         t_end: datetime,
         precision_seconds: int = 60,
     ) -> datetime:
-        """Binary search for the exact moment an angular crossing occurred."""
+        """Binary search for the exact moment a signed aspect crossing occurred."""
         from app.calculators.aspect_engine import AspectEngine
+
+        diff_start = AspectEngine._aspect_diff(
+            self.get_moon_longitude(t_start),
+            self.core.get_planet_position(planet, t_start)[0],
+            target_angle,
+        )
 
         while (t_end - t_start).total_seconds() > precision_seconds:
             t_mid = t_start + (t_end - t_start) / 2
 
-            moon_mid = self.get_moon_longitude(t_mid)
-            planet_mid = self.core.get_planet_position(planet, t_mid)[0]
-            diff_mid = AspectEngine.angular_distance(moon_mid, planet_mid) - target_angle
-
-            moon_s = self.get_moon_longitude(t_start)
-            planet_s = self.core.get_planet_position(planet, t_start)[0]
-            diff_start = AspectEngine.angular_distance(moon_s, planet_s) - target_angle
+            diff_mid = AspectEngine._aspect_diff(
+                self.get_moon_longitude(t_mid),
+                self.core.get_planet_position(planet, t_mid)[0],
+                target_angle,
+            )
 
             if diff_start * diff_mid < 0:
                 t_end = t_mid
             else:
                 t_start = t_mid
+                diff_start = diff_mid
 
         return t_start + (t_end - t_start) / 2
 

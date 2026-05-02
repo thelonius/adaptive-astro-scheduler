@@ -51,11 +51,9 @@ astrologically misleading (a textbook applying window that closed at
 
 Not blockers for v2, but they will rot the same way:
 
-- `lunar-calendar-api/app/calculators/transit_engine.py:_is_transit_applying`
-  re-queries the ephemeris with a 2h lookahead — geometrically right —
-  but uses `lunar_engine` / `planetary_engine` directly rather than
-  the same path as `_get_position`. Verify it returns sensible values
-  for a known applying transit; if not, port the fixed logic.
+- ~~`lunar-calendar-api/app/calculators/transit_engine.py:_is_transit_applying`~~
+  Verified during Phase 1 research: this one already does the right
+  2h orb-shrink check. No fix required.
 - `lunar-calendar-api/app/services/chart_service.py:161` hardcodes
   `is_applying: False` for aspects to dynamic angles (ASC/MC) with the
   comment `Dynamic angles applying/separating is complex due to earth
@@ -265,9 +263,14 @@ predicate with a `window` argument:
 ## Milestone proposal
 
 - **M1 (closed):** applying-formula fix in Python adapter — done.
-- **M2 (in progress — research done, decision pending):** second-mine
-  research. See "Second mine — research findings" below for inventory
-  results, sizing, and recommendation.
+- **M2 (closed):** second-mine research. See "Second mine — research
+  findings" below for inventory results, sizing, and recommendation.
+- **M3 Phase 1 (closed):** signed-separation discriminator landed in
+  `aspect_engine` and `lunar_engine`; `find_perfections_in_window`
+  wrapper added; exposed via `POST /api/v1/planning/aspect-perfections`
+  (90-day cap). Side benefit: v1 VoC end detection now correctly sees
+  Moon–planet conjunction perfections that the old unsigned scan
+  missed. Unit tests for `_aspect_diff` cover conj/opp/trine/wrap.
 - **M3:** implement the chosen strategy. Bump
   `PREDICATE_ENGINE_VERSION`. Add an integration smoke (item 6) that
   exercises the new applying logic over a real (or recorded) ephemeris.
@@ -386,23 +389,33 @@ without astrological grounding.
 
 ### Recommended implementation path
 
-Phase 1 — fix and expose what exists:
+Phase 1 — fix and expose what exists [DONE]:
 
-1. Patch `aspect_engine.find_next_exact_aspect` and
+1. ~~Patch `aspect_engine.find_next_exact_aspect` and
    `lunar_engine._find_last_moon_aspect_before` to use signed
    separation, so conjunction/opposition perfections are detected
    correctly. Add a unit test with a Moon–Sun conjunction (trivially
-   findable: ~one per month).
-2. Add `aspect_engine.find_perfections_in_window(start_dt, end_dt,
-   pairs, aspect_names) -> List[{from, to, aspect, exact_at}]` —
-   thin loop calling the fixed `find_next_exact_aspect` for each
-   pair × aspect × stepping forward through the window.
-3. Expose via `POST /api/v1/planning/aspect-perfections` accepting
-   `{start, end, pairs[], aspects[]}`. 90-day cap matching VoC.
-4. Add the same applying-formula fix to `transit_engine` and
-   `chart_service` from FOLLOWUPS items 2 (separate PR — they're
-   not blocked by v2 but they leak the same wrong answer to other
-   callers).
+   findable: ~one per month).~~ **Landed.** Static helper
+   `AspectEngine._aspect_diff(lon_a, lon_b, target)` returns the
+   signed discriminator: signed-longitude-difference shifted by target
+   for `target ∈ {0, 180}`, classic unsigned `angular_distance -
+   target` for the rest. Both scan loops and binary searches in
+   `aspect_engine` and `lunar_engine` consume it. Unit tests in
+   `tests/calculators/test_aspect_diff.py` lock in conj / opp /
+   wrap / trine behavior with no swisseph dependency.
+2. ~~Add `aspect_engine.find_perfections_in_window(start_dt, end_dt,
+   pairs, aspect_names)` — thin loop calling the fixed
+   `find_next_exact_aspect` for each pair × aspect, stepping forward
+   through the window.~~ **Landed.** Walks each (pair, aspect),
+   advances 1 minute past each found perfection, sorts by time.
+3. ~~Expose via `POST /api/v1/planning/aspect-perfections`.~~ **Landed.**
+   90-day cap, validates `end > start`, returns
+   `{start, end, count, perfections[]}`.
+4. ~~Add the same applying-formula fix to `transit_engine` and
+   `chart_service`.~~ `transit_engine._is_transit_applying` already
+   uses the correct 2h orb-shrink check; verified, no fix needed.
+   `chart_service.py:161` is for ASC/MC angles and is out of scope
+   for v2 (no angle predicates yet).
 
 Phase 2 — wire into v2:
 

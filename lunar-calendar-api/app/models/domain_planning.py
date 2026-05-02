@@ -62,3 +62,37 @@ class PlanningWindow(BaseModel):
     score: float = Field(..., ge=0.0, le=1.0)
     reasons: List[str]
     action_type: str = Field(..., description="GREEN | YELLOW | RED")
+
+
+# ── Aspect Perfections ──────────────────────────────────────────
+
+class AspectPerfectionsRequest(BaseModel):
+    start: datetime = Field(..., description="Window start (UTC)")
+    end: datetime = Field(..., description="Window end (UTC), exclusive")
+    pairs: List[Tuple[str, str]] = Field(
+        ...,
+        description=(
+            "Planet pairs to scan, e.g. [['Moon','Jupiter'], ['Sun','Venus']]. "
+            "Order within a pair is preserved in the response."
+        ),
+        min_length=1,
+    )
+    aspects: List[str] = Field(
+        ...,
+        description="Aspect names from the engine's aspect_defs (e.g. 'conjunction', 'sextile', 'square', 'trine', 'opposition').",
+        min_length=1,
+    )
+
+
+class AspectPerfectionEntry(BaseModel):
+    planet_a: str
+    planet_b: str
+    aspect: str
+    exact_at: datetime
+
+
+class AspectPerfectionsResponse(BaseModel):
+    start: datetime
+    end: datetime
+    count: int
+    perfections: List[AspectPerfectionEntry]
