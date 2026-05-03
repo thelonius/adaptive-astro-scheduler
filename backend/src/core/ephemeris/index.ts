@@ -44,3 +44,15 @@ export function createEphemerisCalculator(
 
   return adapter;
 }
+
+/**
+ * Process-wide shared calculator. Use when you want the cache/adapter
+ * choice driven by env vars and don't need request-scoped isolation.
+ */
+let _shared: ReturnType<typeof createEphemerisCalculator> | null = null;
+export function getSharedEphemerisCalculator(): ReturnType<typeof createEphemerisCalculator> {
+  if (_shared === null) {
+    _shared = createEphemerisCalculator();
+  }
+  return _shared;
+}

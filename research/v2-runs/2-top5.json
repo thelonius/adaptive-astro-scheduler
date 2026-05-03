@@ -1,0 +1,187 @@
+[
+  {
+    "date": "2026-05-01",
+    "score": 70,
+    "rank": 1,
+    "matched_predicates": [
+      {
+        "type": "moon_waxing",
+        "weight": 8,
+        "details": {
+          "phase": "full",
+          "illumination": 0.9978868783843199
+        }
+      },
+      {
+        "type": "no_aspect",
+        "weight": 12,
+        "details": {
+          "from": "Moon",
+          "to": "Saturn",
+          "forbiddenAspects": [
+            "square",
+            "opposition"
+          ],
+          "maxOrbDeg": 6,
+          "offendingAspect": null
+        }
+      }
+    ],
+    "moon": {
+      "sign": "Scorpio",
+      "phase": "full",
+      "illumination": 0.998,
+      "void_of_course": false
+    },
+    "sun_sign": "Taurus",
+    "retrograde_planets": []
+  },
+  {
+    "date": "2026-05-17",
+    "score": 70,
+    "rank": 2,
+    "matched_predicates": [
+      {
+        "type": "moon_waxing",
+        "weight": 8,
+        "details": {
+          "phase": "new",
+          "illumination": 0.00787038185365141
+        }
+      },
+      {
+        "type": "no_aspect",
+        "weight": 12,
+        "details": {
+          "from": "Moon",
+          "to": "Saturn",
+          "forbiddenAspects": [
+            "square",
+            "opposition"
+          ],
+          "maxOrbDeg": 6,
+          "offendingAspect": null
+        }
+      }
+    ],
+    "moon": {
+      "sign": "Gemini",
+      "phase": "new",
+      "illumination": 0.008,
+      "void_of_course": false
+    },
+    "sun_sign": "Taurus",
+    "retrograde_planets": []
+  },
+  {
+    "date": "2026-05-18",
+    "score": 70,
+    "rank": 3,
+    "matched_predicates": [
+      {
+        "type": "moon_waxing",
+        "weight": 8,
+        "details": {
+          "phase": "waxing_crescent",
+          "illumination": 0.043123034632212676
+        }
+      },
+      {
+        "type": "no_aspect",
+        "weight": 12,
+        "details": {
+          "from": "Moon",
+          "to": "Saturn",
+          "forbiddenAspects": [
+            "square",
+            "opposition"
+          ],
+          "maxOrbDeg": 6,
+          "offendingAspect": null
+        }
+      }
+    ],
+    "moon": {
+      "sign": "Gemini",
+      "phase": "waxing_crescent",
+      "illumination": 0.043,
+      "void_of_course": false
+    },
+    "sun_sign": "Taurus",
+    "retrograde_planets": []
+  },
+  {
+    "date": "2026-05-19",
+    "score": 70,
+    "rank": 4,
+    "matched_predicates": [
+      {
+        "type": "moon_waxing",
+        "weight": 8,
+        "details": {
+          "phase": "waxing_crescent",
+          "illumination": 0.10634159473451321
+        }
+      },
+      {
+        "type": "no_aspect",
+        "weight": 12,
+        "details": {
+          "from": "Moon",
+          "to": "Saturn",
+          "forbiddenAspects": [
+            "square",
+            "opposition"
+          ],
+          "maxOrbDeg": 6,
+          "offendingAspect": null
+        }
+      }
+    ],
+    "moon": {
+      "sign": "Cancer",
+      "phase": "waxing_crescent",
+      "illumination": 0.106,
+      "void_of_course": false
+    },
+    "sun_sign": "Taurus",
+    "retrograde_planets": []
+  },
+  {
+    "date": "2026-05-21",
+    "score": 70,
+    "rank": 5,
+    "matched_predicates": [
+      {
+        "type": "moon_waxing",
+        "weight": 8,
+        "details": {
+          "phase": "first_quarter",
+          "illumination": 0.29216133754077755
+        }
+      },
+      {
+        "type": "no_aspect",
+        "weight": 12,
+        "details": {
+          "from": "Moon",
+          "to": "Saturn",
+          "forbiddenAspects": [
+            "square",
+            "opposition"
+          ],
+          "maxOrbDeg": 6,
+          "offendingAspect": null
+        }
+      }
+    ],
+    "moon": {
+      "sign": "Leo",
+      "phase": "first_quarter",
+      "illumination": 0.292,
+      "void_of_course": false
+    },
+    "sun_sign": "Gemini",
+    "retrograde_planets": []
+  }
+]

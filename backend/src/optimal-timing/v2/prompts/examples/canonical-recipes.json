@@ -1,0 +1,147 @@
+{
+  "_comment": "Five canonical recipes from Stellium's electional cookbook (examples 26-30), translated into the v2 DSL. These serve as few-shot exemplars for the recipe-generation prompt. When the schema changes, regenerate this file rather than hand-editing — the prompt depends on it being valid against the current schema.",
+  "_source": "https://github.com/katelouie/stellium/blob/main/examples/electional_cookbook.py",
+  "_schema_version": "1.0.0",
+
+  "recipes": [
+    {
+      "_id": "business_launch",
+      "_intent_examples": [
+        "open a coffee shop",
+        "launch a SaaS company",
+        "incorporate a new business",
+        "start a consulting practice"
+      ],
+      "intent": "launch a new business venture",
+      "rationale": "For a new business launch, traditional electional astrology emphasizes (1) a waxing Moon for growth energy, (2) Moon not void of course so the venture takes root, (3) Mercury direct so contracts and communication go through cleanly, (4) no Moon-Saturn affliction to avoid early delays and obstacles, and (5) Jupiter in a strong house (1, 4, 7, 10, 11) for expansion and visibility.",
+      "disqualifiers": [
+        { "type": "moon_void_of_course" },
+        { "type": "planet_retrograde", "planet": "Mercury" }
+      ],
+      "weighted_conditions": [
+        { "predicate": { "type": "moon_waxing" }, "weight": 8, "note": "growth phase favors new ventures" },
+        { "predicate": { "type": "no_aspect", "from": "Moon", "to": "Saturn", "aspects": ["square", "opposition"] }, "weight": 12, "note": "avoid Saturn obstruction" },
+        { "predicate": { "type": "planet_in_house", "planet": "Jupiter", "houses": [1, 4, 7, 10, 11] }, "weight": 10, "note": "Jupiter angular for expansion" },
+        { "predicate": { "type": "aspect", "from": "Moon", "to": "Jupiter", "aspects": ["trine", "sextile", "conjunction"], "applying": true }, "weight": 8, "note": "Moon endorses Jupiter" }
+      ],
+      "metadata": {
+        "schema_version": "1.0.0",
+        "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
+        "generated_at": "2026-05-01T00:00:00.000Z"
+      }
+    },
+
+    {
+      "_id": "marriage_relationship",
+      "_intent_examples": [
+        "propose marriage",
+        "have a wedding",
+        "first date",
+        "move in together",
+        "anniversary celebration"
+      ],
+      "intent": "marriage, engagement, or relationship commitment",
+      "rationale": "Venus rules love and partnership; Moon-Venus harmony is the classic marker of relational well-being. Waxing Moon for growing affection, Venus direct so feelings are not under reconsideration, applying soft aspect from Moon to Venus, and avoiding Moon in difficult signs (Scorpio = jealousy, Capricorn = emotional distance) per traditional electional sources.",
+      "disqualifiers": [
+        { "type": "moon_void_of_course" },
+        { "type": "planet_retrograde", "planet": "Venus" }
+      ],
+      "weighted_conditions": [
+        { "predicate": { "type": "moon_waxing" }, "weight": 6 },
+        { "predicate": { "type": "aspect", "from": "Moon", "to": "Venus", "aspects": ["conjunction", "trine", "sextile"], "applying": true }, "weight": 15, "note": "core Venus contact" },
+        { "predicate": { "type": "moon_not_in_sign", "signs": ["Scorpio", "Capricorn"] }, "weight": 4, "note": "avoid difficult Moon placements" },
+        { "predicate": { "type": "planet_dignified", "planet": "Venus", "mode": "essential" }, "weight": 6, "note": "Venus in own/exaltation sign strengthens the love significator" }
+      ],
+      "metadata": {
+        "schema_version": "1.0.0",
+        "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
+        "generated_at": "2026-05-01T00:00:00.000Z"
+      }
+    },
+
+    {
+      "_id": "mercury_matters",
+      "_intent_examples": [
+        "sign a contract",
+        "send an important email",
+        "submit a manuscript",
+        "go on a short trip",
+        "have a difficult conversation",
+        "publish an article"
+      ],
+      "intent": "Mercury-ruled affairs: contracts, communication, short travel, learning",
+      "rationale": "Mercury rules language, exchange, and short journeys. The cardinal requirement is Mercury direct — retrograde Mercury is the textbook hazard for signed agreements. Moon applying to Mercury endorses the matter; waxing Moon and not VoC for the action to take effect.",
+      "disqualifiers": [
+        { "type": "planet_retrograde", "planet": "Mercury" },
+        { "type": "moon_void_of_course" }
+      ],
+      "weighted_conditions": [
+        { "predicate": { "type": "aspect", "from": "Moon", "to": "Mercury", "aspects": ["conjunction", "sextile", "trine"], "applying": true }, "weight": 12, "note": "Moon endorses Mercury" },
+        { "predicate": { "type": "moon_waxing" }, "weight": 5 },
+        { "predicate": { "type": "planet_combust", "planet": "Mercury" }, "weight": -8, "note": "Mercury within 8.5° of Sun loses force" },
+        { "predicate": { "type": "planet_in_sign", "planet": "Mercury", "signs": ["Gemini", "Virgo"] }, "weight": 6, "note": "Mercury in own sign" }
+      ],
+      "metadata": {
+        "schema_version": "1.0.0",
+        "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
+        "generated_at": "2026-05-01T00:00:00.000Z"
+      }
+    },
+
+    {
+      "_id": "mars_matters",
+      "_intent_examples": [
+        "schedule surgery",
+        "compete in a tournament",
+        "confront a difficult person",
+        "begin a fitness program",
+        "physical challenge"
+      ],
+      "intent": "Mars-ruled affairs: surgery, competition, physical action, confrontation",
+      "rationale": "Mars governs initiative, action, sharp instruments, and physical force. Mars direct is required for follow-through; Mars in detriment (Cancer, Libra) weakens the significator. Avoid Moon-Mars hard aspects to prevent injury and over-reaction. Note: surgery traditionally uses waning Moon (less bleeding); competition uses waxing. The recipe below biases toward action; for procedures aiming to remove or reduce, override moon_waxing weight at request time.",
+      "disqualifiers": [
+        { "type": "planet_retrograde", "planet": "Mars" }
+      ],
+      "weighted_conditions": [
+        { "predicate": { "type": "no_aspect", "from": "Moon", "to": "Mars", "aspects": ["square", "opposition"] }, "weight": 12, "note": "avoid Moon-Mars tension" },
+        { "predicate": { "type": "planet_debilitated", "planet": "Mars" }, "weight": -10, "note": "Mars in detriment lacks vigor" },
+        { "predicate": { "type": "moon_waxing" }, "weight": 5, "note": "growth-oriented bias; flip for surgery/removal" },
+        { "predicate": { "type": "planet_dignified", "planet": "Mars", "mode": "essential" }, "weight": 8, "note": "Mars in own sign or exaltation" }
+      ],
+      "metadata": {
+        "schema_version": "1.0.0",
+        "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
+        "generated_at": "2026-05-01T00:00:00.000Z"
+      }
+    },
+
+    {
+      "_id": "jupiter_matters",
+      "_intent_examples": [
+        "file a lawsuit",
+        "begin university studies",
+        "publish a book",
+        "long journey abroad",
+        "apply for a major loan",
+        "expansion of business"
+      ],
+      "intent": "Jupiter-ruled affairs: legal, education, publishing, long-distance travel, expansion",
+      "rationale": "Jupiter rules growth, law, foreign affairs, higher learning, and luck. Jupiter direct so the matter expands rather than retracts; Moon applying soft aspect to Jupiter to seal the venture; waxing and not VoC for action to take. Jupiter dignified (Sagittarius, Pisces, Cancer) significantly amplifies the favorable signal.",
+      "disqualifiers": [
+        { "type": "planet_retrograde", "planet": "Jupiter" },
+        { "type": "moon_void_of_course" }
+      ],
+      "weighted_conditions": [
+        { "predicate": { "type": "aspect", "from": "Moon", "to": "Jupiter", "aspects": ["trine", "sextile"], "applying": true }, "weight": 13, "note": "Moon endorses Jupiter" },
+        { "predicate": { "type": "moon_waxing" }, "weight": 5 },
+        { "predicate": { "type": "planet_dignified", "planet": "Jupiter", "mode": "essential" }, "weight": 10, "note": "Jupiter in Sagittarius/Pisces/Cancer" },
+        { "predicate": { "type": "planet_in_house", "planet": "Jupiter", "houses": [9, 11, 1] }, "weight": 6, "note": "Jupiter in own/joy houses" }
+      ],
+      "metadata": {
+        "schema_version": "1.0.0",
+        "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
+        "generated_at": "2026-05-01T00:00:00.000Z"
+      }
+    }
+  ]
+}
