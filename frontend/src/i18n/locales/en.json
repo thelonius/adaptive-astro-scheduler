@@ -28,7 +28,8 @@
     "quickLinks_testLabel": "Test Page:",
     "quickLinks_testDesc": "Comprehensive testing with automated tests, manual scenarios, and configuration controls",
     "quickLinks_demoLabel": "Demo Page:",
-    "quickLinks_demoDesc": "Interactive demonstration with live controls and theme switcher"
+    "quickLinks_demoDesc": "Interactive demonstration with live controls and theme switcher",
+    "optimalTimingV2": "Intent-based scheduler (v2)"
   },
   "location": {
     "changeLocation": "Change location",
@@ -540,5 +541,39 @@
     "tip3": "• Use automated tests to verify core functionality",
     "tip4": "• Try edge cases (very small/large sizes, extreme orbs)",
     "tip5": "• Test on different browsers if possible"
+  },
+  "optimalTimingV2": {
+    "pageTitle": "Intent-based scheduler",
+    "pageSubtitle": "An LLM translates your intent into an astrological recipe and ranks days in the chosen range",
+    "intentLabel": "What are you planning?",
+    "intentPlaceholder": "Describe your intent in 1–2 sentences. e.g. \"sign an important contract\", \"start a new business\"",
+    "examples": "examples:",
+    "startDate": "from",
+    "endDate": "to",
+    "topN": "top-N",
+    "submit": "find windows",
+    "searching": "searching…",
+    "loadingMessage": "LLM is generating a recipe and scoring days against ephemeris…",
+    "errorTitle": "Error",
+    "whatLLMUnderstood": "What the LLM inferred",
+    "cachedMark": "cached",
+    "attempts": "attempts",
+    "intent": "intent",
+    "rationale": "rationale",
+    "disqualifiers": "disqualifiers (any zeroes out the day)",
+    "weightedConditions": "weighted conditions",
+    "model": "model",
+    "promptVersion": "prompt",
+    "voc": "VoC",
+    "retrograde": "retro",
+    "showDetails": "show details",
+    "collapse": "collapse",
+    "sun": "Sun",
+    "illumination": "illum.",
+    "matchedPredicates": "matched predicates",
+    "noWindows": "No suitable days in this range. Try widening the dates or rephrasing the intent.",
+    "disqualifiedDays": "disqualified",
+    "latency": "latency",
+    "requestId": "request"
   }
 }
