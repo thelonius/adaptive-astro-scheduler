@@ -75,6 +75,13 @@ services:
       EPHEMERIS_API_URL: http://176.123.166.252:8000
       TELEGRAM_BOT_TOKEN: "8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
       TELEGRAM_WEBHOOK_URL: "http://176.123.166.252:3000/webhook/telegram"
+      # NVIDIA NIM — used by /api/optimal-timing/v2/find-with-intent.
+      # Sourced from .env on the server (written by the deploy workflow
+      # from the NVIDIA_API_KEY GitHub secret). Empty here means the
+      # endpoint will return 502 on first call until secrets are wired.
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_BASE_URL: ${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: adaptive_astro
