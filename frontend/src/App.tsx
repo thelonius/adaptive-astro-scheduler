@@ -8,6 +8,7 @@ import NatalChart from './pages/NatalChart';
 import ChartLibrary from './pages/ChartLibrary';
 import DayExplorer from './pages/DayExplorer';
 import { OptimalTiming } from './pages/OptimalTiming';
+import OptimalTimingV2 from './pages/OptimalTimingV2';
 import { CelestialEvents } from './pages/CelestialEvents';
 import { SchedulerLab } from './pages/SchedulerLab';
 import { DynamicThemeProvider } from './theme/DynamicThemeProvider';
@@ -33,6 +34,16 @@ function Home() {
             width="100%"
           >
             ⚡ {t('nav.optimalTiming')}
+          </Button>
+
+          <Button
+            as={Link}
+            to="/optimal-timing-v2"
+            size="lg"
+            colorScheme="yellow"
+            width="100%"
+          >
+            ✨ {t('nav.optimalTimingV2', 'Intent-based scheduler (v2)')}
           </Button>
 
           <Button
@@ -148,6 +159,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/optimal-timing" element={<OptimalTiming />} />
+        <Route path="/optimal-timing-v2" element={<OptimalTimingV2 />} />
         <Route path="/scheduler-lab" element={<SchedulerLab />} />
         <Route path="/celestial-events" element={<CelestialEvents />} />
         <Route path="/day-explorer" element={<DayExplorer />} />
