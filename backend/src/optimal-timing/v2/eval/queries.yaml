@@ -1,0 +1,75 @@
+# Gold-set for v2 eval harness — phase 1 (recipe-correctness only).
+#
+# Each query is a free-text intent in Russian or English, plus an
+# `expected` block with hard requirements (`must_disqualifiers`,
+# `must_weighted_predicates`) and soft hints (`should_weighted_predicates`).
+#
+# Predicate matching: each expected entry is a partial JSON object.
+# An actual predicate matches if every key in expected equals the
+# corresponding key in actual. For array fields (e.g. `aspects`,
+# `signs`) we require intersection — at least one element in common.
+#
+# We start with one query per canonical recipe family (5 total) so the
+# harness has signal across the full DSL surface. Expand as new recipe
+# patterns emerge.
+version: 1
+queries:
+  - id: business_launch_basic
+    prompt: "хочу открыть кофейню"
+    expected:
+      intent_class: business_launch
+      must_disqualifiers:
+        - { type: moon_void_of_course }
+      must_weighted_predicates:
+        - { type: moon_waxing }
+      should_weighted_predicates:
+        - { type: planet_in_house, planet: Jupiter }
+
+  - id: marriage_classical
+    prompt: "выйти замуж"
+    expected:
+      intent_class: marriage_relationship
+      must_disqualifiers:
+        - { type: moon_void_of_course }
+      must_weighted_predicates:
+        - { type: aspect, from: Moon, to: Venus }
+      should_weighted_predicates:
+        - { type: moon_waxing }
+
+  - id: mercury_contract
+    prompt: "подписать важный договор"
+    expected:
+      intent_class: mercury_matters
+      must_disqualifiers:
+        - { type: moon_void_of_course }
+        - { type: planet_retrograde, planet: Mercury }
+      must_weighted_predicates:
+        - { type: aspect, from: Moon, to: Mercury }
+      should_weighted_predicates:
+        - { type: moon_waxing }
+        - { type: planet_in_sign, planet: Mercury, signs: [Gemini, Virgo] }
+
+  - id: mars_competition
+    prompt: "хочу выиграть в спортивном соревновании"
+    expected:
+      intent_class: mars_matters
+      must_disqualifiers:
+        - { type: planet_retrograde, planet: Mars }
+      must_weighted_predicates:
+        - { type: aspect, from: Moon, to: Mars }
+      should_weighted_predicates:
+        - { type: planet_dignified, planet: Mars }
+        - { type: planet_in_sign, planet: Mars }
+
+  - id: jupiter_long_travel
+    prompt: "отправиться в дальнее путешествие"
+    expected:
+      intent_class: jupiter_matters
+      must_disqualifiers:
+        - { type: planet_retrograde, planet: Jupiter }
+        - { type: moon_void_of_course }
+      must_weighted_predicates:
+        - { type: aspect, from: Moon, to: Jupiter }
+      should_weighted_predicates:
+        - { type: moon_waxing }
+        - { type: planet_dignified, planet: Jupiter }

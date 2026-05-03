@@ -12,7 +12,8 @@
     "test:coverage": "jest --coverage",
     "test:setup": "tsx src/test-setup.ts",
     "lint": "eslint src --ext .ts",
-    "migrate": "tsx scripts/migrate.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "eval": "tsx src/optimal-timing/v2/eval/run.ts"
   },
   "dependencies": {
     "@adaptive-astro/shared": "*",
