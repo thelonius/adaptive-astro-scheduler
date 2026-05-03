@@ -27,6 +27,7 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude '.git' \
+            --exclude '.env' \
             --exclude 'node_modules' \
             --exclude '__pycache__' \
             --exclude '*.pyc' \
@@ -37,13 +38,25 @@ jobs:
 
       - name: Rebuild and restart containers
         uses: appleboy/ssh-action@v1
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NVIDIA_API_KEY
           script: |
             set -e
             cd ${{ secrets.SSH_DEPLOY_PATH }}
+
+            # Persist secrets to .env so docker-compose's ${VAR:-} substitution
+            # picks them up — both for this deploy and for any future manual
+            # `docker-compose restart` after an SSH session.
+            umask 077
+            cat > .env <<EOF
+            NVIDIA_API_KEY=${NVIDIA_API_KEY}
+            EOF
+            umask 022
 
             echo "--- Stopping containers ---"
             docker-compose -f docker/docker-compose.yml down
