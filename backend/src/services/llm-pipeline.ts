@@ -20,26 +20,26 @@ export class LLMPipelineService {
   private defaultProvider: LLMProvider;
 
   constructor() {
-    // Initialize providers based on available API keys
-    if (process.env.OPENAI_API_KEY) {
+    if (process.env.NVIDIA_NIM_API_KEY) {
       this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: process.env.NVIDIA_NIM_API_KEY,
+        baseURL: process.env.NVIDIA_NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
       });
+    } else if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
 
     if (process.env.ANTHROPIC_API_KEY) {
-      this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+      this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     }
 
-    // Set default provider preference: Claude > GPT-4
     this.defaultProvider = this.anthropic ? 'claude' : 'openai';
 
     console.log('🤖 LLM Pipeline initialized with providers:', {
+      nim: !!process.env.NVIDIA_NIM_API_KEY,
       openai: !!this.openai,
       anthropic: !!this.anthropic,
-      default: this.defaultProvider
+      default: this.defaultProvider,
     });
   }
 
@@ -104,6 +104,84 @@ export class LLMPipelineService {
       category: rule.category,
       mode: 'improvement'
     });
+  }
+
+  /**
+   * Synthesize a full set of IntentionRules from a natural language prompt
+   */
+  async synthesizeIntentionRules(prompt: string): Promise<any> {
+    console.log('🚀 Synthesizing intention rules for:', prompt);
+
+    const systemPrompt = this.buildIntentionRulesPrompt(prompt);
+    const response = await this.callLLM(systemPrompt, this.defaultProvider);
+
+    try {
+      // Extract JSON from response
+      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) ||
+                       response.match(/(\{[\s\S]*\})/);
+
+      if (!jsonMatch) {
+        throw new Error('No JSON found in LLM response');
+      }
+
+      return JSON.parse(jsonMatch[1]);
+    } catch (error) {
+       console.error('❌ Failed to parse synthesized rules:', response);
+       throw new Error(`Failed to parse AI response: ${error}`);
+    }
+  }
+
+  /**
+   * Build prompt for full intention rules synthesis
+   */
+  private buildIntentionRulesPrompt(userPrompt: string): string {
+    return `
+# Astrological Electional Architect
+You are an expert in Electional Astrology (choosing best times).
+Your task is to translate a user request into a JSON structure of weighted rules.
+
+## User Request: "${userPrompt}"
+
+## Output Requirements:
+Return ONLY a JSON object following this interface:
+{
+  "description": "Short explanation of the astrological strategy used",
+  "favorable": [
+    { "type": "conjunction|trine|square|opposition|sextile|quincunx|lunar-phase|ingress|retrograde-start|retrograde-end|void-moon", "planet": "PlanetName", "targetPlanet": "PlanetName (for aspects)", "sign": "SignName (for ingress)", "phase": "New|Full|Waxing|Waning (for phase)", "weight": 1-20 }
+  ],
+  "unfavorable": [
+    { "type": "...", "weight": -1 to -20 }
+  ],
+  "moonSigns": {
+    "favorable": ["SignName"],
+    "unfavorable": ["SignName"]
+  }
+}
+
+## Valid Values:
+- Planets: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
+- Signs: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces
+- Aspects: conjunction, trine, square, opposition, sextile, quincunx
+
+## Example: "Starting a business"
+{
+  "description": "Focus on growth (Jupiter), stability (Saturn), and new starts (New Moon)",
+  "favorable": [
+    { "type": "lunar-phase", "phase": "Waxing", "weight": 10 },
+    { "type": "trine", "planet": "Jupiter", "targetPlanet": "Sun", "weight": 15 },
+    { "type": "retrograde-end", "planet": "Mercury", "weight": 12 }
+  ],
+  "unfavorable": [
+    { "type": "void-moon", "weight": -20 },
+    { "type": "retrograde-start", "planet": "Mercury", "weight": -10 }
+  ],
+  "moonSigns": {
+    "favorable": ["Capricorn", "Taurus"],
+    "unfavorable": ["Pisces"]
+  }
+}
+
+Generate the JSON for the user request now:`;
   }
 
   /**
@@ -235,12 +313,36 @@ Generate improved rule:`;
   /**
    * Call appropriate LLM provider
    */
-  private async callLLM(prompt: string, provider: LLMProvider): Promise<string> {
+  private async callLLM(prompt: string, provider: string): Promise<string> {
+    if (provider === 'mock' || (!this.openai && !this.anthropic)) {
+      console.log('🧪 Using MOCK LLM Response for prompt:', prompt);
+      
+      // Return a professional-looking mock response for common astrological intents
+      return `
+      {
+        "description": "Mocked AI strategy for ${prompt.substring(0, 30).replace(/\n/g, " ")}...",
+        "favorable": [
+          { "type": "trine", "planet": "Sun", "targetPlanet": "Jupiter", "weight": 15 },
+          { "type": "conjunction", "planet": "Mercury", "targetPlanet": "Venus", "weight": 10 },
+          { "type": "lunar-phase", "phase": "Waxing", "weight": 8 }
+        ],
+        "unfavorable": [
+          { "type": "void-moon", "weight": -20 },
+          { "type": "opposition", "planet": "Mars", "targetPlanet": "Saturn", "weight": -12 }
+        ],
+        "moonSigns": {
+          "favorable": ["Leo", "Sagittarius", "Aries"],
+          "unfavorable": ["Scorpio", "Capricorn"]
+        }
+      }`;
+    }
+
     switch (provider) {
       case 'openai':
-        if (!this.openai) throw new Error('OpenAI not configured');
+        if (!this.openai) throw new Error('OpenAI/NIM not configured');
+        const gptModel = process.env.NVIDIA_NIM_MODEL || process.env.OPENAI_MODEL || 'gpt-4';
         const gptResponse = await this.openai.chat.completions.create({
-          model: 'gpt-4',
+          model: gptModel,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 2000,

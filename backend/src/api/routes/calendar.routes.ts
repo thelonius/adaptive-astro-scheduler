@@ -19,4 +19,7 @@ router.get('/month', (req, res) => calendarController.getMonth(req, res));
 // POST /api/calendar/find-best-days - Find optimal days for activity
 router.post('/find-best-days', (req, res) => calendarController.findBestDays(req, res));
 
+// POST /api/calendar/scan - Scan for best opportunities around a date (AI powered)
+router.post('/scan', (req, res) => calendarController.scan(req, res));
+
 export default router;

@@ -235,8 +235,8 @@ export const ZodiacWheelTest: React.FC = () => {
 
   // Measure load time
   useEffect(() => {
-    if (currentData && loadTime === 0) {
-      setLoadTime(Date.now() - currentData.timestamp.getTime());
+    if (currentData && loadTime === 0 && currentData.timestamp) {
+      setLoadTime(Date.now() - new Date(currentData.timestamp).getTime());
     }
   }, [currentData, loadTime]);
 

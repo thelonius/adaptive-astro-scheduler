@@ -371,6 +371,11 @@ export type CelestialEventType =
   | 'solar-eclipse'        // Total, Annular, Partial
   | 'planetary-alignment'  // 3+ planets in narrow arc
   | 'conjunction'          // Planets close together
+  | 'trine'                // 120 deg
+  | 'square'               // 90 deg
+  | 'opposition'           // 180 deg
+  | 'sextile'              // 60 deg
+  | 'quincunx'             // 150 deg
   | 'occultation'          // Moon/planet blocking another
   | 'retrograde-start'     // Planet stations retrograde
   | 'retrograde-end'       // Planet stations direct
@@ -443,6 +448,10 @@ export interface TimingWindow {
   suggestions?: string[];
   moonPhase?: string;
   moonSign?: string;
+  colorPalette?: {
+    base_colors: string[];
+    gradient: string[];
+  };
 }
 
 /**

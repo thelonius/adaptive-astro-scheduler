@@ -15,6 +15,10 @@ export class LunarDayEntity implements LunarDay {
   symbol: string;
   energy: LunarEnergyType;
   lunarPhase: LunarPhaseType;
+  colorPalette?: {
+    base_colors: string[];
+    gradient: string[];
+  };
   characteristics: {
     spiritual: string;
     practical: string;
@@ -28,6 +32,7 @@ export class LunarDayEntity implements LunarDay {
     this.symbol = data.symbol;
     this.energy = data.energy;
     this.lunarPhase = data.lunarPhase;
+    this.colorPalette = data.colorPalette;
     this.characteristics = {
       spiritual: data.characteristics.spiritual,
       practical: data.characteristics.practical,
@@ -159,6 +164,7 @@ export class LunarDayEntity implements LunarDay {
       symbol: this.symbol,
       energy: this.energy,
       lunarPhase: this.lunarPhase,
+      colorPalette: this.colorPalette,
       characteristics: {
         spiritual: this.characteristics.spiritual,
         practical: this.characteristics.practical,

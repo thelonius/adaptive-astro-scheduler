@@ -1,14 +1,91 @@
+.intention-selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
 .intention-selector {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
+    gap: 1.5rem;
+}
+
+.custom-intent-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--ag-text-muted);
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+}
+
+.custom-intent-divider::before,
+.custom-intent-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--ag-border);
+}
+
+.custom-intent-divider span {
+    padding: 0 1rem;
+}
+
+.custom-intent-box {
+    display: flex;
+    gap: 1rem;
+    background: var(--ag-day-glow);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--ag-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.custom-intent-input {
+    flex: 1;
+    background: var(--ag-surface);
+    border: 1px solid var(--ag-border);
+    padding: 0.8rem 1.2rem;
+    border-radius: 0.6rem;
+    color: var(--ag-text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.custom-intent-input:focus {
+    outline: none;
+    border-color: var(--ag-accent);
+    box-shadow: 0 0 0 2px rgba(138, 75, 241, 0.2);
+}
+
+.ai-scan-button {
+    background: linear-gradient(135deg, #8a4bf1 0%, #6366f1 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.6rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.ai-scan-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(138, 75, 241, 0.4);
+}
+
+.ai-scan-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
 }
 
 .intention-card {
     display: flex;
-    align-items: flex-start;
-    gap: 16px;
+    align-items: center;
+    gap: 1.2rem;
     padding: 20px;
     background: var(--ag-surface);
     border: 1px solid var(--ag-border);

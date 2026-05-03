@@ -14,6 +14,10 @@ export interface PersonalizedDayAnalytics {
     moonPhase: string;
     voidOfCourse: boolean;
     dayStrength: number; // 0-1, from calendar generator
+    colorPalette?: {
+      base_colors: string[];
+      gradient: string[];
+    };
   };
   personalTransits: TransitAnalysis;
   recommendations: {
@@ -105,8 +109,9 @@ export class PersonalizedAnalyticsService {
       universalEnergy: {
         lunarDay: calendarDay.lunarDay.number,
         moonPhase: calendarDay.lunarDay.lunarPhase,
-        voidOfCourse: false, // TODO: Add void moon check
+        voidOfCourse: !!calendarDay.voidOfCourseMoon,
         dayStrength: dayStrength,
+        colorPalette: calendarDay.lunarDay.colorPalette,
       },
       personalTransits: transits,
       recommendations,

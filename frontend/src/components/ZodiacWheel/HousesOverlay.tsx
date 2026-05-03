@@ -208,18 +208,10 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
                   )}
                 </g>
                 <text
-                  x={
-                    house.number === 1 ? centerX - size * 0.485 :
-                      house.number === 7 ? centerX + size * 0.485 :
-                        polarToCartesian(centerX, centerY, size * 0.49, angle).x + size * 0.01
-                  }
-                  y={
-                    house.number === 1 ? centerY + size * 0.025 :
-                      house.number === 7 ? centerY + size * 0.025 :
-                        polarToCartesian(centerX, centerY, size * 0.49, angle).y + (house.number === 4 ? size * 0.02 : 0)
-                  }
+                  x={polarToCartesian(centerX, centerY, size * 0.485, angle).x}
+                  y={polarToCartesian(centerX, centerY, size * 0.485, angle).y}
                   textAnchor={
-                    house.number === 1 || house.number === 7 ? 'middle' : 'start'
+                    angle > 0 && angle < 180 ? 'start' : 'end'
                   }
                   dominantBaseline="middle"
                   fill={house.number === 1 || house.number === 7 ? '#e53935' : '#1e88e5'}
@@ -228,6 +220,7 @@ export const HousesOverlay: React.FC<HousesOverlayProps> = ({ houses, size, colo
                 >
                   {house.number === 1 ? 'Asc' : house.number === 7 ? 'Dsc' : house.number === 10 ? 'MC' : 'IC'}
                 </text>
+
               </>
             )}
           </g>

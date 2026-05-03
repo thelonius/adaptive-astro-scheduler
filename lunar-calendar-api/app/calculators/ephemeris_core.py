@@ -147,8 +147,9 @@ class EphemerisCore:
         # Observe from Earth
         astrometric = self.earth.at(t).observe(body)
         
-        # Get ecliptic coordinates
-        lat, lon, dist = astrometric.ecliptic_latlon()
+        # Get ecliptic coordinates in the frame of the date (Tropical Zodiac)
+        lat, lon, dist = astrometric.ecliptic_latlon(epoch='date')
+
         
         lon_deg = lon.degrees  # 0-360
         lat_deg = lat.degrees

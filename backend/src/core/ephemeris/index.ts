@@ -15,6 +15,7 @@ export {
 } from './cached-adapter';
 
 // Factory function to create a cached ephemeris calculator
+import { IEphemerisCalculator } from './interface';
 import { EphemerisAdapter } from './adapter';
 import { MockEphemerisAdapter } from './mock-adapter';
 import { CachedEphemerisCalculator, InMemoryCache } from './cached-adapter';
@@ -43,4 +44,18 @@ export function createEphemerisCalculator(
   }
 
   return adapter;
+}
+
+// Shared instance for the whole application
+let sharedCalculator: IEphemerisCalculator | null = null;
+
+/**
+ * Get or create a shared ephemeris calculator instance.
+ * Using a singleton ensures that the InMemoryCache is shared across all services.
+ */
+export function getSharedEphemerisCalculator(): IEphemerisCalculator {
+  if (!sharedCalculator) {
+    sharedCalculator = createEphemerisCalculator();
+  }
+  return sharedCalculator;
 }

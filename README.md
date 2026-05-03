@@ -198,17 +198,29 @@ git clone https://github.com/thelonius/adaptive-astro-scheduler.git
 cd adaptive-astro-scheduler
 
 # Install dependencies
-npm install
+npm run setup
 
 # Set up environment
-cp .env.example .env
-# Edit .env with your API keys and database URL
+cp backend/.env.example backend/.env
+# Edit backend/.env with your API keys and database URL
 
-# Run migrations
-npm run db:migrate
-
-# Start dev server
+# Start development environment (Docker + Servers)
 npm run dev
+
+# Stop development environment (Docker cleanup)
+npm run stop
+```
+
+### Local Development Workflow
+
+The project uses a unified startup script `npm run dev` that:
+1.  **Starts Docker**: PostgreSQL, Redis, and Ephemeris API.
+2.  **Builds Shared**: Compilation of the `@adaptive-astro/shared` package.
+3.  **Starts Servers**: Concurrent execution of Backend (3001) and Frontend (5173).
+
+To shut everything down including Docker containers, use:
+```bash
+npm run stop
 ```
 
 ### Quick Demo

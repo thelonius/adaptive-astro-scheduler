@@ -207,65 +207,131 @@ export class EphemerisAdapter implements IEphemerisCalculator {
 
   /**
    * Get void of course moon from API
-   * Falls back to calculation from aspects if API doesn't support it
+   * Uses planning endpoint for reliable windows
    */
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
     try {
+      // Search window: +/- 12 hours from target time to find windows
+      const startTime = new Date(dateTime.date.getTime() - 12 * 60 * 60 * 1000);
+      const endTime = new Date(dateTime.date.getTime() + 12 * 60 * 60 * 1000);
+
       const params = {
-        date: dateTime.date.toISOString().split('.')[0],
-        latitude: dateTime.location.latitude.toString(),
-        longitude: dateTime.location.longitude.toString(),
-        timezone: dateTime.timezone,
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
       };
 
-      const resp = await this.fetch<any>('/api/v1/ephemeris/void-moon', params);
+      const resp = await this.fetch<any>('/api/v1/planning/void-of-course', params);
       
+      // Find if target date is in any window
+      const targetTime = dateTime.date.getTime();
+      const activeWindow = (resp.windows || []).find((w: any) => {
+        const start = new Date(w.voc_start).getTime();
+        const end = new Date(w.voc_end).getTime();
+        return targetTime >= start && targetTime <= end;
+      });
+
       return {
         date: dateTime.date.toISOString().split('T')[0],
-        isVoidOfCourse: resp.is_void,
-        voidPeriod: resp.is_void ? {
-          startTime: resp.start_time,
-          endTime: resp.end_time,
-          currentSign: resp.sign,
-          nextSign: resp.next_sign,
-          durationHours: resp.duration_hours,
+        isVoidOfCourse: !!activeWindow,
+        voidPeriod: activeWindow ? {
+          startTime: activeWindow.voc_start,
+          endTime: activeWindow.voc_end,
+          currentSign: activeWindow.last_aspect?.planet || 'Moon', // Fallback
+          nextSign: activeWindow.new_sign,
+          durationHours: activeWindow.duration_hours,
         } : undefined,
       };
     } catch (error) {
-      // Fallback if needed, but endpoint should now be reliable
-      throw error;
+      console.warn('❌ Failed to fetch VoC windows:', error instanceof Error ? error.message : String(error));
+      return {
+        date: dateTime.date.toISOString().split('T')[0],
+        isVoidOfCourse: false,
+      };
     }
   }
 
   /**
-   * Get retrograde planets from API
-   * API returns either an array [{name, longitude, zodiac_sign, speed},...]
-   * or an object {date, retrogradePlanets: [...]} — handle both.
+   * Get retrograde planets from API.
+   * Handles three known response formats:
+   *   1. Plain array:  [{name, longitude, zodiac_sign, speed}, ...]
+   *   2. camelCase:    {date, retrogradePlanets: [...]}
+   *   3. snake_case:   {date, retrograde_planets: [...]}
+   * Fallback: derive retrogrades from planet positions (isRetrograde flag).
    */
   async getRetrogradePlanets(dateTime: DateTime): Promise<RetrogradesApiResponse> {
     const params = {
       date: this.formatDate(dateTime.date),
     };
 
-    const raw = await this.fetch<any>('/api/v1/ephemeris/retrogrades', params);
+    try {
+      const raw = await this.fetch<any>('/api/v1/ephemeris/retrogrades', params);
 
-    // API returns a plain array — normalize to our type
-    if (Array.isArray(raw)) {
+      // Format 1: plain array [{name, longitude, zodiac_sign, speed}, ...]
+      if (Array.isArray(raw)) {
+        return {
+          date: params.date,
+          retrogradePlanets: raw.map((p: any) => ({
+            name: p.name,
+            retrogradeStart: params.date,
+            retrogradeEnd: params.date,
+            currentSign: p.zodiac_sign || p.zodiacSign || this.getZodiacSign(p.longitude),
+            longitude: p.longitude,
+            speed: p.speed,
+          })),
+        };
+      }
+
+      // Format 2: camelCase {retrogradePlanets: [...]}
+      if (raw.retrogradePlanets && Array.isArray(raw.retrogradePlanets)) {
+        return raw as RetrogradesApiResponse;
+      }
+
+      // Format 3: snake_case {retrograde_planets: [...]}
+      if (raw.retrograde_planets && Array.isArray(raw.retrograde_planets)) {
+        return {
+          date: raw.date || params.date,
+          retrogradePlanets: raw.retrograde_planets.map((p: any) => ({
+            name: p.name,
+            retrogradeStart: p.retrograde_start || params.date,
+            retrogradeEnd: p.retrograde_end || params.date,
+            currentSign: p.current_sign || p.zodiac_sign || this.getZodiacSign(p.longitude ?? 0),
+            longitude: p.longitude,
+            speed: p.speed,
+          })),
+        };
+      }
+
+      // Unknown format — return as-is and hope for the best
+      return raw as RetrogradesApiResponse;
+    } catch {
+      // Endpoint not available or errored — derive retrogrades from planet positions
+      return this.retrogradesFromPlanets(dateTime, params.date);
+    }
+  }
+
+  /**
+   * Fallback: extract retrograde planets from the general positions endpoint.
+   */
+  private async retrogradesFromPlanets(dateTime: DateTime, dateStr: string): Promise<RetrogradesApiResponse> {
+    try {
+      const planetsData = await this.getPlanetsPositions(dateTime);
+      const retroPlanets = (planetsData.planets || []).filter(
+        (p: any) => p.is_retrograde || p.isRetrograde
+      );
       return {
-        date: params.date,
-        retrogradePlanets: raw.map((p: any) => ({
+        date: dateStr,
+        retrogradePlanets: retroPlanets.map((p: any) => ({
           name: p.name,
-          retrogradeStart: params.date, // Not provided by this endpoint — use query date as fallback
-          retrogradeEnd: params.date,
-          currentSign: p.zodiac_sign || p.zodiacSign || this.getZodiacSign(p.longitude),
+          retrogradeStart: dateStr,
+          retrogradeEnd: dateStr,
+          currentSign: p.zodiac_sign || p.zodiacSign || this.getZodiacSign(p.longitude ?? 0),
           longitude: p.longitude,
           speed: p.speed,
         })),
       };
+    } catch {
+      return { date: dateStr, retrogradePlanets: [] };
     }
-
-    // Already in expected format
-    return raw as RetrogradesApiResponse;
   }
 
   /**

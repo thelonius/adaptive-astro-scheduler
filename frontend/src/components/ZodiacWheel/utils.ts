@@ -358,14 +358,17 @@ export function getZodiacSignPositions(size: number, rotationOffset: number = 0)
   const radius = size * 0.42; // Position signs at outer ring
 
   return signs.map(sign => {
-    const svgAngle = longitudeToAngle(sign.angle, rotationOffset);
-    const { x, y } = polarToCartesian(centerX, centerY, radius, svgAngle);
-
+    // Position icons in the middle of each sign (cusp + 15 degrees)
+    const midPointLongitude = (sign.angle + 15) % 360;
+    const svgAngle = longitudeToAngle(midPointLongitude, rotationOffset);
+    const { x, y } = polarToCartesian(size / 2, size / 2, radius, svgAngle);
+    
+    // Also store the cusp angle for drawing boundaries
+    const cuspSvgAngle = longitudeToAngle(sign.angle, rotationOffset);
+    
     return {
       ...sign,
-      x,
-      y,
-      svgAngle,
+      x, y, svgAngle: cuspSvgAngle
     };
   });
 }

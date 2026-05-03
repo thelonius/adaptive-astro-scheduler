@@ -64,21 +64,45 @@ export function useZodiacData(options: UseZodiacDataOptions = {}): UseZodiacData
 
     if (dateProp) {
       targetDate = typeof dateProp === 'string' ? new Date(dateProp) : dateProp;
-      // Use local date components to match local time
-      const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const day = String(targetDate.getDate()).padStart(2, '0');
-      queryDate = `${year}-${month}-${day}`;
-      queryTime = targetDate.toTimeString().split(' ')[0];
+      // Use Intl to get exact localized time for the TARGET timezone
+      // This ensures we send the 'local' time of that location to the backend
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone || 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      
+      const parts = formatter.formatToParts(targetDate);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value;
+      
+      queryDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+      queryTime = `${getPart('hour')}:${getPart('minute')}:${getPart('second')}`;
+
     } else {
       targetDate = new Date();
-      // Use local date components to match local time
-      const year = targetDate.getFullYear();
-      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const day = String(targetDate.getDate()).padStart(2, '0');
-      queryDate = `${year}-${month}-${day}`;
-      queryTime = targetDate.toTimeString().split(' ')[0];
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone || 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      
+      const parts = formatter.formatToParts(targetDate);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value;
+      
+      queryDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+      queryTime = `${getPart('hour')}:${getPart('minute')}:${getPart('second')}`;
     }
+
 
 
     try {

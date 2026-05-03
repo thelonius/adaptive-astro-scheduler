@@ -13,6 +13,7 @@ import type {
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
 import { interpretationService } from './astrology/interpretation.service';
+import mlAdapter from './ml-adapter';
 
 /**
  * Calendar Generator Service
@@ -26,7 +27,7 @@ export class CalendarGenerator {
   /**
    * Generate a single calendar day
    */
-  async generateDay(dateTime: DateTime): Promise<CalendarDay> {
+  async generateDay(dateTime: DateTime, intent?: string): Promise<CalendarDay> {
     // Fetch astronomical data in parallel
     const [
       lunarDay,
@@ -42,11 +43,25 @@ export class CalendarGenerator {
       this.ephemeris.getMoonPhase(dateTime),
       this.ephemeris.getPlanetsPositions(dateTime),
       this.ephemeris.getVoidOfCourseMoon(dateTime),
-      this.ephemeris.getRetrogradePlanets(dateTime),
+      this.ephemeris.getRetrogradePlanets(dateTime).catch(() => ({ date: '', retrogradePlanets: [] })),
       this.ephemeris.getAspects(dateTime).catch(() => null as AspectsApiResponse | null),
       this.ephemeris.getHouses(dateTime, 'placidus').catch(() => null as HousesApiResponse | null),
       this.ephemeris.getPlanetaryHours(dateTime).catch(() => null as PlanetaryHoursApiResponse | null),
     ]);
+
+    // Patch isRetrograde flags in planetsData using the dedicated retrogrades endpoint.
+    // Production ephemeris containers may return speeds as unsigned values (always positive),
+    // so is_retrograde on planets is sometimes false even when the planet is actually retrograde.
+    // The /retrogrades endpoint computes this correctly.
+    const retrogradeNames = new Set(
+      (retrogradesData?.retrogradePlanets || []).map(r => r.name.toLowerCase())
+    );
+    if (retrogradeNames.size > 0 && planetsData?.planets) {
+      planetsData.planets = planetsData.planets.map((p: any) => {
+        const isRetro = retrogradeNames.has(p.name.toLowerCase());
+        return isRetro ? { ...p, is_retrograde: true, isRetrograde: true } : p;
+      });
+    }
 
     // Enrich lunar day with calculations and interpretations
     const enrichedLunarDay = interpretationService.getLunarDay(lunarDay.number, lunarDay.lunarPhase);
@@ -130,7 +145,72 @@ export class CalendarGenerator {
       recommendations,
     };
 
+    // --- INTEGRATE AI ADVICE ---
+    if (intent) {
+      const tags = this.collectTags(calendarDay, lunarDay.number);
+      // Use fast ML-only path for bulk scanning; NIM synthesis happens in a post-pass
+      // over the top-ranked results in OpportunityScannerService.
+      const mlResponse = await mlAdapter.getAdviceFast({
+        prompt: intent,
+        active_transits: tags,
+        date: dateTime.date.toISOString().split('T')[0],
+      });
+
+      if (mlResponse.success && mlResponse.results) {
+        const bestAdvice = mlResponse.results[0];
+        const avgScore = mlResponse.results.reduce((acc, r) => acc + r.score, 0) / mlResponse.results.length;
+
+        (calendarDay as any).aiAdvice = {
+          text: bestAdvice.text,
+          score: Math.round(avgScore * 100),
+          reasoning: bestAdvice.metadata.tag,
+          source: bestAdvice.metadata.author,
+          allInterpretations: mlResponse.results,
+          vector: bestAdvice.vector
+        };
+        
+        // Boost the general strength by AI score if it's relevant
+        calendarDay.recommendations.strength = (calendarDay.recommendations.strength + avgScore) / 2;
+      }
+    }
+
     return calendarDay;
+  }
+
+  /**
+   * Collect ZET-compatible tags from calendar day data
+   */
+  private collectTags(day: CalendarDay, moonDay: number): string[] {
+    const planetMap: Record<string, string> = {
+      'Sun': 'SU', 'Moon': 'MO', 'Mercury': 'ME', 'Venus': 'VE', 'Mars': 'MA',
+      'Jupiter': 'JU', 'Saturn': 'SA', 'Uranus': 'UR', 'Neptune': 'NE', 'Pluto': 'PL'
+    };
+    
+    const aspectMap: Record<string, string> = {
+      'conjunction': '000', 'sextile': '060', 'square': '090', 'trine': '120', 'opposition': '180'
+    };
+
+    const tags: string[] = [];
+    
+    // Aspects
+    (day.aspects ?? []).forEach(asp => {
+      const p1 = planetMap[asp.planet1];
+      const p2 = planetMap[asp.planet2];
+      const aspType = asp.type ?? (asp.aspect_type as any);
+      const type = aspType ? aspectMap[aspType] : undefined;
+      if (p1 && p2 && type) tags.push(`${p1}.${type}.${p2}`);
+    });
+
+    // Retrogrades
+    day.retrogradesActive.forEach(p => {
+      const code = planetMap[p.name];
+      if (code) tags.push(`${code}.R`);
+    });
+
+    // Moon Day
+    tags.push(`[${moonDay}]`);
+
+    return tags;
   }
 
   /**
@@ -140,7 +220,8 @@ export class CalendarGenerator {
     year: number,
     month: number,
     location: { latitude: number; longitude: number },
-    timezone: string = 'UTC'
+    timezone: string = 'UTC',
+    intent?: string
   ): Promise<CalendarMonth> {
     const daysInMonth = new Date(year, month, 0).getDate();
     const days: CalendarDay[] = [];
@@ -157,7 +238,7 @@ export class CalendarGenerator {
         location,
       };
 
-      dayPromises.push(this.generateDay(dateTime));
+      dayPromises.push(this.generateDay(dateTime, intent));
     }
 
     const generatedDays = await Promise.all(dayPromises);

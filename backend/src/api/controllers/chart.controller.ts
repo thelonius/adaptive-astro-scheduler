@@ -64,6 +64,21 @@ export class ChartController {
       // We save the literal entered time by using ISO string without converting.
       const birthDateTime = new Date(`${chartData.date}T${chartData.time}:00`);
 
+      // Calculate natal planets and houses
+      const dateTime = {
+        date: birthDateTime,
+        timezone: chartData.location.timezone,
+        location: {
+          latitude: chartData.location.latitude,
+          longitude: chartData.location.longitude,
+        }
+      };
+
+      const [planetsData, housesData] = await Promise.all([
+        this.ephemeris.getPlanetsPositions(dateTime),
+        this.ephemeris.getHouses(dateTime, 'placidus'),
+      ]);
+
       const natalChart = await this.natalRepo.create({
         user_id: user.id,
         name: chartData.name,
@@ -72,6 +87,20 @@ export class ChartController {
         birth_location: chartData.location,
         house_system: 'placidus',
         chart_type: chartData.type,
+        planets: planetsData.planets.map(p => ({
+          name: p.name as any,
+          longitude: p.longitude,
+          latitude: p.latitude,
+          zodiacSign: this.getZodiacSignFromName(p.zodiacSign),
+          speed: p.speed,
+          isRetrograde: p.isRetrograde,
+          distanceAU: p.distanceAU,
+        })),
+        houses: housesData.houses.map(h => ({
+          number: h.number as any,
+          cusp: h.cusp,
+          sign: this.getZodiacSignFromName(h.zodiacSign),
+        })),
         description: chartData.description,
         tags: chartData.tags,
         created_at: new Date(),
@@ -294,5 +323,26 @@ export class ChartController {
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
+  }
+  /**
+   * Helper to map zodiac sign name to object
+   */
+  private getZodiacSignFromName(signName: string): any {
+    const zodiacSigns: Record<string, any> = {
+      'Aries': { id: 1, name: 'Овен', element: 'Огонь', quality: 'Кардинальный', rulingPlanet: 'Mars', symbol: '♈', dateRange: [21, 19] },
+      'Taurus': { id: 2, name: 'Телец', element: 'Земля', quality: 'Фиксированный', rulingPlanet: 'Venus', symbol: '♉', dateRange: [20, 20] },
+      'Gemini': { id: 3, name: 'Близнецы', element: 'Воздух', quality: 'Мутабельный', rulingPlanet: 'Mercury', symbol: '♊', dateRange: [21, 20] },
+      'Cancer': { id: 4, name: 'Рак', element: 'Вода', quality: 'Кардинальный', rulingPlanet: 'Moon', symbol: '♋', dateRange: [21, 22] },
+      'Leo': { id: 5, name: 'Лев', element: 'Огонь', quality: 'Фиксированный', rulingPlanet: 'Sun', symbol: '♌', dateRange: [23, 22] },
+      'Virgo': { id: 6, name: 'Дева', element: 'Земля', quality: 'Мутабельный', rulingPlanet: 'Mercury', symbol: '♍', dateRange: [23, 22] },
+      'Libra': { id: 7, name: 'Весы', element: 'Воздух', quality: 'Кардинальный', rulingPlanet: 'Venus', symbol: '♎', dateRange: [23, 22] },
+      'Scorpio': { id: 8, name: 'Скорпион', element: 'Вода', quality: 'Фиксированный', rulingPlanet: 'Mars', symbol: '♏', dateRange: [23, 21] },
+      'Sagittarius': { id: 9, name: 'Стрелец', element: 'Огонь', quality: 'Мутабельный', rulingPlanet: 'Jupiter', symbol: '♐', dateRange: [22, 19] },
+      'Capricorn': { id: 10, name: 'Козерог', element: 'Земля', quality: 'Кардинальный', rulingPlanet: 'Saturn', symbol: '♑', dateRange: [20, 18] },
+      'Aquarius': { id: 11, name: 'Водолей', element: 'Воздух', quality: 'Фиксированный', rulingPlanet: 'Uranus', symbol: '♒', dateRange: [19, 18] },
+      'Pisces': { id: 12, name: 'Рыбы', element: 'Вода', quality: 'Мутабельный', rulingPlanet: 'Neptune', symbol: '♓', dateRange: [19, 20] }
+    };
+
+    return zodiacSigns[signName] || { id: 1, name: 'Овен', element: 'Огонь', quality: 'Кардинальный', rulingPlanet: 'Mars', symbol: '♈', dateRange: [21, 19] };
   }
 }

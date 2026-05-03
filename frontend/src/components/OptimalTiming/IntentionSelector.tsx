@@ -5,6 +5,9 @@ import './IntentionSelector.css';
 interface IntentionSelectorProps {
     selected: IntentionCategory | null;
     onSelect: (intention: IntentionCategory) => void;
+    customIntent: string;
+    onCustomIntentChange: (value: string) => void;
+    onAISearch: () => void;
 }
 
 const INTENTIONS: { id: IntentionCategory; label: string; icon: string; description: string }[] = [
@@ -64,22 +67,32 @@ const INTENTIONS: { id: IntentionCategory; label: string; icon: string; descript
     }
 ];
 
-export const IntentionSelector: React.FC<IntentionSelectorProps> = ({ selected, onSelect }) => {
+export const IntentionSelector: React.FC<IntentionSelectorProps> = ({ 
+    selected, 
+    onSelect, 
+    customIntent, 
+    onCustomIntentChange,
+    onAISearch
+}) => {
     return (
-        <div className="intention-selector">
-            {INTENTIONS.map((intention) => (
-                <button
-                    key={intention.id}
-                    className={`intention-card ${selected === intention.id ? 'intention-card--active' : ''}`}
-                    onClick={() => onSelect(intention.id)}
+        <div className="intention-selector-container">
+            <div className="custom-intent-box">
+                <input
+                    type="text"
+                    placeholder="Ask AI: e.g., 'Best day for a crypto launch' or 'When to talk to my boss'..."
+                    value={customIntent}
+                    onChange={(e) => onCustomIntentChange(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && onAISearch()}
+                    className="custom-intent-input"
+                />
+                <button 
+                    className="ai-scan-button"
+                    onClick={onAISearch}
+                    disabled={!customIntent.trim()}
                 >
-                    <div className="intention-card__icon">{intention.icon}</div>
-                    <div className="intention-card__content">
-                        <h3>{intention.label}</h3>
-                        <p>{intention.description}</p>
-                    </div>
+                    ✨ Scan with AI
                 </button>
-            ))}
+            </div>
         </div>
     );
 };

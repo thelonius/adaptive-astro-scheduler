@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { CalendarGenerator } from '../../services/calendar-generator';
+import { OpportunityScannerService } from '../../services/opportunity-scanner';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import type { DateTime } from '@adaptive-astro/shared/types';
 
@@ -10,11 +11,62 @@ import type { DateTime } from '@adaptive-astro/shared/types';
  */
 export class CalendarController {
   private calendarGenerator: CalendarGenerator;
+  private opportunityScanner: OpportunityScannerService;
 
   constructor() {
     // Initialize with cached ephemeris calculator
     const ephemeris = createEphemerisCalculator();
     this.calendarGenerator = new CalendarGenerator(ephemeris);
+    this.opportunityScanner = new OpportunityScannerService(this.calendarGenerator);
+  }
+
+  /**
+   * POST /calendar/scan
+   * 
+   * Scans for best opportunities around a center date
+   */
+  async scan(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        intent,
+        date = new Date().toISOString(),
+        rangeDays = 7,
+        latitude = 55.7558,
+        longitude = 37.6173,
+        timezone = 'Europe/Moscow',
+        userId = '00000000-0000-0000-0000-000000000000' // Default guest
+      } = req.body;
+
+      if (!intent) {
+        res.status(400).json({ success: false, error: 'Intent is required' });
+        return;
+      }
+
+      const location = {
+        latitude: typeof latitude === 'number' ? latitude : parseFloat(latitude),
+        longitude: typeof longitude === 'number' ? longitude : parseFloat(longitude),
+      };
+
+      const results = await this.opportunityScanner.scanRange(
+        userId,
+        intent,
+        new Date(date),
+        parseInt(rangeDays as string),
+        location,
+        timezone
+      );
+
+      res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      console.error('Error scanning opportunities:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   /**
@@ -35,6 +87,7 @@ export class CalendarController {
         latitude = '55.7558',
         longitude = '37.6173',
         timezone = 'Europe/Moscow',
+        intent,
       } = req.query;
 
       const dateTime: DateTime = {
@@ -46,7 +99,7 @@ export class CalendarController {
         },
       };
 
-      const calendarDay = await this.calendarGenerator.generateDay(dateTime);
+      const calendarDay = await this.calendarGenerator.generateDay(dateTime, intent as string);
 
       res.json({
         success: true,

@@ -7,53 +7,134 @@ import {
 } from '@adaptive-astro/shared/types/astrology';
 import { TIMING_RULES, IntentionRules } from '../config/timing-rules';
 import { CelestialEventsDetector } from './celestial-events-detector';
+import { natalChartRepository } from '../database/repositories/natal-chart.repository';
+import { PersonalizedAnalyticsService } from './personalized-analytics';
+import { createEphemerisCalculator, IEphemerisCalculator } from '../core/ephemeris';
 
 export class OptimalTimingService {
-    constructor(private detector: CelestialEventsDetector) { }
+    private personalizedAnalytics: PersonalizedAnalyticsService;
+
+    constructor(
+        private detector: CelestialEventsDetector,
+        private ephemeris: IEphemerisCalculator
+    ) {
+        this.personalizedAnalytics = new PersonalizedAnalyticsService(this.ephemeris);
+    }
 
     /**
      * Find optimal timing windows for a specific intention
      */
     async findOptimalWindows(
-        intention: IntentionCategory,
+        intention: IntentionCategory | IntentionRules,
         startDate: DateTime,
         endDate: DateTime,
-        limit: number = 20
+        limit: number = 20,
+        natalChartId?: string
     ): Promise<TimingWindow[]> {
         // 1. Get all events for the period
         const events = await this.detector.getAllEvents(startDate, endDate);
+
+        // 2. Fetch natal chart if provided
+        let natalChart = null;
+        if (natalChartId) {
+            natalChart = await natalChartRepository.findById(natalChartId);
+        }
 
         // 2. Group events by day
         const eventsByDay = this.groupEventsByDay(events);
 
         // 3. Score each day
         const windows: TimingWindow[] = [];
-        const rules = TIMING_RULES[intention];
+        const rules = typeof intention === 'string' 
+            ? TIMING_RULES[intention] 
+            : intention;
 
-        for (const [dateStr, dayEvents] of eventsByDay.entries()) {
-            const date = new Date(dateStr);
-            // Create a DateTime object for the window
-            const windowDate: DateTime = {
-                date: date,
-                timezone: startDate.timezone,
-                location: startDate.location
-            };
+        if (!rules) {
+            throw new Error(`Invalid intention: ${intention}`);
+        }
 
-            const scoreResult = this.scoreDay(dayEvents, rules);
+        const intentionKey = typeof intention === 'string' ? intention : 'custom';
 
-            if (scoreResult.score >= 50) { // Only return neutral or positive days
-                windows.push({
-                    id: `${intention}-${dateStr}`,
-                    date: windowDate,
-                    score: scoreResult.score,
-                    events: dayEvents,
-                    summary: this.generateSummary(intention, scoreResult.score),
-                    suggestions: scoreResult.matches,
-                    warnings: scoreResult.warnings,
-                    moonPhase: this.findMoonPhase(dayEvents),
-                    moonSign: this.findMoonSign(dayEvents)
-                });
-            }
+        // 3. Process each day (Parallelize scoring)
+        const entries = Array.from(eventsByDay.entries());
+        const CHUNK_SIZE = 10;
+        
+        for (let i = 0; i < entries.length; i += CHUNK_SIZE) {
+            const chunk = entries.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(chunk.map(async ([dateStr, dayEvents]) => {
+                const date = new Date(dateStr);
+                const windowDate: DateTime = {
+                    date: date,
+                    timezone: startDate.timezone,
+                    location: startDate.location
+                };
+
+                // Personal analysis variables
+                let personalScore = 0;
+                let personalMatches: string[] = [];
+                let personalWarnings: string[] = [];
+                let personalSummary = '';
+
+                const personalAnalytics = natalChart 
+                    ? await this.personalizedAnalytics.generateDayAnalytics(natalChart, date, startDate.location)
+                    : null;
+
+                if (personalAnalytics) {
+                    personalScore = personalAnalytics.overallScore;
+                    personalSummary = personalAnalytics.personalSummary;
+                    personalMatches = personalAnalytics.personalTransits.significantTransits
+                        .filter(t => ['trine', 'sextile', 'conjunction'].includes(t.aspectType))
+                        .map(t => `${t.transitingPlanet} ${t.aspectType} натальный ${t.natalPlanet}`);
+                    personalWarnings = personalAnalytics.personalTransits.significantTransits
+                        .filter(t => ['square', 'opposition'].includes(t.aspectType))
+                        .map(t => `${t.transitingPlanet} ${t.aspectType} натальный ${t.natalPlanet}`);
+                }
+
+                // Inject a synthetic daily moon-phase event so phase-based rules fire on every day,
+                // not just exact New/Full/Quarter transitions detected by CelestialEventsDetector.
+                let scoringEvents = [...dayEvents];
+                try {
+                    const lunarData = await this.ephemeris.getLunarDay(windowDate);
+                    const hasDailyPhase = dayEvents.some(e => e.type === 'lunar-phase');
+                    if (!hasDailyPhase && lunarData?.lunarPhase) {
+                        scoringEvents.push({
+                            id: `moon-phase-daily-${dateStr}`,
+                            type: 'lunar-phase' as CelestialEventType,
+                            name: lunarData.lunarPhase,
+                            description: `Current moon phase: ${lunarData.lunarPhase}`,
+                            date: windowDate,
+                            planets: ['Moon', 'Sun'],
+                            rarity: 'common',
+                            significance: `Moon is ${lunarData.lunarPhase}`,
+                        });
+                    }
+                } catch { /* skip if ephemeris unavailable */ }
+
+                const scoreResult = this.scoreDay(scoringEvents, rules);
+
+                let finalScore = scoreResult.score;
+                if (personalAnalytics) {
+                    finalScore = Math.round((scoreResult.score * 0.6) + (personalScore * 0.4));
+                }
+
+                if (finalScore >= 40) {
+                    return {
+                        id: `${intentionKey}-${dateStr}`,
+                        date: windowDate,
+                        score: finalScore,
+                        events: dayEvents,
+                        summary: personalAnalytics ? personalSummary : this.generateSummary(intentionKey as any, finalScore),
+                        suggestions: [...scoreResult.matches, ...personalMatches],
+                        warnings: [...scoreResult.warnings, ...personalWarnings],
+                        moonPhase: this.findMoonPhase(dayEvents),
+                        moonSign: this.findMoonSign(dayEvents),
+                        colorPalette: personalAnalytics?.universalEnergy.colorPalette
+                    } as TimingWindow;
+                }
+                return null;
+            }));
+
+            windows.push(...chunkResults.filter((w): w is TimingWindow => w !== null));
         }
 
         // 4. Sort by score (descending) and return top results
@@ -112,18 +193,20 @@ export class OptimalTimingService {
     private matchesRule(event: CelestialEvent, rule: any): boolean {
         if (event.type !== rule.type) return false;
 
-        // Check planet
+        // Check primary planet
         if (rule.planet && !event.planets?.includes(rule.planet)) return false;
+
+        // Check target planet (for aspects/conjunctions)
+        if (rule.targetPlanet && !event.planets?.includes(rule.targetPlanet)) return false;
 
         // Check phase (for lunar phases)
         if (rule.phase && event.type === 'lunar-phase') {
-            // Simple string includes for now
-            return event.name.includes(rule.phase);
+            return event.name.includes(rule.phase) || (event.description?.includes(rule.phase) ?? false);
         }
 
         // Check sign (for ingress)
         if (rule.sign && event.type === 'ingress') {
-            return event.name.includes(rule.sign);
+            return event.name.includes(rule.sign) || (event.description?.includes(rule.sign) ?? false);
         }
 
         return true;

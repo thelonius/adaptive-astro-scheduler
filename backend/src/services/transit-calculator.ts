@@ -40,6 +40,11 @@ export interface TransitAnalysis {
     affectedNatalPlanets: string[];
   }[];
   summary: string;
+  aiAdvice?: {
+    text: string;
+    score: number;
+    interpretations: any[]; // Raw interpretations from ML service
+  };
 }
 
 /**
@@ -57,7 +62,8 @@ export class TransitCalculator {
   async calculateTransits(
     natalChart: NatalChart,
     date: Date = new Date(),
-    location?: { latitude: number; longitude: number }
+    location?: { latitude: number; longitude: number },
+    userIntent?: string
   ): Promise<TransitAnalysis> {
     // Use natal birth location if no location specified
     const transitLocation = location || {
@@ -104,6 +110,30 @@ export class TransitCalculator {
     // Generate summary
     const summary = this.generateSummary(significantTransits, houseTransits);
 
+    let aiAdvice;
+    if (userIntent) {
+      const mlAdapter = (await import('./ml-adapter')).default;
+      
+      // Map transits to ZET tags
+      const transitTags = this.mapTransitsToZetTags(transits, retrogradeInfluences);
+      
+      const mlResponse = await mlAdapter.getAdvice({
+        prompt: userIntent,
+        active_transits: transitTags
+      });
+
+      if (mlResponse.success && mlResponse.results) {
+        // Simple aggregate score for now (average of results)
+        const avgScore = mlResponse.results.reduce((acc, r) => acc + r.score, 0) / mlResponse.results.length;
+        
+        aiAdvice = {
+          text: mlResponse.results[0]?.text || "No specific advice found.",
+          score: Math.round(avgScore * 100),
+          interpretations: mlResponse.results
+        };
+      }
+    }
+
     return {
       date,
       transits,
@@ -111,7 +141,44 @@ export class TransitCalculator {
       significantTransits,
       retrogradeInfluences,
       summary,
+      aiAdvice
     };
+  }
+
+  /**
+   * Helper to map internal transit data to ZET-compatible tags
+   */
+  private mapTransitsToZetTags(transits: Transit[], retrogrades: any[]): string[] {
+    const planetMap: Record<string, string> = {
+      'Sun': 'SU', 'Moon': 'MO', 'Mercury': 'ME', 'Venus': 'VE', 'Mars': 'MA',
+      'Jupiter': 'JU', 'Saturn': 'SA', 'Uranus': 'UR', 'Neptune': 'NE', 'Pluto': 'PL'
+    };
+    
+    const aspectMap: Record<string, string> = {
+      'conjunction': '000', 'sextile': '060', 'square': '090', 'trine': '120', 'opposition': '180'
+    };
+
+    const tags: string[] = [];
+    
+    // Add aspects
+    transits.forEach(t => {
+      const p1 = planetMap[t.transitingPlanet];
+      const p2 = planetMap[t.natalPlanet];
+      const asp = aspectMap[t.aspectType];
+      if (p1 && p2 && asp) {
+        tags.push(`${p1}.${asp}.${p2}`);
+      }
+    });
+
+    // Add retrogrades
+    retrogrades.forEach(r => {
+      const p = planetMap[r.planet];
+      if (p) {
+        tags.push(`${p}.R`);
+      }
+    });
+
+    return [...new Set(tags)]; // Unique tags only
   }
 
   /**

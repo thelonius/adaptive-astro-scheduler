@@ -52,11 +52,12 @@ class AspectEngine:
             # Fallback: hardcode major aspects if JSON is missing
             return {
                 "conjunction":  {"angle": 0,   "orb": {"default": 8, "luminaries": 10}, "category": "major", "nature": "neutral"},
-                "sextile":      {"angle": 60,  "orb": {"default": 4, "luminaries": 6},  "category": "major", "nature": "harmonious"},
+                "sextile":      {"angle": 60,  "orb": {"default": 5, "luminaries": 6},  "category": "major", "nature": "harmonious"},
                 "square":       {"angle": 90,  "orb": {"default": 7, "luminaries": 8},  "category": "major", "nature": "tense"},
                 "trine":        {"angle": 120, "orb": {"default": 7, "luminaries": 8},  "category": "major", "nature": "harmonious"},
                 "opposition":   {"angle": 180, "orb": {"default": 8, "luminaries": 10}, "category": "major", "nature": "tense"},
             }
+
     
     @staticmethod
     def angular_distance(lon_a: float, lon_b: float) -> float:

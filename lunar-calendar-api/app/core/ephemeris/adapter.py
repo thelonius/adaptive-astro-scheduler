@@ -228,41 +228,17 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
     ) -> CelestialBody:
         """Calculate position for a single planet."""
         try:
-            # Get the celestial body
-            body = self.eph[skyfield_name]
-
-            # Observe from Earth
-            astrometric = observer.at(time).observe(body)
-            apparent = astrometric.apparent()
-
-            # Get ecliptic coordinates
-            ecliptic = apparent.ecliptic_latlon()
-            longitude = ecliptic[1].degrees % 360
-            latitude = ecliptic[0].degrees
-
-            # Get right ascension and declination
-            ra, dec, distance = apparent.radec()
-            right_ascension = ra._degrees
-            declination = dec.degrees
-            distance_au = distance.au
-
-            # Calculate speed (degrees per day)
-            # Use a 1-day difference for speed calculation
-            next_time = self.ts.from_datetime(
-                time.utc_datetime() + timedelta(days=1)
-            )
-            next_astrometric = observer.at(next_time).observe(body)
-            next_apparent = next_astrometric.apparent()
-            next_ecliptic = next_apparent.ecliptic_latlon()
-            next_longitude = next_ecliptic[1].degrees % 360
-
-            # Handle 360° wraparound
-            speed = next_longitude - longitude
-            if speed > 180:
-                speed -= 360
-            elif speed < -180:
-                speed += 360
-
+            # Use unifying ephemeris core for precision (SwissEph support)
+            # This handles light-time, aberration and moves from J2000 to Date Equinox (Tropical)
+            dt = time.utc_datetime()
+            pos = ephemeris_core.get_planet_position(planet_name.value, dt)
+            
+            # SwissEph format: (longitude, latitude, distance, speed_long, speed_lat, speed_dist)
+            longitude = pos[0]
+            latitude = pos[1]
+            distance_au = pos[2]
+            speed = pos[3]
+            
             is_retrograde = speed < 0
 
             # Get zodiac sign
@@ -275,9 +251,7 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                 zodiac_sign=zodiac_sign,
                 speed=speed,
                 is_retrograde=is_retrograde,
-                distance_au=distance_au,
-                right_ascension=right_ascension,
-                declination=declination
+                distance_au=distance_au
             )
 
         except Exception as e:
@@ -286,6 +260,7 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                 message=f"Failed to calculate position for {planet_name.value}: {str(e)}",
                 details={"planet": planet_name.value}
             )
+
 
     async def get_moon_phase(self, date_time: DateTime) -> MoonPhase:
         """

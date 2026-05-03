@@ -8,6 +8,7 @@ export interface FindOptimalTimingParams {
     startDate: Date;
     endDate: Date;
     limit?: number;
+    natalChartId?: string;
     location?: {
         latitude: number;
         longitude: number;
@@ -21,6 +22,28 @@ export interface OptimalTimingResponse {
     windows: TimingWindow[];
 }
 
+export interface FindAIWindowsParams {
+    prompt: string;
+    // Dates are optional — backend extracts them from the prompt text
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    natalChartId?: string;
+}
+
+export interface ExtractedRange {
+    startDate: string;
+    endDate: string;
+    wasExtracted: boolean;
+}
+
+export interface FindAIResponse extends OptimalTimingResponse {
+    prompt: string;
+    strategy: string;
+    rules: any;
+    extractedRange?: ExtractedRange;
+}
+
 class OptimalTimingService {
     private baseUrl = `${API_URL}/api/optimal-timing`;
 
@@ -29,6 +52,15 @@ class OptimalTimingService {
             ...params,
             startDate: params.startDate.toISOString(),
             endDate: params.endDate.toISOString()
+        });
+        return response.data;
+    }
+
+    async findAIWindows(params: FindAIWindowsParams): Promise<FindAIResponse> {
+        const response = await axios.post(`${this.baseUrl}/find-ai`, {
+            prompt: params.prompt,
+            ...(params.startDate && { startDate: params.startDate.toISOString() }),
+            ...(params.endDate && { endDate: params.endDate.toISOString() }),
         });
         return response.data;
     }

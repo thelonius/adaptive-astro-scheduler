@@ -180,7 +180,7 @@ const DayExplorer: React.FC = () => {
 
                             <Box position="relative" cursor="pointer" _hover={{ transform: 'scale(1.05)' }} transition="transform 0.2s">
                                 <Text fontSize="5xl" fontWeight="bold" fontFamily="monospace" color="purple.600" lineHeight={1}>
-                                    {selectedDate.getHours().toString().padStart(2, '0')}:{selectedDate.getMinutes().toString().padStart(2, '0')}
+                                    {selectedDate.toLocaleTimeString('en-GB', { timeZone: userLocation.timezone, hour: '2-digit', minute: '2-digit', hour12: false })}
                                 </Text>
                                 <input
                                     type="time"
@@ -194,15 +194,40 @@ const DayExplorer: React.FC = () => {
                                         cursor: 'pointer',
                                         zIndex: 10
                                     }}
-                                    value={`${selectedDate.getHours().toString().padStart(2, '0')}:${selectedDate.getMinutes().toString().padStart(2, '0')}`}
+                                    value={selectedDate.toLocaleTimeString('en-GB', { timeZone: userLocation.timezone, hour: '2-digit', minute: '2-digit', hour12: false })}
                                     onChange={(e) => {
                                         if (!e.target.value) return;
                                         const [h, m] = e.target.value.split(':');
-                                        const newDate = new Date(selectedDate);
-                                        newDate.setHours(parseInt(h), parseInt(m));
-                                        handleTimeChange(newDate);
+                                        
+                                        // Construct a date string in ISO-like format but without 'Z'
+                                        // Then parse it as being in the target timezone
+                                        const dateStr = selectedDate.toISOString().split('T')[0];
+                                        const targetTimeStr = `${dateStr}T${h}:${m}:00`;
+                                        
+                                        // Get timezone offset for this specific date
+                                        // Use toLocaleString to find what the UTC equivalent would be
+                                        const formatter = new Intl.DateTimeFormat('en-US', {
+                                            timeZone: userLocation.timezone,
+                                            year: 'numeric', month: '2-digit', day: '2-digit',
+                                            hour: '2-digit', minute: '2-digit', second: '2-digit',
+                                            hour12: false
+                                        });
+                                        
+                                        // We want to find a UTC Date 'D' such that formatter.format(D) == targetTimeStr
+                                        // A simple iterative approach or just using the current offset is usually enough
+                                        const testDate = new Date(targetTimeStr + 'Z');
+                                        const formattedTest = formatter.formatToParts(testDate);
+                                        const getP = (type: string) => formattedTest.find(p => p.type === type)?.value;
+                                        const testLocalStr = `${getP('year')}-${getP('month')}-${getP('day')}T${getP('hour')}:${getP('minute')}:${getP('second')}`;
+                                        
+                                        const offsetMs = new Date(targetTimeStr + 'Z').getTime() - new Date(testLocalStr + 'Z').getTime();
+                                        const finalDate = new Date(new Date(targetTimeStr + 'Z').getTime() + offsetMs);
+                                        
+                                        handleTimeChange(finalDate);
                                     }}
+
                                 />
+
                             </Box>
 
                             <Button

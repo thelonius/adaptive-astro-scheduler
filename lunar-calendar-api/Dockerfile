@@ -1,48 +1,54 @@
-FROM python:3.11-slim
+# ── Stage 1: builder ─────────────────────────────────────────
+# Install gcc, compile pyswisseph, build virtualenv.
+# Build tools are NOT carried into the final image.
+FROM python:3.11-slim AS builder
 
-# Set working directory
-WORKDIR /app
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    EPHEMERIS_DATA_DIR=/app/data
-
-# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc g++ libc6-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create data directory for ephemeris files
-RUN mkdir -p /app/data
+WORKDIR /app
 
-# Copy requirements and install Python dependencies
+# Build a self-contained virtualenv
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Pre-download ephemeris data to avoid runtime permission issues
-RUN python3 -c "from skyfield.api import load; load.directory = '/app/data'; load('de421.bsp')" && \
-    echo "Ephemeris data downloaded successfully to /app/data"
+# ── Stage 2: runtime ──────────────────────────────────────────
+# Lean image: only the compiled venv, no build tools.
+FROM python:3.11-slim
 
-# Copy application code
-COPY . .
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    EPHEMERIS_DATA_DIR=/app/data \
+    PATH="/opt/venv/bin:$PATH"
 
-# Create non-root user and set ownership
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Copy compiled venv from builder (no gcc needed here)
+COPY --from=builder /opt/venv /opt/venv
 
-# Switch to non-root user
+WORKDIR /app
+
+# Pre-download ephemeris data
+RUN mkdir -p /app/data && \
+    python3 -c "from skyfield.api import load; load.directory = '/app/data'; load('de421.bsp')" && \
+    echo "Ephemeris data ready"
+
+# Copy application code only
+COPY app/ ./app/
+COPY run.py ./
+COPY requirements.txt ./
+
+# Non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

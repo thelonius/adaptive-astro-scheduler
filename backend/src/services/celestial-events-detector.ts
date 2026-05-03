@@ -30,7 +30,8 @@ export class CelestialEventsDetector {
             alignments,
             retrogrades,
             ingresses,
-            voidMoons
+            voidMoons,
+            generalAspects
         ] = await Promise.all([
             this.detectLunarPhases(startDate, endDate),
             this.detectEclipses(startDate, endDate),
@@ -38,7 +39,8 @@ export class CelestialEventsDetector {
             this.detectPlanetaryAlignments(startDate, endDate),
             this.detectRetrogrades(startDate, endDate),
             this.detectIngresses(startDate, endDate),
-            this.detectVoidMoons(startDate, endDate)
+            this.detectVoidMoons(startDate, endDate),
+            this.detectGeneralAspects(startDate, endDate)
         ]);
 
         events.push(...lunarPhases);
@@ -48,6 +50,7 @@ export class CelestialEventsDetector {
         events.push(...retrogrades);
         events.push(...ingresses);
         events.push(...voidMoons);
+        events.push(...generalAspects);
 
         // Deduplicate events to ensure only one entry per unique event per day
         // This prevents multiple cards for the same eclipse or occultation detected in multiple windows
@@ -165,77 +168,88 @@ export class CelestialEventsDetector {
         startDate: DateTime,
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
-        const events: CelestialEvent[] = [];
-        const currentDate = new Date(startDate.date);
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
         const end = new Date(endDate.date);
-
-        // Check each day for lunar phase transitions
-        while (currentDate <= end) {
-            const dateTime: DateTime = {
-                date: new Date(currentDate),
-                timezone: 'UTC',
-                location: { latitude: 0, longitude: 0 }
-            };
-
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
-            const sun = planets.planets.find(p => p.name === 'Sun');
-            const moon = planets.planets.find(p => p.name === 'Moon');
-
-            if (sun && moon) {
-                const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
-
-                // Detect phase transitions (within 1° of exact)
-                if (Math.abs(phase.angle) < 1) {
-                    events.push({
-                        id: `new-moon-${dateTime.date.toISOString().split('T')[0]}`,
-                        type: 'lunar-phase',
-                        name: 'New Moon',
-                        description: 'Moon and Sun conjunct - new beginnings, fresh starts',
-                        date: dateTime,
-                        planets: ['Moon', 'Sun'],
-                        rarity: 'common',
-                        significance: 'Time for setting intentions and starting new projects'
-                    });
-                } else if (Math.abs(phase.angle - 180) < 1) {
-                    events.push({
-                        id: `full-moon-${dateTime.date.toISOString().split('T')[0]}`,
-                        type: 'lunar-phase',
-                        name: 'Full Moon',
-                        description: 'Moon opposite Sun - culmination, illumination, release',
-                        date: dateTime,
-                        planets: ['Moon', 'Sun'],
-                        rarity: 'common',
-                        significance: 'Peak energy, revelations, completion of cycles'
-                    });
-                } else if (Math.abs(phase.angle - 90) < 1) {
-                    events.push({
-                        id: `first-quarter-${dateTime.date.toISOString().split('T')[0]}`,
-                        type: 'lunar-phase',
-                        name: 'First Quarter Moon',
-                        description: 'Moon square Sun - action, decision-making',
-                        date: dateTime,
-                        planets: ['Moon', 'Sun'],
-                        rarity: 'common',
-                        significance: 'Time to take action and overcome obstacles'
-                    });
-                } else if (Math.abs(phase.angle - 270) < 1) {
-                    events.push({
-                        id: `last-quarter-${dateTime.date.toISOString().split('T')[0]}`,
-                        type: 'lunar-phase',
-                        name: 'Last Quarter Moon',
-                        description: 'Moon square Sun - release, letting go',
-                        date: dateTime,
-                        planets: ['Moon', 'Sun'],
-                        rarity: 'common',
-                        significance: 'Time to release what no longer serves'
-                    });
-                }
-            }
-
-            currentDate.setDate(currentDate.getDate() + 1);
+        
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
         }
 
-        return events;
+        const CHUNK_SIZE = 20;
+        const results: CelestialEvent[][] = [];
+        
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(chunk.map(async (date) => {
+                const dayEvents: CelestialEvent[] = [];
+                const dateTime: DateTime = {
+                    date,
+                    timezone: 'UTC',
+                    location: { latitude: 0, longitude: 0 }
+                };
+
+                const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+                const sun = planets.planets.find(p => p.name === 'Sun');
+                const moon = planets.planets.find(p => p.name === 'Moon');
+
+                if (sun && moon) {
+                    const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    if (Math.abs(phase.angle) < 1) {
+                        dayEvents.push({
+                            id: `new-moon-${dateStr}`,
+                            type: 'lunar-phase',
+                            name: 'New Moon',
+                            description: 'Moon and Sun conjunct - new beginnings, fresh starts',
+                            date: dateTime,
+                            planets: ['Moon', 'Sun'],
+                            rarity: 'common',
+                            significance: 'Time for setting intentions and starting new projects'
+                        });
+                    } else if (Math.abs(phase.angle - 180) < 1) {
+                        dayEvents.push({
+                            id: `full-moon-${dateStr}`,
+                            type: 'lunar-phase',
+                            name: 'Full Moon',
+                            description: 'Moon opposite Sun - culmination, illumination, release',
+                            date: dateTime,
+                            planets: ['Moon', 'Sun'],
+                            rarity: 'common',
+                            significance: 'Peak energy, revelations, completion of cycles'
+                        });
+                    } else if (Math.abs(phase.angle - 90) < 1) {
+                        dayEvents.push({
+                            id: `first-quarter-${dateStr}`,
+                            type: 'lunar-phase',
+                            name: 'First Quarter Moon',
+                            description: 'Moon square Sun - action, decision-making',
+                            date: dateTime,
+                            planets: ['Moon', 'Sun'],
+                            rarity: 'common',
+                            significance: 'Time to take action and overcome obstacles'
+                        });
+                    } else if (Math.abs(phase.angle - 270) < 1) {
+                        dayEvents.push({
+                            id: `last-quarter-${dateStr}`,
+                            type: 'lunar-phase',
+                            name: 'Last Quarter Moon',
+                            description: 'Moon square Sun - release, letting go',
+                            date: dateTime,
+                            planets: ['Moon', 'Sun'],
+                            rarity: 'common',
+                            significance: 'Time to release what no longer serves'
+                        });
+                    }
+                }
+                return dayEvents;
+            }));
+            results.push(...chunkResults);
+        }
+
+        return results.flat();
     }
 
     /**
@@ -246,55 +260,63 @@ export class CelestialEventsDetector {
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
         const rawDetections: { date: DateTime; planets: any[]; arc: number }[] = [];
-        const currentDate = new Date(startDate.date);
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
         const end = new Date(endDate.date);
 
-        // Sample every 2 days for precision
-        while (currentDate <= end) {
-            const dateTime: DateTime = {
-                date: new Date(currentDate),
-                timezone: 'UTC',
-                location: { latitude: 0, longitude: 0 }
-            };
-
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
-            const majorPlanets = planets.planets.filter(p =>
-                ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(p.name)
-            );
-
-            const alignmentArc = 30;
-            for (let i = 0; i < majorPlanets.length - 2; i++) {
-                const cluster = [majorPlanets[i]];
-                let maxDist = 0;
-
-                for (let j = i + 1; j < majorPlanets.length; j++) {
-                    const distance = this.angularDistance(
-                        majorPlanets[i].longitude,
-                        majorPlanets[j].longitude
-                    );
-
-                    if (distance <= alignmentArc) {
-                        cluster.push(majorPlanets[j]);
-                        maxDist = Math.max(maxDist, distance);
-                    }
-                }
-
-                if (cluster.length >= 3) {
-                    rawDetections.push({ date: dateTime, planets: cluster, arc: maxDist });
-                    i += cluster.length - 1;
-                    break;
-                }
-            }
-            currentDate.setDate(currentDate.getDate() + 2);
+        // Sample every 2 days for precision vs speed
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setDate(curr.getDate() + 2);
         }
 
-        // Group RAW detections into sessions (contiguous periods)
+        const CHUNK_SIZE = 20;
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(chunk.map(async (date) => {
+                const dateTime: DateTime = {
+                    date,
+                    timezone: 'UTC',
+                    location: { latitude: 0, longitude: 0 }
+                };
+
+                const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+                const majorPlanets = planets.planets.filter(p =>
+                    ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].includes(p.name)
+                );
+
+                const alignmentArc = 30;
+                for (let k = 0; k < majorPlanets.length - 2; k++) {
+                    const cluster = [majorPlanets[k]];
+                    let maxDist = 0;
+
+                    for (let j = k + 1; j < majorPlanets.length; j++) {
+                        const distance = this.angularDistance(
+                            majorPlanets[k].longitude,
+                            majorPlanets[j].longitude
+                        );
+
+                        if (distance <= alignmentArc) {
+                            cluster.push(majorPlanets[j]);
+                            maxDist = Math.max(maxDist, distance);
+                        }
+                    }
+
+                    if (cluster.length >= 3) {
+                        return { date: dateTime, planets: cluster, arc: maxDist };
+                    }
+                }
+                return null;
+            }));
+
+            rawDetections.push(...chunkResults.filter((r): r is { date: DateTime; planets: any[]; arc: number } => r !== null));
+        }
+
+        // Group RAW detections into sessions
         const finalEvents: CelestialEvent[] = [];
         let currentSession: typeof rawDetections = [];
 
-        for (let i = 0; i < rawDetections.length; i++) {
-            const det = rawDetections[i];
-
+        for (const det of rawDetections) {
             if (currentSession.length === 0) {
                 currentSession.push(det);
                 continue;
@@ -302,8 +324,6 @@ export class CelestialEventsDetector {
 
             const prevDet = currentSession[currentSession.length - 1];
             const daysDiff = (det.date.date.getTime() - prevDet.date.date.getTime()) / (1000 * 3600 * 24);
-
-            // Compare planets in current session vs new detection
             const samePlanets = det.planets.length === prevDet.planets.length &&
                 det.planets.every(p => prevDet.planets.some(prevP => prevP.name === p.name));
 
@@ -360,16 +380,32 @@ export class CelestialEventsDetector {
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
-        const currentDate = new Date(startDate.date);
-        const end = new Date(endDate.date);
-
         const retrogradeablePlanets = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
         const previousStates = new Map<string, boolean>();
 
-        // Check every day for retrograde changes
-        while (currentDate <= end) {
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
+        const end = new Date(endDate.date);
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        // 1. Pre-fetch positions in parallel
+        const CHUNK_SIZE = 30;
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            await Promise.all(chunk.map(date => 
+                this.ephemeris.getPlanetsPositions({ 
+                    date, timezone: 'UTC', location: { latitude: 0, longitude: 0 } 
+                })
+            ));
+        }
+
+        // 2. Process sequentially
+        for (const date of dates) {
             const dateTime: DateTime = {
-                date: new Date(currentDate),
+                date,
                 timezone: 'UTC',
                 location: { latitude: 0, longitude: 0 }
             };
@@ -383,12 +419,11 @@ export class CelestialEventsDetector {
                 const wasRetrograde = previousStates.get(planetName);
                 const isRetrograde = planet.isRetrograde;
 
-                // Detect station (change in retrograde status)
                 if (wasRetrograde !== undefined && wasRetrograde !== isRetrograde) {
+                    const dateStr = date.toISOString().split('T')[0];
                     if (isRetrograde) {
-                        // Station Retrograde
                         events.push({
-                            id: `${planetName.toLowerCase()}-rx-${dateTime.date.toISOString().split('T')[0]}`,
+                            id: `${planetName.toLowerCase()}-rx-${dateStr}`,
                             type: 'retrograde-start',
                             name: `${planetName} Retrograde`,
                             description: `${planetName} stations retrograde - time for review and reflection`,
@@ -398,9 +433,8 @@ export class CelestialEventsDetector {
                             significance: `Review, revise, and reconsider matters related to ${planetName}`
                         });
                     } else {
-                        // Station Direct
                         events.push({
-                            id: `${planetName.toLowerCase()}-direct-${dateTime.date.toISOString().split('T')[0]}`,
+                            id: `${planetName.toLowerCase()}-direct-${dateStr}`,
                             type: 'retrograde-end',
                             name: `${planetName} Direct`,
                             description: `${planetName} stations direct - forward momentum resumes`,
@@ -414,8 +448,6 @@ export class CelestialEventsDetector {
 
                 previousStates.set(planetName, isRetrograde);
             }
-
-            currentDate.setDate(currentDate.getDate() + 1);
         }
 
         return events;
@@ -429,16 +461,32 @@ export class CelestialEventsDetector {
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
         const events: CelestialEvent[] = [];
-        const currentDate = new Date(startDate.date);
-        const end = new Date(endDate.date);
-
         const trackedPlanets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
         const previousSigns = new Map<string, string>();
 
-        // Check every day for sign changes
-        while (currentDate <= end) {
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
+        const end = new Date(endDate.date);
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        // 1. Pre-fetch positions in parallel to populate the shared cache
+        const CHUNK_SIZE = 30;
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            await Promise.all(chunk.map(date => 
+                this.ephemeris.getPlanetsPositions({ 
+                    date, timezone: 'UTC', location: { latitude: 0, longitude: 0 } 
+                })
+            ));
+        }
+
+        // 2. Process sequentially (now instant due to cache)
+        for (const date of dates) {
             const dateTime: DateTime = {
-                date: new Date(currentDate),
+                date,
                 timezone: 'UTC',
                 location: { latitude: 0, longitude: 0 }
             };
@@ -452,10 +500,9 @@ export class CelestialEventsDetector {
                 const currentSign = planet.zodiacSign;
                 const previousSign = previousSigns.get(planetName);
 
-                // Detect ingress (sign change)
                 if (previousSign && previousSign !== currentSign) {
                     events.push({
-                        id: `${planetName.toLowerCase()}-ingress-${currentSign.toLowerCase()}-${dateTime.date.toISOString().split('T')[0]}`,
+                        id: `${planetName.toLowerCase()}-ingress-${currentSign.toLowerCase()}-${date.toISOString().split('T')[0]}`,
                         type: 'ingress',
                         name: `${planetName} enters ${currentSign}`,
                         description: `${planetName} moves into ${currentSign}`,
@@ -468,8 +515,6 @@ export class CelestialEventsDetector {
 
                 previousSigns.set(planetName, currentSign);
             }
-
-            currentDate.setDate(currentDate.getDate() + 1);
         }
 
         return events;
@@ -482,112 +527,114 @@ export class CelestialEventsDetector {
         startDate: DateTime,
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
-        const events: CelestialEvent[] = [];
-        const currentDate = new Date(startDate.date);
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
         const end = new Date(endDate.date);
-
-        // Check every day for eclipse conditions
-        while (currentDate <= end) {
-            const dateTime: DateTime = {
-                date: new Date(currentDate),
-                timezone: 'UTC',
-                location: { latitude: 0, longitude: 0 }
-            };
-
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
-            const sun = planets.planets.find(p => p.name === 'Sun');
-            const moon = planets.planets.find(p => p.name === 'Moon');
-
-            if (sun && moon) {
-                const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
-                const angularDistance = this.angularDistance(sun.longitude, moon.longitude);
-
-                // Solar Eclipse: New Moon + Sun-Moon close alignment
-                // Solar Eclipse: New Moon day + Sun-Moon close alignment
-                if (Math.abs(phase.angle) < 1.0) { // Must be New Moon day
-                    // Check if Moon is near ecliptic (low latitude)
-                    if (Math.abs(moon.latitude) < 1.5) {
-                        // Determine eclipse type based on Moon's distance
-                        const moonDistance = moon.distanceAU * 149597870.7; // Convert AU to km
-                        const avgMoonDistance = 384400; // km
-
-                        let eclipseType: 'total' | 'annular' | 'partial';
-                        let eclipseName: string;
-                        let rarity: 'common' | 'moderate' | 'rare' | 'very-rare';
-
-                        if (angularDistance < 0.5) {
-                            if (moonDistance < avgMoonDistance * 0.95) {
-                                eclipseType = 'total';
-                                eclipseName = 'Total Solar Eclipse';
-                                rarity = 'very-rare';
-                            } else {
-                                eclipseType = 'annular';
-                                eclipseName = 'Annular Solar Eclipse';
-                                rarity = 'rare';
-                            }
-                        } else {
-                            eclipseType = 'partial';
-                            eclipseName = 'Partial Solar Eclipse';
-                            rarity = 'moderate';
-                        }
-
-                        events.push({
-                            id: `solar-eclipse-${eclipseType}-${dateTime.date.toISOString().split('T')[0]}`,
-                            type: 'solar-eclipse',
-                            name: eclipseName,
-                            description: `${eclipseName} - Moon passes between Earth and Sun`,
-                            date: dateTime,
-                            planets: ['Sun', 'Moon'],
-                            rarity,
-                            visibility: 'visible',
-                            significance: `Powerful new beginning energy, shadow work, transformation`
-                        });
-                    }
-                }
-
-                // Lunar Eclipse: Full Moon + Sun-Moon-Earth alignment
-                // Lunar Eclipse: Full Moon day + Sun-Moon-Earth alignment
-                if (Math.abs(phase.angle - 180) < 1.0) { // Must be Full Moon day
-                    // Check if Moon is near ecliptic
-                    if (Math.abs(moon.latitude) < 1.5) {
-                        let eclipseType: 'total' | 'partial' | 'penumbral';
-                        let eclipseName: string;
-                        let rarity: 'common' | 'moderate' | 'rare' | 'very-rare';
-
-                        // Determine eclipse type based on alignment precision
-                        if (Math.abs(moon.latitude) < 0.5) {
-                            eclipseType = 'total';
-                            eclipseName = 'Total Lunar Eclipse';
-                            rarity = 'rare';
-                        } else if (Math.abs(moon.latitude) < 1.0) {
-                            eclipseType = 'partial';
-                            eclipseName = 'Partial Lunar Eclipse';
-                            rarity = 'moderate';
-                        } else {
-                            eclipseType = 'penumbral';
-                            eclipseName = 'Penumbral Lunar Eclipse';
-                            rarity = 'common';
-                        }
-
-                        events.push({
-                            id: `lunar-eclipse-${eclipseType}-${dateTime.date.toISOString().split('T')[0]}`,
-                            type: 'lunar-eclipse',
-                            name: eclipseName,
-                            description: `${eclipseName} - Earth's shadow falls on the Moon`,
-                            date: dateTime,
-                            planets: ['Moon', 'Sun'],
-                            rarity,
-                            visibility: 'visible',
-                            significance: `Emotional culmination, release, revelation of hidden truths`
-                        });
-                    }
-                }
-            }
-
-            currentDate.setDate(currentDate.getDate() + 1);
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setDate(curr.getDate() + 1);
         }
 
-        return events;
+        const CHUNK_SIZE = 20;
+        const results: CelestialEvent[][] = [];
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(chunk.map(async (date) => {
+                const dayEvents: CelestialEvent[] = [];
+                const dateTime: DateTime = {
+                    date,
+                    timezone: 'UTC',
+                    location: { latitude: 0, longitude: 0 }
+                };
+
+                const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+                const sun = planets.planets.find(p => p.name === 'Sun');
+                const moon = planets.planets.find(p => p.name === 'Moon');
+
+                if (sun && moon) {
+                    const phase = this.calculateLunarPhase(sun.longitude, moon.longitude);
+                    const angularDist = this.angularDistance(sun.longitude, moon.longitude);
+                    const dateStr = date.toISOString().split('T')[0];
+
+                    if (Math.abs(phase.angle) < 1.0) { // New Moon
+                        if (Math.abs(moon.latitude) < 1.5) {
+                            const moonDistance = moon.distanceAU * 149597870.7;
+                            const avgMoonDistance = 384400;
+
+                            let eclipseType: 'total' | 'annular' | 'partial';
+                            let eclipseName: string;
+                            let rarity: 'common' | 'moderate' | 'rare' | 'very-rare';
+
+                            if (angularDist < 0.5) {
+                                if (moonDistance < avgMoonDistance * 0.95) {
+                                    eclipseType = 'total';
+                                    eclipseName = 'Total Solar Eclipse';
+                                    rarity = 'very-rare';
+                                } else {
+                                    eclipseType = 'annular';
+                                    eclipseName = 'Annular Solar Eclipse';
+                                    rarity = 'rare';
+                                }
+                            } else {
+                                eclipseType = 'partial';
+                                eclipseName = 'Partial Solar Eclipse';
+                                rarity = 'moderate';
+                            }
+
+                            dayEvents.push({
+                                id: `solar-eclipse-${eclipseType}-${dateStr}`,
+                                type: 'solar-eclipse',
+                                name: eclipseName,
+                                description: `${eclipseName} - Moon passes between Earth and Sun`,
+                                date: dateTime,
+                                planets: ['Sun', 'Moon'],
+                                rarity,
+                                visibility: 'visible',
+                                significance: `Powerful new beginning energy, shadow work, transformation`
+                            });
+                        }
+                    }
+
+                    if (Math.abs(phase.angle - 180) < 1.0) { // Full Moon
+                        if (Math.abs(moon.latitude) < 1.5) {
+                            let eclipseType: 'total' | 'partial' | 'penumbral';
+                            let eclipseName: string;
+                            let rarity: 'common' | 'moderate' | 'rare' | 'very-rare';
+
+                            if (Math.abs(moon.latitude) < 0.5) {
+                                eclipseType = 'total';
+                                eclipseName = 'Total Lunar Eclipse';
+                                rarity = 'rare';
+                            } else if (Math.abs(moon.latitude) < 1.0) {
+                                eclipseType = 'partial';
+                                eclipseName = 'Partial Lunar Eclipse';
+                                rarity = 'moderate';
+                            } else {
+                                eclipseType = 'penumbral';
+                                eclipseName = 'Penumbral Lunar Eclipse';
+                                rarity = 'common';
+                            }
+
+                            dayEvents.push({
+                                id: `lunar-eclipse-${eclipseType}-${dateStr}`,
+                                type: 'lunar-eclipse',
+                                name: eclipseName,
+                                description: `${eclipseName} - Earth's shadow falls on the Moon`,
+                                date: dateTime,
+                                planets: ['Moon', 'Sun'],
+                                rarity,
+                                visibility: 'visible',
+                                significance: `Emotional culmination, release, revelation of hidden truths`
+                            });
+                        }
+                    }
+                }
+                return dayEvents;
+            }));
+            results.push(...chunkResults);
+        }
+
+        return results.flat();
     }
 
     /**
@@ -597,63 +644,68 @@ export class CelestialEventsDetector {
         startDate: DateTime,
         endDate: DateTime
     ): Promise<CelestialEvent[]> {
-        const events: CelestialEvent[] = [];
-        const currentDate = new Date(startDate.date);
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
         const end = new Date(endDate.date);
-
-        // Check every 6 hours (occultations are brief events)
-        while (currentDate <= end) {
-            const dateTime: DateTime = {
-                date: new Date(currentDate),
-                timezone: 'UTC',
-                location: { latitude: 0, longitude: 0 }
-            };
-
-            const planets = await this.ephemeris.getPlanetsPositions(dateTime);
-            const moon = planets.planets.find(p => p.name === 'Moon');
-
-            if (moon) {
-                // Check Moon-planet occultations
-                const innerPlanets = ['Mercury', 'Venus', 'Mars'];
-
-                for (const planetName of innerPlanets) {
-                    const planet = planets.planets.find(p => p.name === planetName);
-                    if (!planet) continue;
-
-                    // Calculate angular separation
-                    const separation = this.calculateAngularSeparation(
-                        moon.longitude,
-                        moon.latitude,
-                        planet.longitude,
-                        planet.latitude
-                    );
-
-                    // Moon's apparent radius is ~0.25°
-                    // Occultation occurs when separation < Moon radius + planet radius
-                    const moonRadius = 0.25;
-                    const planetRadius = 0.01; // Approximate for inner planets
-
-                    if (separation < (moonRadius + planetRadius)) {
-                        events.push({
-                            id: `occultation-moon-${planetName.toLowerCase()}-${dateTime.date.toISOString().split('T')[0]}`,
-                            type: 'occultation',
-                            name: `Lunar Occultation of ${planetName}`,
-                            description: `Moon passes in front of ${planetName}, blocking it from view`,
-                            date: dateTime,
-                            planets: ['Moon', planetName],
-                            rarity: 'rare',
-                            visibility: 'visible',
-                            significance: `Rare celestial alignment - ${planetName} energy temporarily obscured by lunar influence`
-                        });
-                    }
-                }
-            }
-
-            // Advance by 6 hours
-            currentDate.setHours(currentDate.getHours() + 6);
+        
+        // Sample every 6 hours
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setHours(curr.getHours() + 6);
         }
 
-        return events;
+        const CHUNK_SIZE = 40;
+        const results: CelestialEvent[][] = [];
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(chunk.map(async (date) => {
+                const dayEvents: CelestialEvent[] = [];
+                const dateTime: DateTime = {
+                    date,
+                    timezone: 'UTC',
+                    location: { latitude: 0, longitude: 0 }
+                };
+
+                const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+                const moon = planets.planets.find(p => p.name === 'Moon');
+
+                if (moon) {
+                    const innerPlanets = ['Mercury', 'Venus', 'Mars'];
+                    for (const planetName of innerPlanets) {
+                        const planet = planets.planets.find(p => p.name === planetName);
+                        if (!planet) continue;
+
+                        const separation = this.calculateAngularSeparation(
+                            moon.longitude,
+                            moon.latitude,
+                            planet.longitude,
+                            planet.latitude
+                        );
+
+                        const moonRadius = 0.25;
+                        const planetRadius = 0.01;
+
+                        if (separation < (moonRadius + planetRadius)) {
+                            dayEvents.push({
+                                id: `occultation-moon-${planetName.toLowerCase()}-${date.toISOString().split('T')[0]}`,
+                                type: 'occultation',
+                                name: `Lunar Occultation of ${planetName}`,
+                                description: `Moon passes in front of ${planetName}, blocking it from view`,
+                                date: dateTime,
+                                planets: ['Moon', planetName],
+                                rarity: 'rare',
+                                visibility: 'visible',
+                                significance: `Rare celestial alignment - ${planetName} energy temporarily obscured by lunar influence`
+                            });
+                        }
+                    }
+                }
+                return dayEvents;
+            }));
+            results.push(...chunkResults);
+        }
+
+        return results.flat();
     }
 
     /**
@@ -766,5 +818,86 @@ export class CelestialEventsDetector {
         }
 
         return events;
+    }
+    /**
+     * Detect general planetary aspects (Sun, Moon, Mercury, etc.)
+     */
+    private async detectGeneralAspects(
+        startDate: DateTime,
+        endDate: DateTime
+    ): Promise<CelestialEvent[]> {
+        const peaks = new Map<string, { event: CelestialEvent; minOrb: number }>();
+        const dates: Date[] = [];
+        const curr = new Date(startDate.date);
+        const end = new Date(endDate.date);
+
+        // Track peaks using 12h resolution
+        while (curr <= end) {
+            dates.push(new Date(curr));
+            curr.setHours(curr.getHours() + 12);
+        }
+
+        const CHUNK_SIZE = 20;
+        for (let i = 0; i < dates.length; i += CHUNK_SIZE) {
+            const chunk = dates.slice(i, i + CHUNK_SIZE);
+            await Promise.all(chunk.map(async (date) => {
+                const dateTime: DateTime = {
+                    date,
+                    timezone: 'UTC',
+                    location: { latitude: 0, longitude: 0 }
+                };
+
+                const aspectsData = await this.ephemeris.getAspects(dateTime, 5);
+                
+                for (const aspect of aspectsData.aspects) {
+                    const aspectType = aspect.type || aspect.aspect_type;
+                    if (!aspectType) continue;
+
+                    if (!['conjunction', 'sextile', 'square', 'trine', 'opposition'].includes(aspectType)) {
+                        continue;
+                    }
+
+                    const isMoon = aspect.planet1 === 'Moon' || aspect.planet2 === 'Moon';
+                    const dateKey = isMoon 
+                        ? date.toISOString().split('T')[0] 
+                        : Math.floor(date.getTime() / (1000 * 3600 * 72)).toString();
+
+                    const key = `${aspect.planet1}-${aspect.planet2}-${aspectType}-${dateKey}`;
+                    const existing = peaks.get(key);
+                    
+                    if (!existing || aspect.orb < existing.minOrb) {
+                        const rarity = this.getAspectRarity(aspect.planet1, aspect.planet2);
+                        peaks.set(key, {
+                            minOrb: aspect.orb,
+                            event: {
+                                id: `aspect-${aspect.planet1}-${aspect.planet2}-${aspectType}-${date.toISOString().split('T')[0]}`,
+                                type: aspectType as any,
+                                name: `${aspect.planet1} ${aspectType} ${aspect.planet2}`,
+                                description: `${aspect.planet1} forms a ${aspectType} aspect with ${aspect.planet2}`,
+                                date: dateTime,
+                                planets: [aspect.planet1, aspect.planet2],
+                                rarity,
+                                significance: `Exact peak of ${aspect.planet1} ${aspectType} ${aspect.planet2}.`
+                            }
+                        });
+                    }
+                }
+            }));
+        }
+
+        return Array.from(peaks.values()).map(p => p.event);
+    }
+
+    /**
+     * Helper: Get aspect rarity based on involved planets
+     */
+    private getAspectRarity(p1: string, p2: string): 'common' | 'moderate' | 'rare' | 'very-rare' {
+        const outerPlanets = ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+        const isP1Outer = outerPlanets.includes(p1);
+        const isP2Outer = outerPlanets.includes(p2);
+
+        if (isP1Outer && isP2Outer) return 'rare';
+        if (isP1Outer || isP2Outer) return 'moderate';
+        return 'common';
     }
 }
