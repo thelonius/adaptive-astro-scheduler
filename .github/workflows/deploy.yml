@@ -17,26 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
-
-      - name: Sync code to server
-        run: |
-          rsync -az --delete \
-            --exclude '.git' \
-            --exclude '.env' \
-            --exclude 'node_modules' \
-            --exclude '__pycache__' \
-            --exclude '*.pyc' \
-            --exclude 'dist' \
-            --exclude 'venv' \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DEPLOY_PATH }}/
-
-      - name: Rebuild and restart containers
+      - name: Sync server to origin/main and rebuild containers
         uses: appleboy/ssh-action@v1
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
@@ -48,6 +29,17 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.SSH_DEPLOY_PATH }}
+
+            # Sync working tree to origin/main via git, not rsync.
+            # rsync left .git untouched and the working tree drifted from the
+            # index — modified + untracked entries that were actually just
+            # main's content rsynced over an old HEAD. reset --hard + clean -fd
+            # is idempotent and respects .gitignore (so .env, node_modules,
+            # dist, venv, __pycache__ stay put).
+            echo "--- Syncing repo to origin/main ---"
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
 
             # Persist secrets to .env so docker-compose's ${VAR:-} substitution
             # picks them up — both for this deploy and for any future manual
