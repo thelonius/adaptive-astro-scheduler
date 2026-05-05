@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm run build:assets",
+    "build:assets": "mkdir -p dist/optimal-timing/v2 && cp -r src/optimal-timing/v2/prompts dist/optimal-timing/v2/prompts",
     "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
