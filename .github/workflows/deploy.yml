@@ -53,14 +53,19 @@ jobs:
             echo "--- Stopping containers ---"
             docker-compose -f docker/docker-compose.yml down
 
+            # Prune BEFORE the build, not after. The previous trailing prune
+            # only ran on success — when a build OOM'd on disk, old layers
+            # piled up and the next deploy hit the same wall. With down
+            # already done, every old image is unused, so -af is safe.
+            echo "--- Pruning old images and build cache ---"
+            docker image prune -af
+            docker builder prune -af
+
             echo "--- Building and starting ---"
             docker-compose -f docker/docker-compose.yml up -d --build --force-recreate
 
             echo "--- Running migrations ---"
             docker-compose -f docker/docker-compose.yml exec -T backend npm run migrate 2>/dev/null || true
-
-            echo "--- Pruning old images ---"
-            docker image prune -f
 
             echo "--- Deploy complete: $(date) ---"
             docker-compose -f docker/docker-compose.yml ps
