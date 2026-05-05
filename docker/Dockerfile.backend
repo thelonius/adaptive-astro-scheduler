@@ -54,8 +54,9 @@ COPY --from=builder --chown=astroapp:nodejs /app/backend/package.json ./backend/
 COPY --from=builder --chown=astroapp:nodejs /app/shared/package.json ./shared/
 COPY --from=builder --chown=astroapp:nodejs /app/shared/dist ./shared/dist
 
-# Create writable directory for bot sessions
-RUN mkdir -p /app/data && chown -R astroapp:nodejs /app/data
+# Create writable directories: bot sessions (data/) and v2 trace JSONL (var/traces/).
+# TraceStore defaults to process.cwd()/var/traces, and cwd here is /app.
+RUN mkdir -p /app/data /app/var/traces && chown -R astroapp:nodejs /app/data /app/var
 
 USER astroapp
 
