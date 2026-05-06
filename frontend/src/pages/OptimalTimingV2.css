@@ -598,3 +598,245 @@
     padding: 1px 6px;
     border-radius: 3px;
 }
+
+/* ─── Split-pane layout (Phase B) ───────────────────────────────────────── */
+
+.otv2-split {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) 1fr;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.otv2-split-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.otv2-split-detail {
+    min-width: 0; /* prevents grid-blowout from wide content */
+}
+
+.otv2-split-empty {
+    padding: 32px;
+    text-align: center;
+    color: #6b7280;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+    .otv2-split {
+        grid-template-columns: 1fr;
+    }
+    .otv2-split-list {
+        max-height: none;
+    }
+    .otv2-split-detail {
+        order: 2;
+    }
+}
+
+/* ─── WindowListItem ───────────────────────────────────────────────────── */
+
+.otv2-li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+        'rank date score'
+        'moon moon tags';
+    gap: 4px 12px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    transition: background 120ms, border-color 120ms;
+}
+
+.otv2-li:hover {
+    background: #f9fafb;
+}
+
+.otv2-li.is-selected {
+    border-color: #6366f1;
+    background: #eef2ff;
+}
+
+.otv2-li-rank { grid-area: rank; font-weight: 600; color: #6b7280; }
+.otv2-li-date { grid-area: date; font-weight: 500; }
+.otv2-li-score { grid-area: score; font-weight: 700; }
+.otv2-li-moon { grid-area: moon; color: #6b7280; font-size: 13px; }
+
+.otv2-li-tag {
+    grid-area: tags;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.otv2-li-score--great { color: #15803d; }
+.otv2-li-score--good { color: #4d7c0f; }
+.otv2-li-score--mid { color: #b45309; }
+.otv2-li-score--low { color: #b91c1c; }
+
+/* ─── VibeTabSwitcher ──────────────────────────────────────────────────── */
+
+.otv2-vibe-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0;
+}
+
+.otv2-vibe-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: white;
+    cursor: pointer;
+    font: inherit;
+    transition: all 120ms;
+}
+
+.otv2-vibe-tab:hover {
+    background: #f9fafb;
+}
+
+.otv2-vibe-tab.is-active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+}
+
+.otv2-vibe-tab-emoji { font-size: 16px; line-height: 1; }
+.otv2-vibe-tab-label { font-size: 13px; }
+
+/* ─── NarrativeBlock ───────────────────────────────────────────────────── */
+
+.otv2-narrative-text {
+    line-height: 1.55;
+    color: #1f2937;
+    margin: 0;
+    padding: 12px 0;
+}
+
+.otv2-narrative-fallback {
+    color: #6b7280;
+    font-style: italic;
+    margin: 0;
+    padding: 12px 0;
+}
+
+.otv2-narrative-skeleton {
+    padding: 12px 0;
+}
+
+.otv2-narrative-skeleton-line {
+    height: 14px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+    background-size: 200% 100%;
+    animation: otv2-shimmer 1.4s infinite;
+    border-radius: 4px;
+}
+
+.otv2-narrative-skeleton-line--short {
+    width: 60%;
+}
+
+@keyframes otv2-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ─── DayDetailPanel ───────────────────────────────────────────────────── */
+
+.otv2-detail {
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+}
+
+.otv2-detail-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.otv2-detail-date {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.otv2-detail-score {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.otv2-detail-wheel {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0;
+    min-height: 320px;
+}
+
+.otv2-detail-predicates {
+    margin-top: 16px;
+}
+
+.otv2-detail-predicates summary {
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.otv2-detail-predicates ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.otv2-detail-predicates li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+/* ─── Recipe panel: vibes chip row ─────────────────────────────────────── */
+
+.otv2-recipe-vibes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.otv2-recipe-vibe-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    font-size: 12px;
+}
+
+.otv2-recipe-vibe-chip-emoji { font-size: 14px; line-height: 1; }
+
