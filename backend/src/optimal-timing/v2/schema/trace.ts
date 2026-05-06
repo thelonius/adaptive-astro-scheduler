@@ -17,6 +17,7 @@
 
 import type { IntentEnvelope } from './intent-envelope';
 import type { Recipe, Predicate } from './dsl';
+import type { NarrativeBundle } from './narratives';
 
 // ─── LLM stage envelope ──────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ export interface LLMStage<T> {
     /** Provider model id, e.g. "claude-sonnet-4.6" or "gpt-4o-2024-11-20" */
     model: string;
     provider: 'anthropic' | 'openai' | 'nim' | 'mock';
-    /** Version of the prompt template, e.g. "recipe.v1" */
+    /** Version of the prompt template, e.g. "recipe.v2" */
     prompt_template_version: string;
     latency_ms: number;
     cost_usd: number;
@@ -39,6 +40,16 @@ export interface LLMStage<T> {
      * failures. Heavy: skip persisting in production unless debug flag set.
      */
     raw_response?: string;
+}
+
+/**
+ * Stage 6 (added in 1.1.0): per-day per-vibe narrative rendering.
+ * Optional on TraceRecord — old traces and requests that didn't request
+ * narratives leave this field undefined.
+ */
+export interface StageRenderNarratives extends LLMStage<NarrativeBundle> {
+    /** Echo of the natal chart id used to ground narratives, or null. */
+    natal_chart_id: string | null;
 }
 
 // ─── Per-stage records ───────────────────────────────────────────────────────
@@ -141,6 +152,8 @@ export interface TraceRecord {
     stage_recipe: LLMStage<Recipe>;
     stage_scoring: StageScoring;
     stage_output: StageOutput;
+    /** New in 1.1.0: per-day per-vibe narratives. Undefined for v1.0.x traces. */
+    stage_render_narratives?: StageRenderNarratives;
 
     total_latency_ms: number;
     total_cost_usd: number;

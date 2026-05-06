@@ -1,5 +1,5 @@
 /**
- * v2 HTTP controller — phase 1 + 2.
+ * v2 HTTP controller — phase 1 + 2 + Phase A vibes/narratives.
  *
  * Endpoints:
  *   POST /api/optimal-timing/v2/find-with-fixed-recipe
@@ -7,9 +7,27 @@
  *     inline recipe object. Use to validate the engine without LLM.
  *
  *   POST /api/optimal-timing/v2/find-with-intent
- *     Free-text intent → LLM-generated Recipe → scoring. Returns the
- *     generated recipe alongside the windows so the caller can audit
- *     what the LLM inferred.
+ *     Free-text intent → LLM-generated Recipe (with vibes) → scoring →
+ *     LLM-rendered per-day per-vibe narratives. Optional natal_chart_id
+ *     in the request grounds narratives in the user's natal chart and
+ *     embeds the chart in the response for biwheel rendering on the
+ *     client.
+ *
+ *     Request body:
+ *       {
+ *         intent: string,                    // free-text user prompt
+ *         start_date: string,                // YYYY-MM-DD
+ *         end_date: string,                  // YYYY-MM-DD
+ *         top_n?: number,                    // default 10
+ *         language?: 'ru' | 'en' | 'auto',
+ *         natal_chart_id?: string,           // optional UUID
+ *         bypass_cache?: boolean,
+ *         debug?: boolean,
+ *       }
+ *
+ *     Response includes generated_recipe.vibes,
+ *     windows[i].vibe_narratives { [vibeId]: text }, and
+ *     natal_chart (full chart object or null).
  *
  *   GET /api/optimal-timing/v2/traces/:id
  *     Fetch a persisted TraceRecord.
@@ -26,6 +44,8 @@ import {
 import { TraceStore } from '../trace/store';
 import { tryParseRecipe } from '../schema/dsl';
 import { generateRecipe } from '../llm/recipe-generator';
+import { renderNarratives } from '../llm/narratives-generator';
+import { natalChartRepository } from '../../../database/repositories';
 
 const CANONICAL_IDS = [
     'business_launch',
@@ -35,6 +55,23 @@ const CANONICAL_IDS = [
     'jupiter_matters',
 ] as const;
 type CanonicalId = typeof CANONICAL_IDS[number];
+
+/**
+ * Project a NatalChart row to the minimum fields the biwheel renderer
+ * needs. Strips PII (user_id, birth_date, birth_time, birth_location,
+ * name) — the API has no ownership check yet, and any caller with a
+ * UUID could otherwise read someone else's birth data.
+ */
+function projectNatalForBiwheel(
+    natal: NonNullable<Awaited<ReturnType<typeof natalChartRepository.findById>>>,
+) {
+    return {
+        id: natal.id,
+        planets: natal.planets,
+        houses: (natal as { houses?: unknown }).houses ?? null,
+        aspects: (natal as { aspects?: unknown }).aspects ?? null,
+    };
+}
 
 export class OptimalTimingV2Controller {
     private ephemeris = getSharedEphemerisCalculator();
@@ -102,6 +139,11 @@ export class OptimalTimingV2Controller {
                 { ephemeris: this.ephemeris, traceStore: this.traceStore },
             );
 
+            // Pipeline no longer persists the trace itself — controller appends.
+            try { await this.traceStore.append(result.trace); } catch (e) {
+                console.warn('[v2] failed to persist trace (find-with-fixed-recipe):', e);
+            }
+
             res.json({
                 request_id: result.trace.request_id,
                 recipe_id: typeof recipe_id === 'string' ? recipe_id : null,
@@ -142,6 +184,7 @@ export class OptimalTimingV2Controller {
                 debug = false,
                 language,
                 bypass_cache = false,
+                natal_chart_id,
             } = req.body ?? {};
 
             if (typeof intent !== 'string' || !intent.trim()) {
@@ -195,6 +238,63 @@ export class OptimalTimingV2Controller {
                 { ephemeris: this.ephemeris, traceStore: this.traceStore },
             );
 
+            // Stage 4: optional natal chart fetch
+            let natal: Awaited<ReturnType<typeof natalChartRepository.findById>> = null;
+            if (typeof natal_chart_id === 'string' && natal_chart_id.length > 0) {
+                try {
+                    natal = await natalChartRepository.findById(natal_chart_id);
+                } catch (e) {
+                    console.warn('[v2] failed to fetch natal chart, continuing without:', e);
+                }
+            }
+
+            // Project once, reuse for both the LLM call and the response.
+            // PII (user_id, birth_date, birth_time, birth_location, name) stays
+            // server-side — see projectNatalForBiwheel.
+            const natalProjected = natal ? projectNatalForBiwheel(natal) : null;
+
+            // Stage 5: per-day per-vibe narratives.
+            // result.windows is already the ranked survivors (ScoredDay[] with non-null rank),
+            // produced by rankWindows in pipeline/index.ts.
+            let narrativeResult: Awaited<ReturnType<typeof renderNarratives>> | null = null;
+            try {
+                narrativeResult = await renderNarratives({
+                    intent,
+                    recipe: generation.recipe,
+                    windows: result.windows,
+                    natal_chart: natalProjected,
+                    language,
+                });
+            } catch (e) {
+                console.warn('[v2] renderNarratives failed, continuing with empty narratives:', e);
+            }
+
+            // Stage 6: stamp narratives onto the trace BEFORE persisting,
+            // so /traces/:id surfaces them. Pipeline deferred the append to us.
+            if (narrativeResult) {
+                result.trace.stage_render_narratives = {
+                    model: narrativeResult.llm.model,
+                    provider: 'nim',
+                    prompt_template_version: narrativeResult.llm.prompt_version,
+                    latency_ms: narrativeResult.llm.latency_ms,
+                    cost_usd: narrativeResult.llm.cost_usd,
+                    input_tokens: narrativeResult.llm.input_tokens,
+                    output_tokens: narrativeResult.llm.output_tokens,
+                    output: { narratives: narrativeResult.narratives },
+                    cache_hit: narrativeResult.llm.cached,
+                    natal_chart_id: typeof natal_chart_id === 'string' ? natal_chart_id : null,
+                };
+                // Roll narratives cost/latency into the trace totals.
+                result.trace.total_cost_usd = Number(
+                    (result.trace.total_cost_usd + narrativeResult.llm.cost_usd).toFixed(6),
+                );
+                result.trace.total_latency_ms += narrativeResult.llm.latency_ms;
+            }
+
+            try { await this.traceStore.append(result.trace); } catch (e) {
+                console.warn('[v2] failed to persist trace (find-with-intent):', e);
+            }
+
             res.json({
                 request_id: result.trace.request_id,
                 intent,
@@ -204,6 +304,7 @@ export class OptimalTimingV2Controller {
                     rationale: generation.recipe.rationale,
                     disqualifiers: generation.recipe.disqualifiers,
                     weighted_conditions: generation.recipe.weighted_conditions,
+                    vibes: generation.recipe.vibes,
                     metadata: generation.recipe.metadata,
                 },
                 llm: {
@@ -212,6 +313,13 @@ export class OptimalTimingV2Controller {
                     cached: generation.cached,
                     attempts: generation.attempts,
                 },
+                narratives_llm: narrativeResult ? {
+                    model: narrativeResult.llm.model,
+                    prompt_version: narrativeResult.llm.prompt_version,
+                    cached: narrativeResult.llm.cached,
+                    attempts: narrativeResult.attempts,
+                    latency_ms: narrativeResult.llm.latency_ms,
+                } : null,
                 summary: result.trace.stage_output.response_summary,
                 windows: result.windows.map((w) => ({
                     date: w.date,
@@ -223,7 +331,9 @@ export class OptimalTimingV2Controller {
                     moon: w.ephemeris_snapshot.moon,
                     sun_sign: w.ephemeris_snapshot.sun_sign,
                     retrograde_planets: w.ephemeris_snapshot.retrograde_planets,
+                    vibe_narratives: narrativeResult?.narratives[w.date] ?? {},
                 })),
+                natal_chart: natalProjected,
                 disqualified_days: result.trace.stage_scoring.days_disqualified,
                 cost: { total_usd: result.trace.total_cost_usd, latency_ms: result.trace.total_latency_ms },
                 trace: debug ? result.trace : undefined,

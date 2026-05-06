@@ -3,7 +3,7 @@
  *
  * Takes free-form intent → returns a validated Recipe DSL object.
  * Pipeline:
- *   1. Build system prompt from recipe.v1.md + canonical-recipes.json
+ *   1. Build system prompt from recipe.v2.md + canonical-recipes.json
  *   2. Build user message (INTENT/LOCATION/TODAY/LANGUAGE_HINT)
  *   3. Call NIM /v1/chat/completions (OpenAI-compatible)
  *   4. Parse JSON, validate via Zod tryParseRecipe
@@ -22,7 +22,7 @@ import type { Recipe } from '../schema/dsl';
 
 const NIM_BASE_URL = process.env.NVIDIA_BASE_URL ?? 'https://integrate.api.nvidia.com/v1';
 const NIM_MODEL = process.env.NVIDIA_MODEL ?? 'nvidia/llama-3.3-nemotron-super-49b-v1.5';
-const PROMPT_VERSION = 'recipe.v1';
+const PROMPT_VERSION = 'recipe.v2';
 
 // ─── API key resolution ───────────────────────────────────────────────────────
 // Env wins. Fallback: ~/.config/nvidia/api-key (chmod 600 stash).
@@ -51,7 +51,7 @@ function getApiKey(): string {
 
 // ─── Prompt assembly ──────────────────────────────────────────────────────────
 const PROMPT_DIR = path.join(__dirname, '..', 'prompts');
-const RECIPE_PROMPT_PATH = path.join(PROMPT_DIR, 'recipe.v1.md');
+const RECIPE_PROMPT_PATH = path.join(PROMPT_DIR, 'recipe.v2.md');
 const CANONICAL_RECIPES_PATH = path.join(PROMPT_DIR, 'examples', 'canonical-recipes.json');
 
 let _systemPromptCache: string | null = null;

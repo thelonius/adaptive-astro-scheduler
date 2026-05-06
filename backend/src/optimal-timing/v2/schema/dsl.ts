@@ -12,7 +12,7 @@
 
 import { z } from 'zod';
 
-export const SCHEMA_VERSION = '1.0.0';
+export const SCHEMA_VERSION = '1.1.0';
 
 // ─── Closed enums ────────────────────────────────────────────────────────────
 
@@ -170,6 +170,18 @@ export const WeightedPredicateSchema = z.object({
 });
 export type WeightedPredicate = z.infer<typeof WeightedPredicateSchema>;
 
+// ─── Vibes (Phase A) ──────────────────────────────────────────────────────────
+// A vibe is a framing of the user's intent — an alternative reading lens.
+// LLM proposes 2-5 vibes per recipe. The IDs are stable handles, the labels
+// are user-facing strings in the user's language, the emoji is decorative.
+
+export const VibeSchema = z.object({
+    id: z.string().regex(/^[a-z][a-z0-9_]*$/, 'vibe id must be snake_case ascii'),
+    label: z.string().min(1).max(60),
+    emoji: z.string().max(4).optional(),
+});
+export type Vibe = z.infer<typeof VibeSchema>;
+
 export const RecipeMetadataSchema = z.object({
     schema_version: z.string().default(SCHEMA_VERSION),
     generated_by: z.object({
@@ -202,6 +214,16 @@ export const RecipeSchema = z.object({
      * Sum of matched weights = raw score. Order does not matter.
      */
     weighted_conditions: z.array(WeightedPredicateSchema).min(1),
+
+    /**
+     * Alternative framings of the intent — different vibes the user
+     * might bring to the same event with different intentions or
+     * expectations. 2-5 entries.
+     */
+    vibes: z.array(VibeSchema).min(2).max(5).refine(
+        (vs) => new Set(vs.map((v) => v.id)).size === vs.length,
+        { message: 'vibe ids must be unique within a recipe' },
+    ),
 
     metadata: RecipeMetadataSchema,
 });
