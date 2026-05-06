@@ -35,6 +35,20 @@ export interface MatchedPredicate {
     details?: Record<string, unknown>;
 }
 
+export interface Vibe {
+    id: string;             // snake_case, matches backend VibeSchema regex
+    label: string;          // user-facing string, ≤60 chars
+    emoji?: string;
+}
+
+export type VibeNarrativeMap = Record<string, string>; // vibeId -> narrative text
+
+/**
+ * Loose typing — Phase B ignores natal_chart entirely. Phase D will tighten
+ * this to the redacted projection {id, planets, houses?, aspects?}.
+ */
+export type NatalChartProjection = Record<string, unknown> | null;
+
 export interface TimingWindowV2 {
     date: string; // YYYY-MM-DD
     score: number; // 0..100
@@ -43,6 +57,7 @@ export interface TimingWindowV2 {
     moon: MoonState;
     sun_sign: string;
     retrograde_planets: string[];
+    vibe_narratives?: VibeNarrativeMap; // new in Phase A; absent on legacy responses
 }
 
 export interface RecipeDisqualifier {
@@ -61,6 +76,7 @@ export interface GeneratedRecipe {
     rationale: string;
     disqualifiers: RecipeDisqualifier[];
     weighted_conditions: RecipeWeightedCondition[];
+    vibes: Vibe[];                      // new — backend always returns 2-5
     metadata?: Record<string, unknown>;
 }
 
@@ -75,8 +91,16 @@ export interface FindWithIntentResponse {
         cached: boolean;
         attempts: number;
     };
+    narratives_llm: {
+        model: string;
+        prompt_version: string;
+        cached: boolean;
+        attempts: number;
+        latency_ms: number;
+    } | null;
     summary: string;
     windows: TimingWindowV2[];
+    natal_chart: NatalChartProjection;
     disqualified_days: number;
     cost: { total_usd: number; latency_ms: number };
 }
