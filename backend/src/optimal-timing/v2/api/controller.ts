@@ -56,6 +56,23 @@ const CANONICAL_IDS = [
 ] as const;
 type CanonicalId = typeof CANONICAL_IDS[number];
 
+/**
+ * Project a NatalChart row to the minimum fields the biwheel renderer
+ * needs. Strips PII (user_id, birth_date, birth_time, birth_location,
+ * name) — the API has no ownership check yet, and any caller with a
+ * UUID could otherwise read someone else's birth data.
+ */
+function projectNatalForBiwheel(
+    natal: NonNullable<Awaited<ReturnType<typeof natalChartRepository.findById>>>,
+) {
+    return {
+        id: natal.id,
+        planets: natal.planets,
+        houses: (natal as { houses?: unknown }).houses ?? null,
+        aspects: (natal as { aspects?: unknown }).aspects ?? null,
+    };
+}
+
 export class OptimalTimingV2Controller {
     private ephemeris = getSharedEphemerisCalculator();
     private traceStore = new TraceStore();
@@ -226,6 +243,11 @@ export class OptimalTimingV2Controller {
                 }
             }
 
+            // Project once, reuse for both the LLM call and the response.
+            // PII (user_id, birth_date, birth_time, birth_location, name) stays
+            // server-side — see projectNatalForBiwheel.
+            const natalProjected = natal ? projectNatalForBiwheel(natal) : null;
+
             // Stage 5: per-day per-vibe narratives.
             // result.windows is already the ranked survivors (ScoredDay[] with non-null rank),
             // produced by rankWindows in pipeline/index.ts.
@@ -235,7 +257,7 @@ export class OptimalTimingV2Controller {
                     intent,
                     recipe: generation.recipe,
                     windows: result.windows,
-                    natal_chart: natal as any,
+                    natal_chart: natalProjected,
                     language,
                 });
             } catch (e) {
@@ -280,7 +302,7 @@ export class OptimalTimingV2Controller {
                     retrograde_planets: w.ephemeris_snapshot.retrograde_planets,
                     vibe_narratives: narrativeResult?.narratives[w.date] ?? {},
                 })),
-                natal_chart: natal,
+                natal_chart: natalProjected,
                 disqualified_days: result.trace.stage_scoring.days_disqualified,
                 cost: { total_usd: result.trace.total_cost_usd, latency_ms: result.trace.total_latency_ms },
                 trace: debug ? result.trace : undefined,

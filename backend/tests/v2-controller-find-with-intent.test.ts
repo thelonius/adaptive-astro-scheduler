@@ -127,7 +127,45 @@ describe('POST /find-with-intent (vibes + narratives)', () => {
     expect(res.status).toBe(200);
     expect(res.body.natal_chart).toBeDefined();
     expect(res.body.natal_chart.id).toBe('natal-test');
+    expect(res.body.natal_chart.planets).toBeDefined();
     expect(natalChartRepository.findById).toHaveBeenCalledWith('natal-test');
+  });
+
+  it('strips PII fields from natal_chart in response', async () => {
+    const { natalChartRepository } = await import('../src/database/repositories');
+    jest.spyOn(natalChartRepository, 'findById').mockResolvedValue({
+      id: 'natal-test',
+      user_id: 'user-x',
+      name: 'Mr Sensitive',
+      birth_date: '1984-09-11',
+      birth_time: '01:40:00',
+      birth_location: { latitude: 55.75, longitude: 37.62 },
+      planets: [{ name: 'Sun', longitude: 168, zodiacSign: 'Virgo' }],
+      houses: [],
+      aspects: [],
+    } as any);
+
+    const app = makeApp();
+    const res = await request(app)
+      .post('/find-with-intent')
+      .send({
+        intent: 'with sensitive natal',
+        start_date: '2026-05-05',
+        end_date: '2026-05-06',
+        top_n: 1,
+        natal_chart_id: 'natal-test',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.natal_chart).toBeDefined();
+    expect(res.body.natal_chart.id).toBe('natal-test');
+    expect(res.body.natal_chart.planets).toBeDefined();
+    // PII fields must NOT be in the response
+    expect(res.body.natal_chart.user_id).toBeUndefined();
+    expect(res.body.natal_chart.birth_date).toBeUndefined();
+    expect(res.body.natal_chart.birth_time).toBeUndefined();
+    expect(res.body.natal_chart.birth_location).toBeUndefined();
+    expect(res.body.natal_chart.name).toBeUndefined();
   });
 
   it('continues without natal embedding when natal_chart_id missing in DB', async () => {

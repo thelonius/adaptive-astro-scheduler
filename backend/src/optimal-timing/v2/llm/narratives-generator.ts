@@ -54,10 +54,16 @@ function getSystemPrompt(): string {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/** Optional natal chart payload. Loose typing — accepts the repository result. */
+/**
+ * Optional natal chart payload. Intentionally loose — the only invariant
+ * the renderer relies on is `id` (for cache keying). Everything else is
+ * passed through to the LLM via JSON.stringify, so the structural shape
+ * just needs to be serializable. Callers project the repository row to
+ * a non-PII subset before passing it in.
+ */
 export interface NarrativeNatalChart {
     id: string;
-    planets: Array<{ name: string; longitude: number; zodiacSign?: string; degree_in_sign?: number }>;
+    planets: unknown;
     [key: string]: unknown;
 }
 
