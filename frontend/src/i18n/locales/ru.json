@@ -236,7 +236,22 @@
       "opposition": "Оппозиция ☍",
       "quincunx": "Квинконс ⚻"
     },
-    "locale": "ru-RU"
+    "locale": "ru-RU",
+    "saveButton": "Сохранить в библиотеку",
+    "saveDialogTitle": "Сохранить натальную карту",
+    "saveNameLabel": "Название",
+    "saveNamePlaceholder": "Например: моя карта, друг, событие…",
+    "saveDescriptionLabel": "Описание (опционально)",
+    "saveTypeLabel": "Тип карты",
+    "saveTypeNatal": "Натальная",
+    "saveTypeEvent": "Событие",
+    "saveTypeQuestion": "Хорарная (вопрос)",
+    "saveSuccessTitle": "Карта сохранена",
+    "saveSuccessDesc": "«{{name}}» добавлена в библиотеку",
+    "saveErrorTitle": "Не удалось сохранить",
+    "saveErrorDesc": "Проверьте подключение к серверу",
+    "save": "Сохранить",
+    "cancel": "Отмена"
   },
   "schedulerLab": {
     "title": "Лаборатория планировщика",
