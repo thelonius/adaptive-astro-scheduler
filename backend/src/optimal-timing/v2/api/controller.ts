@@ -1,5 +1,5 @@
 /**
- * v2 HTTP controller — phase 1 + 2.
+ * v2 HTTP controller — phase 1 + 2 + Phase A vibes/narratives.
  *
  * Endpoints:
  *   POST /api/optimal-timing/v2/find-with-fixed-recipe
@@ -7,9 +7,27 @@
  *     inline recipe object. Use to validate the engine without LLM.
  *
  *   POST /api/optimal-timing/v2/find-with-intent
- *     Free-text intent → LLM-generated Recipe → scoring. Returns the
- *     generated recipe alongside the windows so the caller can audit
- *     what the LLM inferred.
+ *     Free-text intent → LLM-generated Recipe (with vibes) → scoring →
+ *     LLM-rendered per-day per-vibe narratives. Optional natal_chart_id
+ *     in the request grounds narratives in the user's natal chart and
+ *     embeds the chart in the response for biwheel rendering on the
+ *     client.
+ *
+ *     Request body:
+ *       {
+ *         intent: string,                    // free-text user prompt
+ *         start_date: string,                // YYYY-MM-DD
+ *         end_date: string,                  // YYYY-MM-DD
+ *         top_n?: number,                    // default 10
+ *         language?: 'ru' | 'en' | 'auto',
+ *         natal_chart_id?: string,           // optional UUID
+ *         bypass_cache?: boolean,
+ *         debug?: boolean,
+ *       }
+ *
+ *     Response includes generated_recipe.vibes,
+ *     windows[i].vibe_narratives { [vibeId]: text }, and
+ *     natal_chart (full chart object or null).
  *
  *   GET /api/optimal-timing/v2/traces/:id
  *     Fetch a persisted TraceRecord.
