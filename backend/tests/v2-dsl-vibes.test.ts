@@ -92,3 +92,30 @@ describe('Recipe schema with vibes', () => {
     expect(() => parseRecipe(validBase)).toThrow();
   });
 });
+
+import * as fsx from 'fs';
+import * as pathx from 'path';
+
+describe('recipe.v2.md prompt template', () => {
+  const promptPath = pathx.join(
+    __dirname, '..', 'src', 'optimal-timing', 'v2', 'prompts', 'recipe.v2.md',
+  );
+  const text = fsx.readFileSync(promptPath, 'utf8');
+
+  it('exists and is non-trivial', () => {
+    expect(text.length).toBeGreaterThan(500);
+  });
+
+  it('mentions vibes by name', () => {
+    expect(text.toLowerCase()).toContain('vibes');
+  });
+
+  it('shows the vibes JSON shape with id and label', () => {
+    expect(text).toMatch(/"id":\s*"[a-z_]+"/);
+    expect(text).toMatch(/"label":/);
+  });
+
+  it('still has the canonical recipes injection placeholder', () => {
+    expect(text).toMatch(/\[CANONICAL RECIPES INSERTED HERE/);
+  });
+});

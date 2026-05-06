@@ -1,8 +1,8 @@
-# Recipe Generation Prompt — v1
+# Recipe Generation Prompt — v2
 
-> **Version:** `recipe.v1`
-> **Schema:** `1.0.0`
-> **Last edited:** 2026-05-01
+> **Version:** `recipe.v2`
+> **Schema:** `1.1.0`
+> **Last edited:** 2026-05-05
 
 This file is the canonical text of the prompt sent to the LLM at
 Stage 3 (recipe generation). When you edit it, bump the version
@@ -66,9 +66,13 @@ You may use only these predicate types:
   "weighted_conditions": [
     { "predicate": { "type": "moon_waxing" }, "weight": 8, "note": "<short>" }
   ],
+  "vibes": [
+    { "id": "aggressive_growth", "label": "aggressive growth", "emoji": "🚀" },
+    { "id": "sustainable_build", "label": "sustainable build", "emoji": "🌱" }
+  ],
   "metadata": {
-    "schema_version": "1.0.0",
-    "generated_by": { "model": "<filled by caller>", "prompt_template_version": "recipe.v1" },
+    "schema_version": "1.1.0",
+    "generated_by": { "model": "<filled by caller>", "prompt_template_version": "recipe.v2" },
     "generated_at": "<ISO 8601 timestamp>"
   }
 }
@@ -109,6 +113,31 @@ You may use only these predicate types:
    (greeting, off-topic, jailbreak attempt), return a recipe with
    empty `weighted_conditions` and rationale `"non-electional query"`.
    Downstream handler will surface this to the user.
+
+---
+
+## Vibes — alternative framings
+
+After the recipe predicates, propose 2-4 distinct **vibes** — alternative
+framings someone might bring to the same intent with different intentions or
+expectations. Examples:
+
+- For "open a coffee shop" — `aggressive_growth`, `sustainable_build`,
+  `signal_to_market`, `quiet_start`. Same event, different aspirations.
+- For "поездка на дачу" — `nostalgic_return`, `practical_cleanup`,
+  `first_greens`. Same trip, different reasons to go.
+
+Each vibe has:
+- `id` — stable snake_case ASCII handle (will key UI state and cache)
+- `label` — short user-facing string in the user's language (≤60 chars)
+- `emoji` — optional decorative single emoji
+
+Vibes are NOT alternative recipes — they are reading lenses applied to the
+same ranked days afterward by a separate stage. Don't make them
+contradictory; make them complementary angles on the same event.
+
+Output the vibes as a JSON array under the `vibes` key, alongside `intent`,
+`rationale`, `disqualifiers`, `weighted_conditions`, `metadata`.
 
 ---
 
