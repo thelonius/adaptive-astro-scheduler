@@ -52,3 +52,29 @@ describe('NarrativeBundle schema', () => {
     ).not.toBeNull();
   });
 });
+
+import * as fsP from 'fs';
+import * as pathP from 'path';
+
+describe('narratives.v1.md prompt', () => {
+  const promptPath = pathP.join(
+    __dirname, '..', 'src', 'optimal-timing', 'v2', 'prompts', 'narratives.v1.md',
+  );
+
+  it('exists', () => {
+    expect(fsP.existsSync(promptPath)).toBe(true);
+  });
+
+  it('contains required structural markers', () => {
+    const text = fsP.readFileSync(promptPath, 'utf8');
+    expect(text.length).toBeGreaterThan(400);
+    expect(text.toLowerCase()).toContain('narrative');
+    expect(text.toLowerCase()).toContain('vibe');
+    // Mentions both with-natal and without-natal modes
+    expect(text.toLowerCase()).toContain('natal');
+    // Asks for JSON-only output
+    expect(text.toLowerCase()).toMatch(/json|valid json/);
+    // Shows the {date: {vibe_id: text}} shape
+    expect(text).toMatch(/\d{4}-\d{2}-\d{2}|YYYY-MM-DD/);
+  });
+});
