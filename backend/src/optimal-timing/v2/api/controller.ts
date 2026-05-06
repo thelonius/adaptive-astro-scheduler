@@ -26,6 +26,8 @@ import {
 import { TraceStore } from '../trace/store';
 import { tryParseRecipe } from '../schema/dsl';
 import { generateRecipe } from '../llm/recipe-generator';
+import { renderNarratives } from '../llm/narratives-generator';
+import { natalChartRepository } from '../../../database/repositories';
 
 const CANONICAL_IDS = [
     'business_launch',
@@ -142,6 +144,7 @@ export class OptimalTimingV2Controller {
                 debug = false,
                 language,
                 bypass_cache = false,
+                natal_chart_id,
             } = req.body ?? {};
 
             if (typeof intent !== 'string' || !intent.trim()) {
@@ -195,6 +198,32 @@ export class OptimalTimingV2Controller {
                 { ephemeris: this.ephemeris, traceStore: this.traceStore },
             );
 
+            // Stage 4: optional natal chart fetch
+            let natal: Awaited<ReturnType<typeof natalChartRepository.findById>> = null;
+            if (typeof natal_chart_id === 'string' && natal_chart_id.length > 0) {
+                try {
+                    natal = await natalChartRepository.findById(natal_chart_id);
+                } catch (e) {
+                    console.warn('[v2] failed to fetch natal chart, continuing without:', e);
+                }
+            }
+
+            // Stage 5: per-day per-vibe narratives.
+            // result.windows is already the ranked survivors (ScoredDay[] with non-null rank),
+            // produced by rankWindows in pipeline/index.ts.
+            let narrativeResult: Awaited<ReturnType<typeof renderNarratives>> | null = null;
+            try {
+                narrativeResult = await renderNarratives({
+                    intent,
+                    recipe: generation.recipe,
+                    windows: result.windows,
+                    natal_chart: natal as any,
+                    language,
+                });
+            } catch (e) {
+                console.warn('[v2] renderNarratives failed, continuing with empty narratives:', e);
+            }
+
             res.json({
                 request_id: result.trace.request_id,
                 intent,
@@ -204,6 +233,7 @@ export class OptimalTimingV2Controller {
                     rationale: generation.recipe.rationale,
                     disqualifiers: generation.recipe.disqualifiers,
                     weighted_conditions: generation.recipe.weighted_conditions,
+                    vibes: generation.recipe.vibes,
                     metadata: generation.recipe.metadata,
                 },
                 llm: {
@@ -212,6 +242,13 @@ export class OptimalTimingV2Controller {
                     cached: generation.cached,
                     attempts: generation.attempts,
                 },
+                narratives_llm: narrativeResult ? {
+                    model: narrativeResult.llm.model,
+                    prompt_version: narrativeResult.llm.prompt_version,
+                    cached: narrativeResult.llm.cached,
+                    attempts: narrativeResult.attempts,
+                    latency_ms: narrativeResult.llm.latency_ms,
+                } : null,
                 summary: result.trace.stage_output.response_summary,
                 windows: result.windows.map((w) => ({
                     date: w.date,
@@ -223,7 +260,9 @@ export class OptimalTimingV2Controller {
                     moon: w.ephemeris_snapshot.moon,
                     sun_sign: w.ephemeris_snapshot.sun_sign,
                     retrograde_planets: w.ephemeris_snapshot.retrograde_planets,
+                    vibe_narratives: narrativeResult?.narratives[w.date] ?? {},
                 })),
+                natal_chart: natal,
                 disqualified_days: result.trace.stage_scoring.days_disqualified,
                 cost: { total_usd: result.trace.total_cost_usd, latency_ms: result.trace.total_latency_ms },
                 trace: debug ? result.trace : undefined,

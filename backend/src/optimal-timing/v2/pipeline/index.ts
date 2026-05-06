@@ -19,6 +19,9 @@ import { buildDayContext, dateRangeISO } from './build-day-context';
 import { scoreDay } from './score-day';
 import { rankWindows, type RankInput } from './rank-windows';
 
+// Re-export for callers that want the full v2 pipeline surface from one module.
+export { renderNarratives } from '../llm/narratives-generator';
+
 export interface FindWithFixedRecipeArgs {
     /** Original user prompt — recorded in trace for analytics, not used to compute. */
     user_prompt: string;
