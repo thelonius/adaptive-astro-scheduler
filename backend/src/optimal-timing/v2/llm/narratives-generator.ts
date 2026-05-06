@@ -67,6 +67,8 @@ export interface RenderNarrativesInput {
     windows: ScoredDay[];
     natal_chart?: NarrativeNatalChart | null;
     language?: 'ru' | 'en' | 'auto';
+    /** When true, skip the cache (forces a fresh LLM call). */
+    bypassCache?: boolean;
 }
 
 export interface RenderNarrativesResult extends NarrativeBundle {
@@ -81,6 +83,38 @@ export interface RenderNarrativesResult extends NarrativeBundle {
     };
     attempts: number;
     raw_response?: string;
+}
+
+// ─── Cache (in-memory LRU) ────────────────────────────────────────────────────
+const CACHE_MAX = 100;
+const cache = new Map<string, RenderNarrativesResult>();
+
+function cacheKeyFor(input: RenderNarrativesInput): string {
+    // Stable hash inputs: language, intent (normalized), date list (sorted),
+    // natal_chart.id, vibe ids (so a recipe edit invalidates cache).
+    const lang = input.language ?? 'auto';
+    const intent = input.intent.trim().toLowerCase().replace(/\s+/g, ' ');
+    const dates = input.windows.map((w) => w.date).sort().join(',');
+    const natalId = input.natal_chart?.id ?? '';
+    const vibeIds = input.recipe.vibes.map((v) => v.id).sort().join(',');
+    return `${lang}|${intent}|${dates}|${natalId}|${vibeIds}`;
+}
+
+function cacheGet(key: string): RenderNarrativesResult | undefined {
+    const hit = cache.get(key);
+    if (hit) {
+        cache.delete(key);
+        cache.set(key, hit);
+    }
+    return hit;
+}
+
+function cachePut(key: string, value: RenderNarrativesResult): void {
+    if (cache.size >= CACHE_MAX) {
+        const oldest = cache.keys().next().value;
+        if (oldest) cache.delete(oldest);
+    }
+    cache.set(key, value);
 }
 
 function buildUserMessage(input: RenderNarrativesInput): string {
@@ -122,6 +156,17 @@ function stripJsonFence(s: string): string {
 export async function renderNarratives(
     input: RenderNarrativesInput,
 ): Promise<RenderNarrativesResult> {
+    const cacheKey = cacheKeyFor(input);
+    if (!input.bypassCache) {
+        const hit = cacheGet(cacheKey);
+        if (hit) {
+            return {
+                ...hit,
+                llm: { ...hit.llm, cached: true, latency_ms: 0 },
+            };
+        }
+    }
+
     const messages: Array<{ role: string; content: string }> = [
         { role: 'system', content: getSystemPrompt() },
         { role: 'user', content: buildUserMessage(input) },
@@ -182,7 +227,7 @@ export async function renderNarratives(
 
         const bundle = tryParseNarrativeBundle(parsedJson);
         if (bundle) {
-            return {
+            const result: RenderNarrativesResult = {
                 narratives: bundle.narratives,
                 llm: {
                     model: NIM_MODEL,
@@ -196,6 +241,8 @@ export async function renderNarratives(
                 attempts,
                 raw_response: raw,
             };
+            cachePut(cacheKey, result);
+            return result;
         }
 
         lastError = 'narrative JSON did not match NarrativeBundleSchema';
@@ -212,3 +259,8 @@ export async function renderNarratives(
         `renderNarratives failed after ${attempts} attempts: ${lastError}. Raw: ${lastRaw.slice(0, 300)}`,
     );
 }
+
+export const __testing__ = {
+    cacheKeyFor,
+    clearCache: () => cache.clear(),
+};

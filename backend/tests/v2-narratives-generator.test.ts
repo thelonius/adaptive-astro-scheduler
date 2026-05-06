@@ -1,4 +1,4 @@
-import { renderNarratives } from '../src/optimal-timing/v2/llm/narratives-generator';
+import { renderNarratives, __testing__ } from '../src/optimal-timing/v2/llm/narratives-generator';
 import type { Recipe } from '../src/optimal-timing/v2/schema/dsl';
 import type { ScoredDay } from '../src/optimal-timing/v2/schema/trace';
 
@@ -30,6 +30,7 @@ const mockDay = (date: string): ScoredDay => ({
 
 beforeEach(() => {
   process.env.NVIDIA_API_KEY = 'nvapi-test-key-for-mock';
+  __testing__.clearCache();
 });
 
 describe('renderNarratives', () => {
@@ -177,5 +178,104 @@ describe('renderNarratives natal handling', () => {
 
     const userMsg = capturedBody.messages.find((m: any) => m.role === 'user').content;
     expect(userMsg).not.toMatch(/NATAL_CHART/);
+  });
+});
+
+describe('renderNarratives L2 cache', () => {
+  it('serves identical second call from cache without invoking fetch', async () => {
+    let calls = 0;
+    (global as any).fetch = jest.fn(async () => {
+      calls++;
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({
+            narratives: { '2026-05-19': { v1: 'first call', v2: 'first call too' } },
+          }) } }],
+        }),
+      };
+    });
+
+    const inputArgs = {
+      intent: 'cache test',
+      recipe: mockRecipe([
+        { id: 'v1', label: 'one' },
+        { id: 'v2', label: 'two' },
+      ]),
+      windows: [mockDay('2026-05-19')],
+    };
+
+    const a = await renderNarratives(inputArgs);
+    const b = await renderNarratives(inputArgs);
+
+    expect(calls).toBe(1);
+    expect(a.llm.cached).toBe(false);
+    expect(b.llm.cached).toBe(true);
+    expect(b.narratives['2026-05-19'].v1).toBe('first call');
+  });
+
+  it('different natal_chart_id misses the cache', async () => {
+    let calls = 0;
+    (global as any).fetch = jest.fn(async () => {
+      calls++;
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({
+            narratives: { '2026-05-19': { v1: 'x', v2: 'y' } },
+          }) } }],
+        }),
+      };
+    });
+
+    const base = {
+      intent: 'natal cache test',
+      recipe: mockRecipe([
+        { id: 'v1', label: 'one' },
+        { id: 'v2', label: 'two' },
+      ]),
+      windows: [mockDay('2026-05-19')],
+    };
+
+    await renderNarratives(base);
+    await renderNarratives({
+      ...base,
+      natal_chart: { id: 'natal-A', planets: [] },
+    });
+    await renderNarratives({
+      ...base,
+      natal_chart: { id: 'natal-B', planets: [] },
+    });
+
+    expect(calls).toBe(3);
+  });
+
+  it('bypassCache forces a fresh call', async () => {
+    let calls = 0;
+    (global as any).fetch = jest.fn(async () => {
+      calls++;
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({
+            narratives: { '2026-05-19': { v1: 'x', v2: 'y' } },
+          }) } }],
+        }),
+      };
+    });
+
+    const base = {
+      intent: 'bypass test',
+      recipe: mockRecipe([
+        { id: 'v1', label: 'one' },
+        { id: 'v2', label: 'two' },
+      ]),
+      windows: [mockDay('2026-05-19')],
+    };
+
+    await renderNarratives(base);
+    await renderNarratives({ ...base, bypassCache: true } as any);
+
+    expect(calls).toBe(2);
   });
 });
