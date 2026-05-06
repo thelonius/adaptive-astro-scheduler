@@ -118,7 +118,7 @@ useful):
 3. `schema/trace.ts` — TraceRecord type. **Done in this commit.**
 4. `prompts/examples/canonical-recipes.json` — 5 Stellium recipes
    translated to DSL. **Done in this commit.**
-5. `prompts/recipe.v1.md` — few-shot prompt template referencing the
+5. `prompts/recipe.v2.md` — few-shot prompt template referencing the
    canonical recipes. **Done in this commit.**
 6. `predicates/` — implement each predicate against the existing
    `IEphemerisCalculator` and `CelestialEventsDetector`. Start with

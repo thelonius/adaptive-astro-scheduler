@@ -24,7 +24,7 @@ export interface LLMStage<T> {
     /** Provider model id, e.g. "claude-sonnet-4.6" or "gpt-4o-2024-11-20" */
     model: string;
     provider: 'anthropic' | 'openai' | 'nim' | 'mock';
-    /** Version of the prompt template, e.g. "recipe.v1" */
+    /** Version of the prompt template, e.g. "recipe.v2" */
     prompt_template_version: string;
     latency_ms: number;
     cost_usd: number;

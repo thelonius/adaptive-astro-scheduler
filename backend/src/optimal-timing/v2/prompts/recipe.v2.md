@@ -118,7 +118,7 @@ You may use only these predicate types:
 
 ## Vibes — alternative framings
 
-After the recipe predicates, propose 2-4 distinct **vibes** — alternative
+After the recipe predicates, propose 2-5 distinct **vibes** — alternative
 framings someone might bring to the same intent with different intentions or
 expectations. Examples:
 

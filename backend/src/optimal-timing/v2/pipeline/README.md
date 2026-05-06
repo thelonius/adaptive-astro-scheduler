@@ -16,7 +16,7 @@ to produce a `StageDateRange`. No LLM call. If extraction fails,
 returns `default_30d` from today.
 
 ### `build-recipe.ts` — Stage 3
-Calls the LLM with `prompts/recipe.v1.md` (with canonical recipes
+Calls the LLM with `prompts/recipe.v2.md` (with canonical recipes
 inlined) to produce a `Recipe`. **Strict Zod validation** before
 returning — on schema failure, retry once with a corrective prompt
 ("Your previous response did not match schema X at field Y. Try
