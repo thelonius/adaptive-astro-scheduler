@@ -12,7 +12,7 @@
  */
 
 import type { IEphemerisCalculator } from '../../../core/ephemeris/interface';
-import type { DateTime as DT, AspectType as ApiAspectType } from '@adaptive-astro/shared/types/astrology';
+import type { DateTime as DT } from '@adaptive-astro/shared/types/astrology';
 import type { DayContext, MoonSnapshot, PlanetSnapshot } from '../predicates/types';
 import type { Planet, AspectType } from '../schema/dsl';
 import { normalizeSign, signFromLongitude } from './sign-mapping';
@@ -21,15 +21,6 @@ const PLANETS: Planet[] = [
     'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
     'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
 ];
-
-/**
- * Map our Planet enum to the planet-name strings the API returns.
- * The API uses TitleCase English which matches our enum exactly,
- * but keep this function as a single seam in case the API changes.
- */
-function asApiPlanetName(p: Planet): string {
-    return p;
-}
 
 function fromApiPlanetName(raw: string): Planet | null {
     if (PLANETS.includes(raw as Planet)) return raw as Planet;
