@@ -26,7 +26,7 @@ export const NarrativeBlock: React.FC<Props> = ({ narratives, selectedVibeId }) 
     if (!text) {
         return (
             <p className="otv2-narrative-fallback">
-                {t('optimalTimingV2.narrativeUnavailable', 'Текст для этого вайба недоступно. Попробуй обновить страницу.')}
+                {t('optimalTimingV2.narrativeUnavailable', 'Текст для этого вайба недоступен. Попробуй обновить страницу.')}
             </p>
         );
     }

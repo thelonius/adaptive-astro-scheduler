@@ -25,7 +25,7 @@ describe('NarrativeBlock', () => {
             />,
         );
         // Fallback should be visible — the test checks for any text that hints "not available"
-        expect(screen.getByText(/недоступно|not available/i)).toBeInTheDocument();
+        expect(screen.getByText(/недоступен|not available/i)).toBeInTheDocument();
     });
 
     it('renders nothing meaningful when no vibe is selected', () => {
