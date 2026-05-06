@@ -77,6 +77,22 @@ export const GeneratedRecipePanel: React.FC<Props> = ({ recipe, llm }) => {
                         </div>
                     )}
 
+                    {recipe.vibes && recipe.vibes.length > 0 && (
+                        <div className="otv2-recipe-section">
+                            <div className="otv2-recipe-section-title">
+                                {t('optimalTimingV2.vibes', 'вайбы')}
+                            </div>
+                            <div className="otv2-recipe-vibes">
+                                {recipe.vibes.map((v) => (
+                                    <span key={v.id} className="otv2-recipe-vibe-chip">
+                                        {v.emoji && <span className="otv2-recipe-vibe-chip-emoji">{v.emoji}</span>}
+                                        <span className="otv2-recipe-vibe-chip-label">{v.label}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {recipe.weighted_conditions.length > 0 && (
                         <div className="otv2-recipe-section">
                             <div className="otv2-recipe-section-title">
