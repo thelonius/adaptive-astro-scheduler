@@ -1,8 +1,9 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
+  Button,
   Container,
   VStack,
   HStack,
@@ -26,22 +27,94 @@ import {
   Td,
   TableContainer,
   Divider,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  Select,
+  useDisclosure,
+  useToast,
 } from '@chakra-ui/react';
 import { ZodiacWheel } from '../components/ZodiacWheel';
 import { BirthDataForm } from '../components/NatalChart/BirthDataForm';
 import { ChartInterpretation } from '../components/NatalChart/ChartInterpretation';
 import { useNatalChart } from '../hooks/useNatalChart';
+import { chartService } from '../services/chartService';
+import { useChartStore } from '../store/chartStore';
 
 export const NatalChart: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data, loading, error, calculateChart, loadSavedChart } = useNatalChart();
+  const { addChart } = useChartStore();
+  const toast = useToast();
+  const saveDialog = useDisclosure();
+
+  const [saveName, setSaveName] = useState('');
+  const [saveDescription, setSaveDescription] = useState('');
+  const [saveType, setSaveType] = useState<'natal' | 'event' | 'horary'>('natal');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadSavedChart(id);
     }
   }, [id, loadSavedChart]);
+
+  const handleSaveChart = async () => {
+    if (!data || !saveName.trim()) return;
+    setSaving(true);
+    try {
+      const saved = await chartService.saveChart({
+        name: saveName.trim(),
+        type: saveType,
+        date: data.birthData.date,
+        time: data.birthData.time.length === 5
+          ? data.birthData.time
+          : data.birthData.time.substring(0, 5),
+        location: {
+          latitude: data.birthData.location.latitude,
+          longitude: data.birthData.location.longitude,
+          city: '',
+          country: '',
+          timezone: data.birthData.location.timezone,
+        },
+        description: saveDescription.trim() || undefined,
+        tags: undefined,
+      } as any);
+
+      addChart(saved);
+
+      toast({
+        title: t('natalChart.saveSuccessTitle'),
+        description: t('natalChart.saveSuccessDesc', { name: saved.name }),
+        status: 'success',
+        duration: 3000,
+      });
+
+      saveDialog.onClose();
+      setSaveName('');
+      setSaveDescription('');
+      setSaveType('natal');
+    } catch (err) {
+      console.error('Save chart failed:', err);
+      toast({
+        title: t('natalChart.saveErrorTitle'),
+        description: t('natalChart.saveErrorDesc'),
+        status: 'error',
+        duration: 4000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Prepare zodiac wheel config for natal chart (static, no refresh)
   const wheelConfig = useMemo(() => ({
@@ -132,6 +205,14 @@ export const NatalChart: React.FC = () => {
                       <Text fontWeight="semibold">{t('natalChart.moonPhaseLabel')}</Text>
                       <Badge colorScheme="purple">{data.moonPhase}</Badge>
                     </HStack>
+                    <Button
+                      mt={3}
+                      colorScheme="green"
+                      size="sm"
+                      onClick={saveDialog.onOpen}
+                    >
+                      💾 {t('natalChart.saveButton')}
+                    </Button>
                   </VStack>
                 </CardBody>
               </Card>
@@ -322,6 +403,59 @@ export const NatalChart: React.FC = () => {
           </GridItem>
         </Grid>
       </VStack>
+
+      <Modal isOpen={saveDialog.isOpen} onClose={saveDialog.onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t('natalChart.saveDialogTitle')}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <FormControl isRequired>
+                <FormLabel>{t('natalChart.saveNameLabel')}</FormLabel>
+                <Input
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder={t('natalChart.saveNamePlaceholder') ?? ''}
+                  autoFocus
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>{t('natalChart.saveTypeLabel')}</FormLabel>
+                <Select
+                  value={saveType}
+                  onChange={(e) => setSaveType(e.target.value as 'natal' | 'event' | 'horary')}
+                >
+                  <option value="natal">{t('natalChart.saveTypeNatal')}</option>
+                  <option value="event">{t('natalChart.saveTypeEvent')}</option>
+                  <option value="horary">{t('natalChart.saveTypeQuestion')}</option>
+                </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel>{t('natalChart.saveDescriptionLabel')}</FormLabel>
+                <Textarea
+                  value={saveDescription}
+                  onChange={(e) => setSaveDescription(e.target.value)}
+                  rows={3}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={saveDialog.onClose}>
+              {t('natalChart.cancel')}
+            </Button>
+            <Button
+              colorScheme="green"
+              onClick={handleSaveChart}
+              isLoading={saving}
+              isDisabled={!saveName.trim()}
+            >
+              {t('natalChart.save')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 };

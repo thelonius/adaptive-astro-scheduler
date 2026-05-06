@@ -42,40 +42,63 @@ export class ChartController {
     try {
       const chartData = req.body as ChartCreateRequest;
 
-      // For now, we'll use a default user or create anonymous charts
-      // In production, this would use authenticated user from JWT token
-      const defaultUserId = '00000000-0000-0000-0000-000000000000';
+      // Normalize time to HH:MM:SS for ephemeris and storage
+      const timeWithSeconds = chartData.time.length === 5
+        ? `${chartData.time}:00`
+        : chartData.time;
 
-      let user = await this.userRepo.findById(defaultUserId);
-      if (!user) {
-        // Create a default user for web app charts
-        user = await this.userRepo.create({
-          id: defaultUserId,
-          username: 'web_user',
-          metadata: {
-            source: 'web_app',
-            created_via: 'chart_library'
-          }
-        });
+      const birthDateTime = new Date(`${chartData.date}T${timeWithSeconds}`);
+
+      // Compute planets/houses/aspects so the chart is usable without re-calculation.
+      // Lunar metadata is best-effort — older birth dates can fall outside ephemeris.
+      const ephemerisInput = {
+        date: birthDateTime,
+        timezone: chartData.location.timezone,
+        location: {
+          latitude: chartData.location.latitude,
+          longitude: chartData.location.longitude,
+        },
+      };
+
+      const [planetsRes, housesRes, aspectsRes] = await Promise.all([
+        this.ephemeris.getPlanetsPositions(ephemerisInput),
+        this.ephemeris.getHouses(ephemerisInput, 'placidus'),
+        this.ephemeris.getAspects(ephemerisInput, 8),
+      ]);
+
+      let lunarDay = null;
+      let moonPhase: string | null = null;
+      try {
+        lunarDay = await this.ephemeris.getLunarDay(ephemerisInput);
+      } catch (e) {
+        console.warn('getLunarDay failed for chart', chartData.name, e);
+      }
+      try {
+        const phase = await this.ephemeris.getMoonPhase(ephemerisInput);
+        moonPhase = typeof phase === 'string' ? phase : String(phase);
+      } catch (e) {
+        console.warn('getMoonPhase failed for chart', chartData.name, e);
       }
 
-      // Convert date/time to proper format.
-      // Store in UTC but treating input as local time (timezone stored in location).
-      // We save the literal entered time by using ISO string without converting.
-      const birthDateTime = new Date(`${chartData.date}T${chartData.time}:00`);
-
       const natalChart = await this.natalRepo.create({
-        user_id: user.id,
+        // Guest namespace — same as /api/natal-chart/save uses (user_id IS NULL).
+        // Auth-bound user_id will be added when accounts ship.
+        user_id: null,
         name: chartData.name,
         birth_date: birthDateTime,
-        birth_time: `${chartData.time}:00`,
+        birth_time: timeWithSeconds,
         birth_location: chartData.location,
         house_system: 'placidus',
         chart_type: chartData.type,
         description: chartData.description,
         tags: chartData.tags,
-        created_at: new Date(),
-        updated_at: new Date(),
+        // ephemeris API types diverge slightly from domain types; persist
+        // the API payloads as JSONB and let consumers parse on read.
+        planets: planetsRes.planets as any,
+        houses: housesRes.houses as any,
+        aspects: aspectsRes.aspects as any,
+        lunar_day: lunarDay,
+        moon_phase: moonPhase,
       });
 
       // Format response to match frontend interface
@@ -107,16 +130,10 @@ export class ChartController {
    */
   async getCharts(req: Request, res: Response) {
     try {
-      // For now, get charts for the default web user
-      const defaultUserId = '00000000-0000-0000-0000-000000000000';
-
-      const user = await this.userRepo.findById(defaultUserId);
-      if (!user) {
-        res.json([]);
-        return;
-      }
-
-      const charts = await this.natalRepo.findFullChartsByUserId(user.id);
+      // Until accounts/JWT ship, every chart lives in the guest namespace
+      // (user_id IS NULL). This is the same set surfaced by
+      // /api/natal-chart/list/guest, so both UIs see the same library.
+      const charts = await this.natalRepo.findFullGuestCharts(500);
 
       const response = charts.map(chart => {
         // Handle Postgres DATE (no time part)

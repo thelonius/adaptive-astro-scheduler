@@ -125,6 +125,22 @@ export class NatalChartRepository {
   }
 
   /**
+   * Find all guest/anonymous natal charts with full data
+   */
+  async findFullGuestCharts(limit: number = 100): Promise<NatalChart[]> {
+    const query = `
+      SELECT *
+      FROM natal_charts
+      WHERE user_id IS NULL
+      ORDER BY created_at DESC
+      LIMIT $1
+    `;
+
+    const result = await pool.query<NatalChart>(query, [limit]);
+    return result.rows.map(chart => this.deserialize(chart));
+  }
+
+  /**
    * Update a natal chart
    */
   async update(id: string, data: UpdateNatalChartInput): Promise<NatalChart | null> {

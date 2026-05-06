@@ -236,7 +236,22 @@
       "opposition": "Opposition ☍",
       "quincunx": "Quincunx ⚻"
     },
-    "locale": "en-US"
+    "locale": "en-US",
+    "saveButton": "Save to library",
+    "saveDialogTitle": "Save natal chart",
+    "saveNameLabel": "Name",
+    "saveNamePlaceholder": "e.g. my chart, friend, event…",
+    "saveDescriptionLabel": "Description (optional)",
+    "saveTypeLabel": "Chart type",
+    "saveTypeNatal": "Natal",
+    "saveTypeEvent": "Event",
+    "saveTypeQuestion": "Horary (question)",
+    "saveSuccessTitle": "Chart saved",
+    "saveSuccessDesc": "\"{{name}}\" added to your library",
+    "saveErrorTitle": "Save failed",
+    "saveErrorDesc": "Check the server connection",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "schedulerLab": {
     "title": "Scheduler Laboratory",
