@@ -1,7 +1,7 @@
 {
   "_comment": "Five canonical recipes from Stellium's electional cookbook (examples 26-30), translated into the v2 DSL. These serve as few-shot exemplars for the recipe-generation prompt. When the schema changes, regenerate this file rather than hand-editing — the prompt depends on it being valid against the current schema.",
   "_source": "https://github.com/katelouie/stellium/blob/main/examples/electional_cookbook.py",
-  "_schema_version": "1.0.0",
+  "_schema_version": "1.1.0",
 
   "recipes": [
     {
@@ -24,8 +24,14 @@
         { "predicate": { "type": "planet_in_house", "planet": "Jupiter", "houses": [1, 4, 7, 10, 11] }, "weight": 10, "note": "Jupiter angular for expansion" },
         { "predicate": { "type": "aspect", "from": "Moon", "to": "Jupiter", "aspects": ["trine", "sextile", "conjunction"], "applying": true }, "weight": 8, "note": "Moon endorses Jupiter" }
       ],
+      "vibes": [
+        { "id": "aggressive_growth", "label": "aggressive growth", "emoji": "🚀" },
+        { "id": "sustainable_build", "label": "sustainable build", "emoji": "🌱" },
+        { "id": "signal_to_market", "label": "signal to market", "emoji": "📣" },
+        { "id": "quiet_start", "label": "quiet start", "emoji": "🤫" }
+      ],
       "metadata": {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
         "generated_at": "2026-05-01T00:00:00.000Z"
       }
@@ -52,8 +58,14 @@
         { "predicate": { "type": "moon_not_in_sign", "signs": ["Scorpio", "Capricorn"] }, "weight": 4, "note": "avoid difficult Moon placements" },
         { "predicate": { "type": "planet_dignified", "planet": "Venus", "mode": "essential" }, "weight": 6, "note": "Venus in own/exaltation sign strengthens the love significator" }
       ],
+      "vibes": [
+        { "id": "public_celebration", "label": "public celebration", "emoji": "🎉" },
+        { "id": "intimate_bond", "label": "intimate bond", "emoji": "💞" },
+        { "id": "family_legacy", "label": "family legacy", "emoji": "🏛️" },
+        { "id": "spiritual_union", "label": "spiritual union", "emoji": "✨" }
+      ],
       "metadata": {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
         "generated_at": "2026-05-01T00:00:00.000Z"
       }
@@ -81,8 +93,14 @@
         { "predicate": { "type": "planet_combust", "planet": "Mercury" }, "weight": -8, "note": "Mercury within 8.5° of Sun loses force" },
         { "predicate": { "type": "planet_in_sign", "planet": "Mercury", "signs": ["Gemini", "Virgo"] }, "weight": 6, "note": "Mercury in own sign" }
       ],
+      "vibes": [
+        { "id": "analytical_focus", "label": "analytical focus", "emoji": "🔍" },
+        { "id": "persuasive_pitch", "label": "persuasive pitch", "emoji": "🎤" },
+        { "id": "careful_negotiation", "label": "careful negotiation", "emoji": "🤝" },
+        { "id": "creative_brainstorm", "label": "creative brainstorm", "emoji": "💡" }
+      ],
       "metadata": {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
         "generated_at": "2026-05-01T00:00:00.000Z"
       }
@@ -108,8 +126,14 @@
         { "predicate": { "type": "moon_waxing" }, "weight": 5, "note": "growth-oriented bias; flip for surgery/removal" },
         { "predicate": { "type": "planet_dignified", "planet": "Mars", "mode": "essential" }, "weight": 8, "note": "Mars in own sign or exaltation" }
       ],
+      "vibes": [
+        { "id": "competitive_drive", "label": "competitive drive", "emoji": "⚔️" },
+        { "id": "disciplined_execution", "label": "disciplined execution", "emoji": "🎯" },
+        { "id": "breakthrough_attempt", "label": "breakthrough attempt", "emoji": "💥" },
+        { "id": "measured_assertion", "label": "measured assertion", "emoji": "🛡️" }
+      ],
       "metadata": {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
         "generated_at": "2026-05-01T00:00:00.000Z"
       }
@@ -137,8 +161,14 @@
         { "predicate": { "type": "planet_dignified", "planet": "Jupiter", "mode": "essential" }, "weight": 10, "note": "Jupiter in Sagittarius/Pisces/Cancer" },
         { "predicate": { "type": "planet_in_house", "planet": "Jupiter", "houses": [9, 11, 1] }, "weight": 6, "note": "Jupiter in own/joy houses" }
       ],
+      "vibes": [
+        { "id": "expansive_growth", "label": "expansive growth", "emoji": "🌍" },
+        { "id": "philosophical_journey", "label": "philosophical journey", "emoji": "📚" },
+        { "id": "risk_taking", "label": "risk taking", "emoji": "🎲" },
+        { "id": "generous_giving", "label": "generous giving", "emoji": "🎁" }
+      ],
       "metadata": {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "generated_by": { "model": "manual_translation_from_stellium", "prompt_template_version": "n/a" },
         "generated_at": "2026-05-01T00:00:00.000Z"
       }
