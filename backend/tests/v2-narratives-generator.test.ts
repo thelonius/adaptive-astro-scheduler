@@ -117,3 +117,65 @@ describe('renderNarratives', () => {
     ).rejects.toThrow(/NIM HTTP 500/);
   });
 });
+
+describe('renderNarratives natal handling', () => {
+  it('includes NATAL_CHART in user message when provided', async () => {
+    let capturedBody: any = null;
+    (global as any).fetch = jest.fn(async (_url: string, init: any) => {
+      capturedBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({
+            narratives: { '2026-05-19': { v1: 'ok', v2: 'ok2' } },
+          }) } }],
+        }),
+      };
+    });
+
+    await renderNarratives({
+      intent: 'x',
+      recipe: mockRecipe([
+        { id: 'v1', label: 'one' },
+        { id: 'v2', label: 'two' },
+      ]),
+      windows: [mockDay('2026-05-19')],
+      natal_chart: {
+        id: 'natal-1',
+        planets: [{ name: 'Sun', longitude: 168.34, zodiacSign: 'Virgo' }],
+      },
+    });
+
+    const userMsg = capturedBody.messages.find((m: any) => m.role === 'user').content;
+    expect(userMsg).toMatch(/NATAL_CHART/);
+    expect(userMsg).toMatch(/natal-1/);
+    expect(userMsg).toMatch(/Virgo/);
+  });
+
+  it('omits NATAL_CHART when not provided', async () => {
+    let capturedBody: any = null;
+    (global as any).fetch = jest.fn(async (_url: string, init: any) => {
+      capturedBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({
+            narratives: { '2026-05-19': { v1: 'x', v2: 'y' } },
+          }) } }],
+        }),
+      };
+    });
+
+    await renderNarratives({
+      intent: 'x',
+      recipe: mockRecipe([
+        { id: 'v1', label: 'one' },
+        { id: 'v2', label: 'two' },
+      ]),
+      windows: [mockDay('2026-05-19')],
+    });
+
+    const userMsg = capturedBody.messages.find((m: any) => m.role === 'user').content;
+    expect(userMsg).not.toMatch(/NATAL_CHART/);
+  });
+});
