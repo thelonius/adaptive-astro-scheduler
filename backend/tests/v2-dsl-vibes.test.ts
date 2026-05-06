@@ -88,6 +88,18 @@ describe('Recipe schema with vibes', () => {
     ).toBeNull();
   });
 
+  it('rejects a recipe with duplicate vibe ids', () => {
+    expect(
+      tryParseRecipe({
+        ...validBase,
+        vibes: [
+          { id: 'duplicate', label: 'first' },
+          { id: 'duplicate', label: 'second' },
+        ],
+      }),
+    ).toBeNull();
+  });
+
   it('parseRecipe (strict) throws on missing vibes', () => {
     expect(() => parseRecipe(validBase)).toThrow();
   });

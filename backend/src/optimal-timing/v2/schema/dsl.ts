@@ -220,7 +220,10 @@ export const RecipeSchema = z.object({
      * might bring to the same event with different intentions or
      * expectations. 2-5 entries.
      */
-    vibes: z.array(VibeSchema).min(2).max(5),
+    vibes: z.array(VibeSchema).min(2).max(5).refine(
+        (vs) => new Set(vs.map((v) => v.id)).size === vs.length,
+        { message: 'vibe ids must be unique within a recipe' },
+    ),
 
     metadata: RecipeMetadataSchema,
 });
