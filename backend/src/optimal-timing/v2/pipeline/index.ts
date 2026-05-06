@@ -43,7 +43,15 @@ export interface FindResult {
 
 /**
  * Run scoring + ranking against a fixed recipe over a date range.
- * Persists the trace before returning.
+ *
+ * Returns the built trace WITHOUT persisting it. The caller is
+ * responsible for `traceStore.append(result.trace)` after any later
+ * stages have stamped their fields onto the trace (e.g. stage 6
+ * narratives in the find-with-intent controller).
+ *
+ * On scoring failure, this function persists a best-effort error
+ * trace and rethrows — telemetry survives even if the caller's
+ * later stages never run.
  */
 export async function findWithFixedRecipe(
     args: FindWithFixedRecipeArgs,
@@ -128,13 +136,16 @@ export async function findWithFixedRecipe(
         recorder.recordScoring(ranked.stage_scoring);
         recorder.recordOutput(ranked.stage_output);
 
+        // Trace is built but NOT persisted here — the caller appends
+        // after later stages (e.g. renderNarratives) have stamped
+        // their fields. See module docstring for findWithFixedRecipe.
         const trace = recorder.build();
-        await deps.traceStore.append(trace);
         return { trace, windows: ranked.windows };
     } catch (e) {
         recorder.recordError('scoring', e);
         const trace = recorder.build();
-        // best-effort persist even on failure
+        // best-effort persist even on failure — caller never sees the
+        // trace for this code path, so it's our last chance.
         try { await deps.traceStore.append(trace); } catch { /* swallow */ }
         throw e;
     }

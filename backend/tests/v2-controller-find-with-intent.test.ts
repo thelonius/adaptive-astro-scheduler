@@ -91,6 +91,7 @@ describe('POST /find-with-intent (vibes + narratives)', () => {
         start_date: '2026-05-05',
         end_date: '2026-05-08',
         top_n: 2,
+        debug: true,
       });
 
     expect(res.status).toBe(200);
@@ -104,6 +105,16 @@ describe('POST /find-with-intent (vibes + narratives)', () => {
     }
     expect(recipeCallCount).toBe(1);
     expect(narrativesCallCount).toBe(1);
+
+    // I1 regression: stage_render_narratives must be on the persisted trace.
+    expect(res.body.trace).toBeDefined();
+    expect(res.body.trace.stage_render_narratives).toBeDefined();
+    expect(res.body.trace.stage_render_narratives.provider).toBe('nim');
+    expect(res.body.trace.stage_render_narratives.output).toBeDefined();
+    const firstWindowDate = res.body.windows[0].date;
+    expect(
+      res.body.trace.stage_render_narratives.output.narratives[firstWindowDate].test_vibe_a,
+    ).toMatch(/narrative A/);
   });
 
   it('embeds natal_chart in response when natal_chart_id provided', async () => {

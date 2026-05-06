@@ -139,6 +139,11 @@ export class OptimalTimingV2Controller {
                 { ephemeris: this.ephemeris, traceStore: this.traceStore },
             );
 
+            // Pipeline no longer persists the trace itself — controller appends.
+            try { await this.traceStore.append(result.trace); } catch (e) {
+                console.warn('[v2] failed to persist trace (find-with-fixed-recipe):', e);
+            }
+
             res.json({
                 request_id: result.trace.request_id,
                 recipe_id: typeof recipe_id === 'string' ? recipe_id : null,
@@ -262,6 +267,32 @@ export class OptimalTimingV2Controller {
                 });
             } catch (e) {
                 console.warn('[v2] renderNarratives failed, continuing with empty narratives:', e);
+            }
+
+            // Stage 6: stamp narratives onto the trace BEFORE persisting,
+            // so /traces/:id surfaces them. Pipeline deferred the append to us.
+            if (narrativeResult) {
+                result.trace.stage_render_narratives = {
+                    model: narrativeResult.llm.model,
+                    provider: 'nim',
+                    prompt_template_version: narrativeResult.llm.prompt_version,
+                    latency_ms: narrativeResult.llm.latency_ms,
+                    cost_usd: narrativeResult.llm.cost_usd,
+                    input_tokens: narrativeResult.llm.input_tokens,
+                    output_tokens: narrativeResult.llm.output_tokens,
+                    output: { narratives: narrativeResult.narratives },
+                    cache_hit: narrativeResult.llm.cached,
+                    natal_chart_id: typeof natal_chart_id === 'string' ? natal_chart_id : null,
+                };
+                // Roll narratives cost/latency into the trace totals.
+                result.trace.total_cost_usd = Number(
+                    (result.trace.total_cost_usd + narrativeResult.llm.cost_usd).toFixed(6),
+                );
+                result.trace.total_latency_ms += narrativeResult.llm.latency_ms;
+            }
+
+            try { await this.traceStore.append(result.trace); } catch (e) {
+                console.warn('[v2] failed to persist trace (find-with-intent):', e);
             }
 
             res.json({

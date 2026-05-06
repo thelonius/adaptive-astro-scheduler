@@ -18,7 +18,7 @@
 
 import { randomUUID } from 'crypto';
 import type {
-    TraceRecord, LLMStage, StageDateRange, StageScoring, StageOutput, TraceVersions,
+    TraceRecord, LLMStage, StageDateRange, StageScoring, StageOutput, StageRenderNarratives, TraceVersions,
 } from '../schema/trace';
 import type { IntentEnvelope } from '../schema/intent-envelope';
 import type { Recipe } from '../schema/dsl';
@@ -85,6 +85,11 @@ export class TraceRecorder {
         this.partial.stage_output = stage;
     }
 
+    recordRenderNarratives(stage: StageRenderNarratives): void {
+        this.partial.stage_render_narratives = stage;
+        this.totalCost += stage.cost_usd;
+    }
+
     recordError(stage: string, err: unknown): void {
         const e = err instanceof Error ? err : new Error(String(err));
         this.partial.error = {
@@ -107,6 +112,7 @@ export class TraceRecorder {
             stage_recipe: this.partial.stage_recipe as TraceRecord['stage_recipe'],
             stage_scoring: this.partial.stage_scoring as TraceRecord['stage_scoring'],
             stage_output: this.partial.stage_output as TraceRecord['stage_output'],
+            stage_render_narratives: this.partial.stage_render_narratives,
             total_latency_ms: elapsed,
             total_cost_usd: Number(this.totalCost.toFixed(6)),
             versions: this.partial.versions!,
