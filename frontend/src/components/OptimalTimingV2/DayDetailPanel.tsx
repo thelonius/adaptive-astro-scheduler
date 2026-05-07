@@ -1,26 +1,59 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TimingWindowV2, Vibe } from '../../services/optimalTimingV2Service';
+import type { ZodiacWheelData } from '../ZodiacWheel/types';
 import { ZodiacWheel } from '../ZodiacWheel';
 import { VibeTabSwitcher } from './VibeTabSwitcher';
 import { NarrativeBlock } from './NarrativeBlock';
-import type { TimingWindowV2, Vibe } from '../../services/optimalTimingV2Service';
+import { NatalChartCTA } from './NatalChartCTA';
 
 interface Props {
     window: TimingWindowV2;
     vibes: Vibe[];
     selectedVibeId: string | null;
     onVibeChange: (vibeId: string) => void;
-    location: { latitude: number; longitude: number; timezone: string };
     language: string;
+    natalData?: ZodiacWheelData | null;
 }
+
+const ZodiacWheelBlock: React.FC<{ date: string; natalData: ZodiacWheelData }> = ({ date, natalData }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver(entries => {
+            setContainerWidth(entries[0].contentRect.width);
+        });
+        observer.observe(el);
+        setContainerWidth(el.getBoundingClientRect().width);
+        return () => observer.disconnect();
+    }, []);
+
+    const size = Math.max(containerWidth - 32, 200);
+
+    return (
+        <div ref={containerRef} style={{ marginBottom: '12px' }}>
+            {containerWidth > 0 && (
+                <ZodiacWheel
+                    date={date}
+                    innerData={natalData}
+                    config={{ size, showHouses: false, showAspects: false, showRetrogrades: false }}
+                    useAdaptiveRefresh={false}
+                />
+            )}
+        </div>
+    );
+};
 
 export const DayDetailPanel: React.FC<Props> = ({
     window: w,
     vibes,
     selectedVibeId,
     onVibeChange,
-    location,
     language: _language,
+    natalData,
 }) => {
     const { t } = useTranslation();
 
@@ -31,15 +64,11 @@ export const DayDetailPanel: React.FC<Props> = ({
                 <div className="otv2-detail-score">{w.score}/100</div>
             </header>
 
-            <div className="otv2-detail-wheel">
-                <ZodiacWheel
-                    date={w.date}
-                    latitude={location.latitude}
-                    longitude={location.longitude}
-                    timezone={location.timezone}
-                    config={{ size: 320, showHouses: true, showAspects: true }}
-                />
-            </div>
+            {natalData !== undefined && (
+                natalData
+                    ? <ZodiacWheelBlock date={w.date} natalData={natalData} />
+                    : <NatalChartCTA />
+            )}
 
             <VibeTabSwitcher vibes={vibes} selectedVibeId={selectedVibeId} onChange={onVibeChange} />
 

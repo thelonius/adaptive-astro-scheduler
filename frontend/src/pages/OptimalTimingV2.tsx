@@ -8,7 +8,7 @@
  *   4. Click a window to drill into matched predicates
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IntentInput, IntentInputValue } from '../components/OptimalTimingV2/IntentInput';
 import { GeneratedRecipePanel } from '../components/OptimalTimingV2/GeneratedRecipePanel';
@@ -19,6 +19,11 @@ import {
     type FindWithIntentResponse,
 } from '../services/optimalTimingV2Service';
 import { useLocationStore } from '../store/locationStore';
+import { useChartStore } from '../store/chartStore';
+import { chartService } from '../services/chartService';
+import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import type { CelestialBody, Aspect } from '@adaptive-astro/shared/types';
+import { transformPlanetData, transformAspectData, transformHouseData } from '../utils/apiTransform';
 import './OptimalTimingV2.css';
 
 export default function OptimalTimingV2() {
@@ -36,6 +41,28 @@ export default function OptimalTimingV2() {
         () => result?.windows.find((w) => w.date === selectedDate) ?? null,
         [result, selectedDate],
     );
+
+    const { charts, loadCharts, isLoading: chartsLoading } = useChartStore();
+    const [natalData, setNatalData] = useState<ZodiacWheelData | null | undefined>(undefined);
+
+    useEffect(() => { loadCharts(); }, []);
+
+    useEffect(() => {
+        if (chartsLoading) return;
+        if (!charts.length) {
+            setNatalData(null);
+            return;
+        }
+        chartService.calculateChart(charts[0]).then(result => {
+            const planets = result.planets.map((p: any) => transformPlanetData(p)) as CelestialBody[];
+            const planetsMap = new Map(planets.map(p => [p.name, p]));
+            const aspects = result.aspects
+                .map((a: any) => transformAspectData(a, planetsMap))
+                .filter((a: Aspect | null) => a !== null) as Aspect[];
+            const houses = result.houses.map((h: any) => transformHouseData(h));
+            setNatalData({ planets, houses, aspects });
+        }).catch(() => setNatalData(null));
+    }, [charts, chartsLoading]);
 
     const handleSubmit = async (value: IntentInputValue) => {
         setIsLoading(true);
@@ -162,12 +189,8 @@ export default function OptimalTimingV2() {
                                         vibes={result.generated_recipe.vibes}
                                         selectedVibeId={selectedVibeId}
                                         onVibeChange={setSelectedVibeId}
-                                        location={{
-                                            latitude: location.latitude,
-                                            longitude: location.longitude,
-                                            timezone: location.timezone,
-                                        }}
                                         language={language}
+                                        natalData={natalData}
                                     />
                                 ) : (
                                     <div className="otv2-split-empty">
