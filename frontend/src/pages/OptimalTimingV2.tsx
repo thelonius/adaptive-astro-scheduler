@@ -1,21 +1,15 @@
-/**
- * v2 optimal-timing page.
- *
- * User flow:
- *   1. Type intent in free text → click "найти окна"
- *   2. Backend calls NIM → generates Recipe DSL → runs scoring pipeline
- *   3. Page shows the inferred Recipe (collapsed) + ranked windows
- *   4. Click a window to drill into matched predicates
- */
+// frontend/src/pages/OptimalTimingV2.tsx
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IntentInput, IntentInputValue } from '../components/OptimalTimingV2/IntentInput';
 import { GeneratedRecipePanel } from '../components/OptimalTimingV2/GeneratedRecipePanel';
-import { WindowCard } from '../components/OptimalTimingV2/WindowCard';
+import { WindowListItem } from '../components/OptimalTimingV2/WindowListItem';
+import { DayDetailPanel } from '../components/OptimalTimingV2/DayDetailPanel';
 import {
     optimalTimingV2Service,
     type FindWithIntentResponse,
+    type Vibe,
 } from '../services/optimalTimingV2Service';
 import { useLocationStore } from '../store/locationStore';
 import './OptimalTimingV2.css';
@@ -28,6 +22,8 @@ export default function OptimalTimingV2() {
     const [result, setResult] = useState<FindWithIntentResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
 
     const handleSubmit = async (value: IntentInputValue) => {
         setIsLoading(true);
@@ -46,22 +42,32 @@ export default function OptimalTimingV2() {
                 },
             });
             setResult(res);
+            setSelectedDate(res.windows[0]?.date ?? null);
+            setSelectedVibe(res.generated_recipe.vibes?.[0]?.id ?? null);
         } catch (e: unknown) {
             const msg =
                 e && typeof e === 'object' && 'response' in e
-                    ? // axios error
-                    (e as { response?: { data?: { error?: string; message?: string } } }).response?.data?.message ??
-                    (e as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ??
-                    String(e)
+                    ? (e as { response?: { data?: { error?: string; message?: string } } }).response?.data?.message ??
+                      (e as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ??
+                      String(e)
                     : e instanceof Error
-                        ? e.message
-                        : String(e);
+                    ? e.message
+                    : String(e);
             setError(msg);
             setResult(null);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleSelectDate = (date: string) => {
+        setSelectedDate(date);
+        const vibes: Vibe[] = result?.generated_recipe.vibes ?? [];
+        setSelectedVibe(vibes[0]?.id ?? null);
+    };
+
+    const selectedWindow = result?.windows.find((w) => w.date === selectedDate) ?? null;
+    const vibes: Vibe[] = result?.generated_recipe.vibes ?? [];
 
     return (
         <div className="otv2-page">
@@ -132,10 +138,29 @@ export default function OptimalTimingV2() {
                             )}
                         </div>
                     ) : (
-                        <div className="otv2-windows-list">
-                            {result.windows.map((w) => (
-                                <WindowCard key={w.date} window={w} language={language} />
-                            ))}
+                        <div className="otv2-split">
+                            <div className="otv2-split-list">
+                                {result.windows.map((w) => (
+                                    <WindowListItem
+                                        key={w.date}
+                                        window={w}
+                                        language={language}
+                                        isSelected={w.date === selectedDate}
+                                        onClick={handleSelectDate}
+                                    />
+                                ))}
+                            </div>
+                            <div className="otv2-split-detail">
+                                {selectedWindow && (
+                                    <DayDetailPanel
+                                        window={selectedWindow}
+                                        vibes={vibes}
+                                        selectedVibe={selectedVibe}
+                                        onVibeChange={setSelectedVibe}
+                                        language={language}
+                                    />
+                                )}
+                            </div>
                         </div>
                     )}
                 </>
