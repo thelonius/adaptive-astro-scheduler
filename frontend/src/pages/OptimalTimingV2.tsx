@@ -189,11 +189,6 @@ export default function OptimalTimingV2() {
                                         vibes={result.generated_recipe.vibes}
                                         selectedVibeId={selectedVibeId}
                                         onVibeChange={setSelectedVibeId}
-                                        location={{
-                                            latitude: location.latitude,
-                                            longitude: location.longitude,
-                                            timezone: location.timezone,
-                                        }}
                                         language={language}
                                         natalData={natalData}
                                     />

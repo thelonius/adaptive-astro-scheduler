@@ -29,7 +29,6 @@ const vibes: Vibe[] = [
     { id: 'nostalgic_return', label: 'nostalgic return', emoji: '🪵' },
 ];
 
-const location = { latitude: 55.7558, longitude: 37.6173, timezone: 'Europe/Moscow' };
 
 describe('DayDetailPanel', () => {
     it('renders zodiac wheel for the day', () => {
@@ -39,7 +38,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="practical_cleanup"
                 onVibeChange={() => {}}
-                location={location}
+
                 language="ru"
             />,
         );
@@ -54,7 +53,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="nostalgic_return"
                 onVibeChange={() => {}}
-                location={location}
+
                 language="ru"
             />,
         );
@@ -71,7 +70,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="practical_cleanup"
                 onVibeChange={onVibeChange}
-                location={location}
+
                 language="ru"
             />,
         );
@@ -86,7 +85,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="practical_cleanup"
                 onVibeChange={() => {}}
-                location={location}
+
                 language="ru"
             />,
         );
@@ -107,7 +106,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="practical_cleanup"
                 onVibeChange={() => {}}
-                location={location}
+
                 language="ru"
             />,
         );
