@@ -1,0 +1,32 @@
+/* ─── Biwheel aspect mode toggle ─────────────────────────────────────────── */
+
+.zodiac-aspect-toggle {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.zodiac-aspect-btn {
+    background: var(--ag-surface);
+    border: 1px solid var(--ag-border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: var(--ag-font-mono, 'JetBrains Mono', monospace);
+    color: var(--ag-text-muted);
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+}
+
+.zodiac-aspect-btn:hover {
+    background: var(--ag-surface-hover);
+    color: var(--ag-text);
+}
+
+.zodiac-aspect-btn.is-active {
+    background: var(--ag-day-primary);
+    border-color: var(--ag-day-primary);
+    color: #000;
+    font-weight: 600;
+}
