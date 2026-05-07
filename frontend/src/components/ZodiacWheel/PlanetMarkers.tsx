@@ -29,7 +29,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   onClusterHover,
   onClusterClick,
   size,
-  chartRotation = 0,
+  chartRotation: _chartRotation = 0,
   markerRadius,
   isNatal = false,
 }) => {
