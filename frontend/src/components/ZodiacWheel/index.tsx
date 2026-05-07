@@ -114,8 +114,10 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     const centerX = config.size / 2;
     const centerY = config.size / 2;
     const radius = config.size * 0.22;
-    return calculatePlanetPositions(sorted, centerX, centerY, radius, 0);
-  }, [innerData?.planets, config.size]);
+    const asc = data?.houses?.find(h => h.number === 1);
+    const rotationDeg = asc ? asc.cusp : 0;
+    return calculatePlanetPositions(sorted, centerX, centerY, radius, rotationDeg);
+  }, [innerData?.planets, config.size, data?.houses]);
 
   // Handle mouse move for tooltip
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
