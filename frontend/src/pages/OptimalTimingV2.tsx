@@ -8,7 +8,7 @@
  *   4. Click a window to drill into matched predicates
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IntentInput, IntentInputValue } from '../components/OptimalTimingV2/IntentInput';
 import { GeneratedRecipePanel } from '../components/OptimalTimingV2/GeneratedRecipePanel';
@@ -19,6 +19,10 @@ import {
     type FindWithIntentResponse,
 } from '../services/optimalTimingV2Service';
 import { useLocationStore } from '../store/locationStore';
+import { useChartStore } from '../store/chartStore';
+import { chartService } from '../services/chartService';
+import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import type { CelestialBody, Aspect, House } from '@adaptive-astro/shared/types';
 import './OptimalTimingV2.css';
 
 export default function OptimalTimingV2() {
@@ -36,6 +40,23 @@ export default function OptimalTimingV2() {
         () => result?.windows.find((w) => w.date === selectedDate) ?? null,
         [result, selectedDate],
     );
+
+    const { charts } = useChartStore();
+    const [natalData, setNatalData] = useState<ZodiacWheelData | null | undefined>(undefined);
+
+    useEffect(() => {
+        if (!charts.length) {
+            setNatalData(null);
+            return;
+        }
+        chartService.calculateChart(charts[0]).then(result => {
+            setNatalData({
+                planets: result.planets as CelestialBody[],
+                houses: result.houses as House[],
+                aspects: result.aspects as Aspect[],
+            });
+        }).catch(() => setNatalData(null));
+    }, [charts]);
 
     const handleSubmit = async (value: IntentInputValue) => {
         setIsLoading(true);
@@ -168,6 +189,7 @@ export default function OptimalTimingV2() {
                                             timezone: location.timezone,
                                         }}
                                         language={language}
+                                        natalData={natalData}
                                     />
                                 ) : (
                                     <div className="otv2-split-empty">
