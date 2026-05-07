@@ -17,6 +17,7 @@ interface PlanetMarkersProps {
   size: number;
   chartRotation?: number;
   markerRadius: number;
+  isNatal?: boolean;
 }
 
 export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
@@ -30,6 +31,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   size,
   chartRotation = 0,
   markerRadius,
+  isNatal = false,
 }) => {
   return (
     <g id="planets">
@@ -74,7 +76,18 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
             }}
             style={{ cursor: 'pointer' }}
           >
-            {/* Exact precise line to inner wheel degree - Temporarily removed due to display artifact */}
+            {/* Natal outlined backing circle */}
+            {isNatal && (
+              <circle
+                cx={pos.x}
+                cy={pos.y}
+                r={planetRadius * 1.5}
+                fill="none"
+                stroke={color}
+                strokeWidth={1.2}
+                opacity={0.55}
+              />
+            )}
 
             {/* Traditional Rx text */}
             {isRetrograde && (
@@ -123,7 +136,7 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
               fontSize={size * 0.025}
               fontWeight="bold"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: isNatal ? 0.65 : 1 }}
               style={{ textShadow: '0 0 3px rgba(0,0,0,0.8)' }}
             >
               {getPlanetSymbol(planet.name)}
