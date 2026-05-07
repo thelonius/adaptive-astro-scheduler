@@ -26,6 +26,7 @@ interface ZodiacWheelProps {
   onLoadingChange?: (loading: boolean) => void;
   date?: Date | string;
   data?: ZodiacWheelData | null;
+  innerData?: ZodiacWheelData | null;
 }
 
 export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
@@ -38,6 +39,7 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   onLoadingChange,
   date,
   data: externalData,
+  innerData,
 }) => {
   const config = useMemo(() => ({ ...DEFAULT_CONFIG, ...userConfig }), [userConfig]);
   const [hoveredPlanet, setHoveredPlanet] = useState<CelestialBody | null>(null);
@@ -105,6 +107,15 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     console.log('Generated aspect lines:', lines.length);
     return lines;
   }, [data?.aspects, planetPositions, config.showAspects, config.colorScheme]);
+
+  const innerPlanetPositions = useMemo(() => {
+    if (!innerData?.planets) return [];
+    const sorted = sortPlanetsByOrbit(innerData.planets);
+    const centerX = config.size / 2;
+    const centerY = config.size / 2;
+    const radius = config.size * 0.22;
+    return calculatePlanetPositions(sorted, centerX, centerY, radius, 0);
+  }, [innerData?.planets, config.size]);
 
   // Handle mouse move for tooltip
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -266,6 +277,30 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                   chartRotation={rotationDeg}
                   markerRadius={config.size * 0.015}
                 />
+              )}
+
+              {/* Biwheel: separator ring + natal planets */}
+              {innerData && (
+                <>
+                  <circle
+                    cx={config.size / 2}
+                    cy={config.size / 2}
+                    r={config.size * 0.27}
+                    fill="none"
+                    stroke="#334155"
+                    strokeWidth={1.5}
+                  />
+                  {innerPlanetPositions.length > 0 && (
+                    <PlanetMarkers
+                      positions={innerPlanetPositions}
+                      colorScheme={config.colorScheme}
+                      showRetrogrades={false}
+                      size={config.size}
+                      chartRotation={0}
+                      markerRadius={config.size * 0.012}
+                    />
+                  )}
+                </>
               )}
 
               {/* Aspect lines — lines connect math-calculated planet positions natively */}
