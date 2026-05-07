@@ -16,7 +16,7 @@ OptimalTimingV2
   └── useNatalChart()         → calculateChart(charts[0].birthData)
   └── natalWheelData: ZodiacWheelData | null
   └── <DayDetailPanel natalData={natalWheelData} .../>
-        └── <ZodiacWheel innerData={natalData} data={transitData} .../>
+        └── <ZodiacWheel date={window.date} innerData={natalData} .../>
 ```
 
 `natalWheelData` вычисляется один раз при маунте OptimalTimingV2 — не на каждый клик по дню. Если `charts` пустой — `natalWheelData = null`.
@@ -79,7 +79,7 @@ natalData?: ZodiacWheelData | null
 ```tsx
 {natalData !== undefined && (
   natalData
-    ? <ZodiacWheelBlock transitData={transitData} natalData={natalData} />
+    ? <ZodiacWheelBlock date={window.date} natalData={natalData} />
     : <NatalChartCTA />
 )}
 ```
@@ -88,10 +88,14 @@ natalData?: ZodiacWheelData | null
 
 #### `ZodiacWheelBlock` (локальный sub-компонент внутри DayDetailPanel.tsx)
 
+Props: `{ date: string; natalData: ZodiacWheelData }`.
+
 Отвечает за:
 - `useRef` + `ResizeObserver` на контейнере для получения ширины
 - `size = containerWidth - 32`
-- рендер `<ZodiacWheel data={transitData} innerData={natalData} config={{ size }} />`
+- рендер `<ZodiacWheel date={date} innerData={natalData} config={{ size }} />`
+
+ZodiacWheel самостоятельно фетчит транзиты для `date` — `transitData` передавать не нужно.
 
 Не выносим в отдельный файл — используется только здесь.
 
