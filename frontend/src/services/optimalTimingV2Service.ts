@@ -35,6 +35,12 @@ export interface MatchedPredicate {
     details?: Record<string, unknown>;
 }
 
+export interface Vibe {
+    id: string;
+    label: string;
+    emoji?: string;
+}
+
 export interface TimingWindowV2 {
     date: string; // YYYY-MM-DD
     score: number; // 0..100
@@ -43,6 +49,7 @@ export interface TimingWindowV2 {
     moon: MoonState;
     sun_sign: string;
     retrograde_planets: string[];
+    vibe_narratives?: Record<string, string>;
 }
 
 export interface RecipeDisqualifier {
@@ -61,6 +68,7 @@ export interface GeneratedRecipe {
     rationale: string;
     disqualifiers: RecipeDisqualifier[];
     weighted_conditions: RecipeWeightedCondition[];
+    vibes?: Vibe[];
     metadata?: Record<string, unknown>;
 }
 
