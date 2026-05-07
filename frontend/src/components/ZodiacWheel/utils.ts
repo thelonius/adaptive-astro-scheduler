@@ -335,6 +335,55 @@ export function calculateAspectLines(
 }
 
 /**
+ * Compute transit↔natal cross-aspects from two PlanetPosition arrays.
+ * Returns AspectLine[] where from=transitPosition, to=natalPosition.
+ * Conjunction excluded (same policy as calculateAspectLines).
+ */
+export function computeCrossAspects(
+  transitPositions: PlanetPosition[],
+  natalPositions: PlanetPosition[],
+  colorScheme: ColorScheme,
+  orb: number = 8
+): AspectLine[] {
+  if (transitPositions.length === 0 || natalPositions.length === 0) return [];
+
+  const standardTypes = ['opposition', 'trine', 'square', 'sextile', 'quincunx'];
+  const targetAngles: Record<string, number> = {
+    sextile: 60, square: 90, trine: 120, quincunx: 150, opposition: 180,
+  };
+  const lines: AspectLine[] = [];
+
+  for (const transitPos of transitPositions) {
+    for (const natalPos of natalPositions) {
+      const angle = calculateAspectAngle(transitPos.planet.longitude, natalPos.planet.longitude);
+      const type = detectAspectType(angle, orb);
+      if (!type || !standardTypes.includes(type)) continue;
+
+      const orbValue = Math.abs(angle - (targetAngles[type] ?? 0));
+      const strength = 1 - Math.min(orbValue / orb, 1);
+
+      lines.push({
+        aspect: {
+          body1: transitPos.planet,
+          body2: natalPos.planet,
+          type: type as import('@adaptive-astro/shared/types').AspectType,
+          angle,
+          orb: orbValue,
+          isExact: orbValue < 1,
+          interpretation: '',
+        },
+        from: transitPos,
+        to: natalPos,
+        color: colorScheme.aspects[type] || '#888',
+        strength,
+      });
+    }
+  }
+
+  return lines;
+}
+
+/**
  * Get zodiac sign data with positions
  */
 export function getZodiacSignPositions(size: number, rotationOffset: number = 0) {

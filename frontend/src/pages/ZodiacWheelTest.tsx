@@ -58,6 +58,24 @@ import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
 import type { PlanetName } from '@adaptive-astro/shared/types';
 import ZodiacIcon from '../components/ZodiacWheel/ZodiacIcon';
 
+// Approximate natal positions for 1984-09-11 01:40 Moscow — visual testing only
+const MOCK_NATAL_DATA: ZodiacWheelData = {
+  planets: [
+    { name: 'Sun',     longitude: 168.5, latitude: 0, speed: 1,    isRetrograde: false } as any,
+    { name: 'Moon',    longitude: 220.0, latitude: 0, speed: 13,   isRetrograde: false } as any,
+    { name: 'Mercury', longitude: 151.0, latitude: 0, speed: 1.5,  isRetrograde: false } as any,
+    { name: 'Venus',   longitude: 140.0, latitude: 0, speed: 1.2,  isRetrograde: false } as any,
+    { name: 'Mars',    longitude: 238.0, latitude: 0, speed: 0.5,  isRetrograde: false } as any,
+    { name: 'Jupiter', longitude: 281.0, latitude: 0, speed: 0.1,  isRetrograde: false } as any,
+    { name: 'Saturn',  longitude: 228.0, latitude: 0, speed: 0.05, isRetrograde: false } as any,
+    { name: 'Uranus',  longitude: 252.0, latitude: 0, speed: 0.02, isRetrograde: false } as any,
+    { name: 'Neptune', longitude: 269.0, latitude: 0, speed: 0.01, isRetrograde: false } as any,
+    { name: 'Pluto',   longitude: 210.0, latitude: 0, speed: 0.005, isRetrograde: false } as any,
+  ],
+  aspects: [],
+  houses: undefined,
+};
+
 interface TestResult {
   name: string;
   passed: boolean;
@@ -549,6 +567,7 @@ export const ZodiacWheelTest: React.FC = () => {
                 <Tab fontSize="sm">{t('zodiacWheel.testsTab')}</Tab>
                 <Tab fontSize="sm">{t('zodiacWheel.statsTab')}</Tab>
                 <Tab fontSize="sm">{t('zodiacWheel.scenariosTab')}</Tab>
+                <Tab fontSize="sm">Biwheel</Tab>
               </TabList>
 
               <TabPanels>
@@ -1401,6 +1420,66 @@ export const ZodiacWheelTest: React.FC = () => {
                     </AlertDescription>
                   </Box>
                 </Alert>
+              </VStack>
+            </TabPanel>
+
+            {/* Biwheel Tab */}
+            <TabPanel>
+              <VStack spacing={6} align="stretch">
+                <Grid templateColumns="repeat(3, 1fr)" gap={6}>
+                  <GridItem>
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Transit only</Heading>
+                        <Text fontSize="xs" color="gray.400">innerData not set — regression check</Text>
+                      </CardHeader>
+                      <CardBody>
+                        <ZodiacWheel
+                          latitude={55.7558}
+                          longitude={37.6173}
+                          timezone="Europe/Moscow"
+                          config={{ size: 280, showAspects: true, showHouses: false }}
+                        />
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+
+                  <GridItem>
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Biwheel — T↔N aspects</Heading>
+                        <Text fontSize="xs" color="gray.400">innerData = mock natal 1984-09-11</Text>
+                      </CardHeader>
+                      <CardBody>
+                        <ZodiacWheel
+                          latitude={55.7558}
+                          longitude={37.6173}
+                          timezone="Europe/Moscow"
+                          config={{ size: 280, showAspects: true, showHouses: false }}
+                          innerData={MOCK_NATAL_DATA}
+                        />
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+
+                  <GridItem>
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Biwheel — T↔T aspects</Heading>
+                        <Text fontSize="xs" color="gray.400">Use T↔T toggle below the wheel</Text>
+                      </CardHeader>
+                      <CardBody>
+                        <ZodiacWheel
+                          latitude={55.7558}
+                          longitude={37.6173}
+                          timezone="Europe/Moscow"
+                          config={{ size: 280, showAspects: true, showHouses: false }}
+                          innerData={MOCK_NATAL_DATA}
+                        />
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+                </Grid>
               </VStack>
             </TabPanel>
           </TabPanels>
