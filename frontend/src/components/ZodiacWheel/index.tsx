@@ -6,12 +6,14 @@ import { useAdaptiveZodiacData } from '../../hooks/useZodiacData';
 import { ZodiacCircle } from './ZodiacCircle';
 import { PlanetMarkers } from './PlanetMarkers';
 import { AspectLines } from './AspectLines';
+import { CrossAspectLines } from './CrossAspectLines';
+import './ZodiacWheel.css';
 import { HousesOverlay } from './HousesOverlay';
 import { Tooltip } from './Tooltip';
 import { ZodiacSignTooltip } from './ZodiacSignTooltip';
 import { HouseTooltip } from './HouseTooltip';
 import { ClusterTooltip } from './ClusterTooltip';
-import { calculatePlanetPositions, calculateAspectLines, sortPlanetsByOrbit } from './utils';
+import { calculatePlanetPositions, calculateAspectLines, sortPlanetsByOrbit, computeCrossAspects } from './utils';
 import type { ZodiacWheelConfig, ZodiacWheelData } from './types';
 import { DEFAULT_CONFIG } from './types';
 import { getHouseMeaning } from '../../constants/houses';
@@ -53,6 +55,11 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   const [clusterTooltipPosition, setClusterTooltipPosition] = useState({ x: 0, y: 0 });
   const [clickedClusterPosition, setClickedClusterPosition] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
+  const [aspectMode, setAspectMode] = useState<'cross' | 'transit'>('cross');
+
+  useEffect(() => {
+    if (!innerData) setAspectMode('cross');
+  }, [innerData]);
 
   // Always use the adaptive hook wrapper, passing the 'adaptive' flag to control behavior
   // If external data is provided, disable internal fetching
@@ -118,6 +125,11 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
     const rotationDeg = asc ? asc.cusp : 0;
     return calculatePlanetPositions(sorted, centerX, centerY, radius, rotationDeg);
   }, [innerData?.planets, config.size, data?.houses]);
+
+  const crossAspectLines = useMemo(() => {
+    if (!innerData || aspectMode !== 'cross' || innerPlanetPositions.length === 0) return [];
+    return computeCrossAspects(planetPositions, innerPlanetPositions, config.colorScheme, config.aspectOrb);
+  }, [innerData, aspectMode, planetPositions, innerPlanetPositions, config.colorScheme, config.aspectOrb]);
 
   // Handle mouse move for tooltip
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -265,6 +277,14 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                 />
               )}
 
+              {/* Biwheel orbit guidelines */}
+              {innerData && (
+                <>
+                  <circle cx={config.size / 2} cy={config.size / 2} r={config.size * 0.32} fill="none" stroke="#1a2235" strokeWidth={0.5} strokeDasharray="2,6" opacity={0.15} />
+                  <circle cx={config.size / 2} cy={config.size / 2} r={config.size * 0.22} fill="none" stroke="#1a2235" strokeWidth={0.5} strokeDasharray="2,6" opacity={0.15} />
+                </>
+              )}
+
               {/* Planets */}
               {planetPositions.length > 0 && (
                 <PlanetMarkers
@@ -281,38 +301,67 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                 />
               )}
 
-              {/* Biwheel: separator ring + natal planets */}
+              {/* Biwheel: separator ring + natal planets with isNatal styling */}
               {innerData && (
-                <>
-                  <circle
-                    cx={config.size / 2}
-                    cy={config.size / 2}
-                    r={config.size * 0.27}
-                    fill="none"
-                    stroke="#334155"
-                    strokeWidth={1.5}
-                  />
-                  {innerPlanetPositions.length > 0 && (
-                    <PlanetMarkers
-                      positions={innerPlanetPositions}
-                      colorScheme={config.colorScheme}
-                      showRetrogrades={false}
-                      size={config.size}
-                      chartRotation={0}
-                      markerRadius={config.size * 0.012}
-                    />
-                  )}
-                </>
+                <circle
+                  cx={config.size / 2}
+                  cy={config.size / 2}
+                  r={config.size * 0.27}
+                  fill="none"
+                  stroke="#334155"
+                  strokeWidth={1.5}
+                />
+              )}
+              {innerPlanetPositions.length > 0 && (
+                <PlanetMarkers
+                  positions={innerPlanetPositions}
+                  colorScheme={config.colorScheme}
+                  showRetrogrades={false}
+                  isNatal={true}
+                  onPlanetHover={setHoveredPlanet}
+                  onClusterHover={handleClusterHover}
+                  onClusterClick={handleClusterClick}
+                  size={config.size}
+                  chartRotation={rotationDeg}
+                  markerRadius={config.size * 0.012}
+                />
               )}
 
-              {/* Aspect lines — lines connect math-calculated planet positions natively */}
-              {config.showAspects && aspectLines.length > 0 && (
+              {/* Cross-aspect lines: transit↔natal */}
+              {aspectMode === 'cross' && crossAspectLines.length > 0 && (
+                <CrossAspectLines lines={crossAspectLines} />
+              )}
+
+              {/* Transit aspect lines (shown in transit mode or when no natal data) */}
+              {config.showAspects && aspectLines.length > 0 && (!innerData || aspectMode === 'transit') && (
                 <AspectLines lines={aspectLines} size={config.size} />
               )}
             </>
           );
         })()}
       </motion.svg>
+
+      {/* Biwheel aspect mode toggle */}
+      {innerData && (
+        <div className="zodiac-aspect-toggle">
+          <button
+            type="button"
+            className={`zodiac-aspect-btn${aspectMode === 'cross' ? ' is-active' : ''}`}
+            onClick={() => setAspectMode('cross')}
+            title="Transit ↔ Natal aspects"
+          >
+            T↔N
+          </button>
+          <button
+            type="button"
+            className={`zodiac-aspect-btn${aspectMode === 'transit' ? ' is-active' : ''}`}
+            onClick={() => setAspectMode('transit')}
+            title="Transit ↔ Transit aspects"
+          >
+            T↔T
+          </button>
+        </div>
+      )}
 
       {/* Tooltip */}
       {hoveredPlanet && hoveredCluster.length <= 1 && (
