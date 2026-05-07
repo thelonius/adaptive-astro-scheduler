@@ -17,7 +17,6 @@ interface PlanetMarkersProps {
   onClusterClick?: (planets: CelestialBody[], position: { x: number; y: number }) => void;
   size: number;
   chartRotation?: number;
-  orbitRadius: number;
   markerRadius: number;
 }
 
@@ -31,7 +30,6 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   onClusterClick,
   size,
   chartRotation = 0,
-  orbitRadius,
   markerRadius,
 }) => {
   return (
