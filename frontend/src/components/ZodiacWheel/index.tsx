@@ -264,7 +264,6 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
                   onClusterClick={handleClusterClick}
                   size={config.size}
                   chartRotation={rotationDeg}
-                  orbitRadius={config.size * 0.32}
                   markerRadius={config.size * 0.015}
                 />
               )}
