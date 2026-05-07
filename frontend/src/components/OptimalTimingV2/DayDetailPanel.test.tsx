@@ -29,6 +29,8 @@ const vibes: Vibe[] = [
     { id: 'nostalgic_return', label: 'nostalgic return', emoji: '🪵' },
 ];
 
+const natalData = { planets: [], aspects: [], houses: undefined } as any;
+
 
 describe('DayDetailPanel', () => {
     it('renders zodiac wheel for the day', () => {
@@ -38,7 +40,7 @@ describe('DayDetailPanel', () => {
                 vibes={vibes}
                 selectedVibeId="practical_cleanup"
                 onVibeChange={() => {}}
-
+                natalData={natalData}
                 language="ru"
             />,
         );
