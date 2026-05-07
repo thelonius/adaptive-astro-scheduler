@@ -18,6 +18,8 @@ interface PlanetMarkersProps {
   onClusterClick?: (planets: CelestialBody[], position: { x: number; y: number }) => void;
   size: number;
   chartRotation?: number;
+  orbitRadius: number;
+  markerRadius: number;
 }
 
 export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
@@ -30,6 +32,8 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
   onClusterClick,
   size,
   chartRotation = 0,
+  orbitRadius,
+  markerRadius,
 }) => {
   return (
     <g id="planets">
@@ -39,11 +43,10 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
         const color = colorScheme.planets?.[planet.name] || '#fff';
         const isRetrograde = planet.isRetrograde && showRetrogrades;
         const isVoidMoon = planet.name === 'Moon' && voidMoon?.isVoid === true;
-        const planetRadius = size * 0.015; // Fixed small radius for all markers
+        const planetRadius = markerRadius;
 
         // Inner ring exact point calculation
         const exactAngle = longitudeToAngle(planet.longitude, chartRotation);
-        const _pointOnRing = polarToCartesian(size / 2, size / 2, size * 0.38, exactAngle);
 
         return (
           <g
