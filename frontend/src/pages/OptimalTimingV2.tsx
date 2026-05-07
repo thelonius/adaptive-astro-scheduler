@@ -29,10 +29,13 @@ export default function OptimalTimingV2() {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
 
-    const { charts } = useChartStore();
+    const { charts, loadCharts, isLoading: chartsLoading } = useChartStore();
     const [natalData, setNatalData] = useState<ZodiacWheelData | null | undefined>(undefined);
 
+    useEffect(() => { loadCharts(); }, []);
+
     useEffect(() => {
+        if (chartsLoading) return;
         if (!charts.length) {
             setNatalData(null);
             return;
@@ -44,7 +47,7 @@ export default function OptimalTimingV2() {
                 aspects: result.aspects as Aspect[],
             });
         }).catch(() => setNatalData(null));
-    }, [charts]);
+    }, [charts, chartsLoading]);
 
     const handleSubmit = async (value: IntentInputValue) => {
         setIsLoading(true);
