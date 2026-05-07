@@ -15,7 +15,8 @@ import { useLocationStore } from '../store/locationStore';
 import { useChartStore } from '../store/chartStore';
 import { chartService } from '../services/chartService';
 import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
-import type { CelestialBody, Aspect, House } from '@adaptive-astro/shared/types';
+import type { CelestialBody, Aspect } from '@adaptive-astro/shared/types';
+import { transformPlanetData, transformAspectData, transformHouseData } from '../utils/apiTransform';
 import './OptimalTimingV2.css';
 
 export default function OptimalTimingV2() {
@@ -41,11 +42,13 @@ export default function OptimalTimingV2() {
             return;
         }
         chartService.calculateChart(charts[0]).then(result => {
-            setNatalData({
-                planets: result.planets as CelestialBody[],
-                houses: result.houses as House[],
-                aspects: result.aspects as Aspect[],
-            });
+            const planets = result.planets.map((p: any) => transformPlanetData(p)) as CelestialBody[];
+            const planetsMap = new Map(planets.map(p => [p.name, p]));
+            const aspects = result.aspects
+                .map((a: any) => transformAspectData(a, planetsMap))
+                .filter((a: Aspect | null) => a !== null) as Aspect[];
+            const houses = result.houses.map((h: any) => transformHouseData(h));
+            setNatalData({ planets, houses, aspects });
         }).catch(() => setNatalData(null));
     }, [charts, chartsLoading]);
 
