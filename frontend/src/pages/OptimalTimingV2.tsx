@@ -12,7 +12,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IntentInput, IntentInputValue } from '../components/OptimalTimingV2/IntentInput';
 import { GeneratedRecipePanel } from '../components/OptimalTimingV2/GeneratedRecipePanel';
-import { WindowCard } from '../components/OptimalTimingV2/WindowCard';
+import { WindowListItem } from '../components/OptimalTimingV2/WindowListItem';
+import { DayDetailPanel } from '../components/OptimalTimingV2/DayDetailPanel';
 import {
     optimalTimingV2Service,
     type FindWithIntentResponse,
@@ -28,6 +29,13 @@ export default function OptimalTimingV2() {
     const [result, setResult] = useState<FindWithIntentResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [selectedVibeId, setSelectedVibeId] = useState<string | null>(null);
+
+    const selectedWindow = React.useMemo(
+        () => result?.windows.find((w) => w.date === selectedDate) ?? null,
+        [result, selectedDate],
+    );
 
     const handleSubmit = async (value: IntentInputValue) => {
         setIsLoading(true);
@@ -46,6 +54,9 @@ export default function OptimalTimingV2() {
                 },
             });
             setResult(res);
+            // Auto-select the first window and the first vibe when a fresh result arrives
+            setSelectedDate(res.windows[0]?.date ?? null);
+            setSelectedVibeId(res.generated_recipe.vibes[0]?.id ?? null);
         } catch (e: unknown) {
             const msg =
                 e && typeof e === 'object' && 'response' in e
@@ -132,10 +143,38 @@ export default function OptimalTimingV2() {
                             )}
                         </div>
                     ) : (
-                        <div className="otv2-windows-list">
-                            {result.windows.map((w) => (
-                                <WindowCard key={w.date} window={w} language={language} />
-                            ))}
+                        <div className="otv2-split">
+                            <aside className="otv2-split-list">
+                                {result.windows.map((w) => (
+                                    <WindowListItem
+                                        key={w.date}
+                                        window={w}
+                                        language={language}
+                                        selected={selectedDate === w.date}
+                                        onSelect={setSelectedDate}
+                                    />
+                                ))}
+                            </aside>
+                            <div className="otv2-split-detail">
+                                {selectedWindow ? (
+                                    <DayDetailPanel
+                                        window={selectedWindow}
+                                        vibes={result.generated_recipe.vibes}
+                                        selectedVibeId={selectedVibeId}
+                                        onVibeChange={setSelectedVibeId}
+                                        location={{
+                                            latitude: location.latitude,
+                                            longitude: location.longitude,
+                                            timezone: location.timezone,
+                                        }}
+                                        language={language}
+                                    />
+                                ) : (
+                                    <div className="otv2-split-empty">
+                                        {t('optimalTimingV2.selectADay', 'Выбери день из списка слева')}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </>

@@ -401,7 +401,7 @@
     border-radius: 3px;
 }
 
-/* ─── Window cards ───────────────────────────────────────────────────────── */
+/* ─── Windows list container (kept for backward compat) ─────────────────── */
 
 .otv2-windows-list {
     display: flex;
@@ -409,72 +409,10 @@
     gap: 12px;
 }
 
-.otv2-window {
-    background: var(--ag-surface);
-    border: 1px solid var(--ag-border);
-    border-radius: var(--ag-radius-md, 12px);
-    padding: 18px;
-    transition: border-color 0.15s ease;
-}
-
-.otv2-window:hover {
-    border-color: var(--ag-border-strong);
-}
-
-.otv2-window.is-expanded {
-    border-color: var(--ag-day-primary, #7aa2ff);
-}
-
-.otv2-window-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 8px;
-}
-
-.otv2-window-rank {
-    font-family: var(--ag-font-mono, 'JetBrains Mono', monospace);
-    font-size: 14px;
-    color: var(--ag-text-muted);
-    width: 36px;
-}
-
-.otv2-window-date {
-    flex: 1;
-    font-size: 17px;
-    font-weight: 500;
-    text-transform: capitalize;
-}
-
-.otv2-window-score {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-family: var(--ag-font-mono, 'JetBrains Mono', monospace);
-}
-
-.otv2-window-score-value {
-    font-size: 22px;
-    font-weight: 700;
-}
-
-.otv2-window-score-label {
-    font-size: 12px;
-    opacity: 0.7;
-}
-
 .otv2-score--great { background: color-mix(in srgb, #22c55e 22%, transparent); color: #86efac; }
 .otv2-score--good  { background: color-mix(in srgb, #84cc16 22%, transparent); color: #bef264; }
 .otv2-score--mid   { background: color-mix(in srgb, #eab308 22%, transparent); color: #fde047; }
 .otv2-score--low   { background: color-mix(in srgb, #f97316 22%, transparent); color: #fdba74; }
-
-.otv2-window-summary {
-    font-size: 14px;
-    color: var(--ag-text);
-    margin-bottom: 10px;
-}
 
 .otv2-tag {
     display: inline-block;
@@ -490,13 +428,6 @@
 .otv2-tag--warn {
     background: color-mix(in srgb, #f97316 22%, transparent);
     color: #fdba74;
-}
-
-.otv2-window-matched {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
 }
 
 .otv2-chip {
@@ -516,29 +447,6 @@
 .otv2-chip--neg {
     background: color-mix(in srgb, #ef4444 18%, transparent);
     color: #fca5a5;
-}
-
-.otv2-window-toggle {
-    background: transparent;
-    border: 1px solid var(--ag-border);
-    border-radius: 6px;
-    padding: 4px 12px;
-    font-size: 12px;
-    color: var(--ag-text-muted);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
-}
-
-.otv2-window-toggle:hover {
-    color: var(--ag-text);
-    border-color: var(--ag-border-strong);
-}
-
-.otv2-window-details {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--ag-border);
 }
 
 .otv2-detail-grid {
@@ -575,21 +483,6 @@
     margin-bottom: 6px;
 }
 
-.otv2-detail-predicates {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.8;
-}
-
-.otv2-detail-predicates li {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
 .otv2-predicate-details {
     font-family: var(--ag-font-mono, 'JetBrains Mono', monospace);
     font-size: 11px;
@@ -598,3 +491,247 @@
     padding: 1px 6px;
     border-radius: 3px;
 }
+
+/* ─── Split-pane layout (Phase B) ───────────────────────────────────────── */
+
+.otv2-split {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) 1fr;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.otv2-split-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.otv2-split-detail {
+    min-width: 0; /* prevents grid-blowout from wide content */
+}
+
+.otv2-split-empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--ag-text-muted);
+    border: 1px dashed var(--ag-border);
+    border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+    .otv2-split {
+        grid-template-columns: 1fr;
+    }
+    .otv2-split-list {
+        max-height: none;
+    }
+    .otv2-split-detail {
+        order: 2;
+    }
+}
+
+/* ─── WindowListItem ───────────────────────────────────────────────────── */
+
+.otv2-li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+        'rank date score'
+        'moon moon tags';
+    gap: 4px 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--ag-border);
+    border-radius: 6px;
+    background: var(--ag-surface);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    transition: background 120ms, border-color 120ms;
+}
+
+.otv2-li:hover {
+    background: var(--ag-surface-hover);
+}
+
+.otv2-li.is-selected {
+    border-color: var(--ag-day-primary);
+    background: var(--ag-surface-hover);
+}
+
+.otv2-li-rank { grid-area: rank; font-weight: 600; color: var(--ag-text-muted); }
+.otv2-li-date { grid-area: date; font-weight: 500; }
+.otv2-li-score { grid-area: score; font-weight: 700; }
+.otv2-li-moon { grid-area: moon; color: var(--ag-text-muted); font-size: 13px; }
+
+.otv2-li-tag {
+    grid-area: tags;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: color-mix(in srgb, #f97316 22%, transparent);
+    color: #fdba74;
+}
+
+.otv2-li-score--great { color: #86efac; }
+.otv2-li-score--good { color: #bef264; }
+.otv2-li-score--mid { color: #fde047; }
+.otv2-li-score--low { color: #fdba74; }
+
+/* ─── VibeTabSwitcher ──────────────────────────────────────────────────── */
+
+.otv2-vibe-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0;
+}
+
+.otv2-vibe-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--ag-border);
+    border-radius: 999px;
+    background: var(--ag-surface);
+    cursor: pointer;
+    font: inherit;
+    color: var(--ag-text);
+    transition: all 120ms;
+}
+
+.otv2-vibe-tab:hover {
+    background: var(--ag-surface-hover);
+}
+
+.otv2-vibe-tab.is-active {
+    background: var(--ag-day-primary);
+    border-color: var(--ag-day-primary);
+    color: #000;
+}
+
+.otv2-vibe-tab-emoji { font-size: 16px; line-height: 1; }
+.otv2-vibe-tab-label { font-size: 13px; }
+
+/* ─── NarrativeBlock ───────────────────────────────────────────────────── */
+
+.otv2-narrative-text {
+    line-height: 1.55;
+    color: var(--ag-text);
+    margin: 0;
+    padding: 12px 0;
+}
+
+.otv2-narrative-fallback {
+    color: var(--ag-text-muted);
+    font-style: italic;
+    margin: 0;
+    padding: 12px 0;
+}
+
+.otv2-narrative-skeleton {
+    padding: 12px 0;
+}
+
+.otv2-narrative-skeleton-line {
+    height: 14px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--ag-border) 0%, var(--ag-surface-hover) 50%, var(--ag-border) 100%);
+    background-size: 200% 100%;
+    animation: otv2-shimmer 1.4s infinite;
+    border-radius: 4px;
+}
+
+.otv2-narrative-skeleton-line--short {
+    width: 60%;
+}
+
+@keyframes otv2-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ─── DayDetailPanel ───────────────────────────────────────────────────── */
+
+.otv2-detail {
+    padding: 16px;
+    border: 1px solid var(--ag-border);
+    border-radius: 8px;
+    background: var(--ag-surface);
+}
+
+.otv2-detail-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.otv2-detail-date {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.otv2-detail-score {
+    color: var(--ag-text-muted);
+    font-size: 13px;
+}
+
+.otv2-detail-wheel {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0;
+    min-height: 320px;
+}
+
+.otv2-detail-predicates {
+    margin-top: 16px;
+}
+
+.otv2-detail-predicates summary {
+    cursor: pointer;
+    color: var(--ag-text-muted);
+    font-size: 13px;
+}
+
+.otv2-detail-predicates ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.otv2-detail-predicates li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+/* ─── Recipe panel: vibes chip row ─────────────────────────────────────── */
+
+.otv2-recipe-vibes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.otv2-recipe-vibe-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--ag-surface-hover);
+    border: 1px solid var(--ag-border);
+    font-size: 12px;
+}
+
+.otv2-recipe-vibe-chip-emoji { font-size: 14px; line-height: 1; }
+

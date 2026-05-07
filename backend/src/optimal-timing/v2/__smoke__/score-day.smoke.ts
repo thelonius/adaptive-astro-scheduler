@@ -21,6 +21,7 @@ import { tryParseRecipe } from '../schema/dsl';
 
 // Inline loadCanonicalRecipe (kept self-contained so this file
 // doesn't pull pipeline/index.ts and its ephemeris dependencies)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const canonicalData = require('../prompts/examples/canonical-recipes.json') as {
     recipes: Array<Record<string, unknown> & { _id: string }>;
 };

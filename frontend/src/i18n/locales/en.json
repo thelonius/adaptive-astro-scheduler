@@ -589,6 +589,9 @@
     "noWindows": "No suitable days in this range. Try widening the dates or rephrasing the intent.",
     "disqualifiedDays": "disqualified",
     "latency": "latency",
-    "requestId": "request"
+    "requestId": "request",
+    "vibes": "vibes",
+    "selectADay": "Pick a day from the list on the left",
+    "narrativeUnavailable": "Narrative for this vibe is not available. Try refreshing."
   }
 }
