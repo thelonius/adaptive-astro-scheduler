@@ -4,7 +4,6 @@ import type { CelestialBody } from '@adaptive-astro/shared/types';
 import type { ColorScheme, PlanetPosition } from './types';
 import {
   getPlanetSymbol,
-  longitudeToAngle,
 } from './utils';
 
 interface PlanetMarkersProps {
@@ -41,9 +40,6 @@ export const PlanetMarkers: React.FC<PlanetMarkersProps> = ({
         const isRetrograde = planet.isRetrograde && showRetrogrades;
         const isVoidMoon = planet.name === 'Moon' && voidMoon?.isVoid === true;
         const planetRadius = markerRadius;
-
-        // Inner ring exact point calculation
-        const exactAngle = longitudeToAngle(planet.longitude, chartRotation);
 
         return (
           <g
