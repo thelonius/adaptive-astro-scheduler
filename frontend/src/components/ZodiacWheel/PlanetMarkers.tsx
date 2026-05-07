@@ -5,7 +5,6 @@ import type { ColorScheme, PlanetPosition } from './types';
 import {
   getPlanetSymbol,
   longitudeToAngle,
-  polarToCartesian
 } from './utils';
 
 interface PlanetMarkersProps {
