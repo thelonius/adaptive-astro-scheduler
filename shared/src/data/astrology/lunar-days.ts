@@ -11,6 +11,15 @@ export interface LunarDayData {
   additional_influences: string[];
   planetary_description: string;
   general_description: string;
+  // Rich Russian content
+  symbol?: string;
+  general?: string;
+  business?: string;
+  health?: string;
+  relationships?: string;
+  warning?: string;
+  dreams?: string;
+  is_dark?: boolean;
 }
 
 export const LUNAR_DAYS_DATA: LunarDayData[] = [

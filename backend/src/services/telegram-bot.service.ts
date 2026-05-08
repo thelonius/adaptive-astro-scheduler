@@ -5,6 +5,7 @@ import { NatalChartRepository } from '../database/repositories/natal-chart.repos
 import { PersonalizedAnalyticsService, PersonalizedDayAnalytics } from './personalized-analytics';
 import { createEphemerisCalculator } from '../core/ephemeris';
 import { IEphemerisCalculator } from '../core/ephemeris';
+import { interpretationService } from './astrology/interpretation.service';
 import type { DateTime } from '@adaptive-astro/shared/types';
 import type { CreateNatalChartInput } from '../database/models';
 import axios from 'axios';
@@ -621,13 +622,14 @@ export class TelegramBotService {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '🔮 View Transits', callback_data: `transits_${chartId}` },
-                { text: '📊 Activities', callback_data: `activities_${chartId}` },
-                { text: '🔍 Natal Details', callback_data: `details_${chartId}` }
+                { text: '🔮 Транзиты', callback_data: `transits_${chartId}` },
+                { text: '📊 Активности', callback_data: `activities_${chartId}` },
+                { text: '🔍 Натал', callback_data: `details_${chartId}` }
               ],
               [
-                { text: '🔄 Refresh', callback_data: `today_${chartId}` },
-                { text: '🏠 Menu', callback_data: 'main_menu' }
+                { text: '📅 7 дней', callback_data: `cal_0_${chartId}` },
+                { text: '🔄 Обновить', callback_data: `today_${chartId}` },
+                { text: '🏠 Меню', callback_data: 'main_menu' }
               ]
             ]
           }
@@ -901,6 +903,14 @@ export class TelegramBotService {
   }
 
   private addCallbackHandlers() {
+    // Calendar week view handler — must be registered before the generic pattern
+    this.bot.action(/^cal_(-?\d+)_(.+)$/, async (ctx) => {
+      const offset = parseInt(ctx.match[1]);
+      const chartId = ctx.match[2];
+      await ctx.answerCbQuery();
+      await this.showWeekCalendar(ctx, chartId, offset);
+    });
+
     // Pattern-based callback handlers
     this.bot.action(/^(.+)_(.+)$/, async (ctx) => {
       const [, action, data] = ctx.match;
@@ -1228,6 +1238,109 @@ export class TelegramBotService {
     };
 
     return await this.natalRepo.create(chartInput);
+  }
+
+  private async showWeekCalendar(ctx: BotContext, chartId: string, offset: number) {
+    const chart = await this.natalRepo.findById(chartId);
+    if (!chart) {
+      await ctx.reply('Карта не найдена.');
+      return;
+    }
+
+    const timezone = (chart as any).birth_location?.timezone || 'UTC';
+    const location = {
+      latitude: (chart as any).birth_location?.latitude || 55.75,
+      longitude: (chart as any).birth_location?.longitude || 37.62,
+    };
+
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+
+    const DAYS_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const MONTHS_RU = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+    const startLabel = offset === 0 ? 'Ближайшие 7 дней' : offset > 0 ? `Через ${offset} дней` : `${Math.abs(offset)} дней назад`;
+    let text = `📅 *${startLabel}*\n\n`;
+
+    for (let i = offset; i < offset + 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const dateTime: DateTime = { date, timezone, location };
+
+      try {
+        const [lunarDay, moonPhase] = await Promise.all([
+          this.ephemeris.getLunarDay(dateTime),
+          this.ephemeris.getMoonPhase(dateTime),
+        ]);
+
+        const raw = interpretationService.getLunarDayRaw(lunarDay.number);
+        const dayName = DAYS_RU[date.getDay()];
+        const dayNum = date.getDate();
+        const month = MONTHS_RU[date.getMonth()];
+        const phaseEmoji = this.moonPhaseEmoji(moonPhase);
+        const darkFlag = raw?.is_dark ? ' ⚠️' : '';
+
+        text += `${i === 0 ? '➤ ' : ''}*${dayName} ${dayNum} ${month}* ${phaseEmoji} ${lunarDay.number}-й лунный день${darkFlag}\n`;
+        if (raw?.symbol) text += `_${raw.symbol}_`;
+        if (raw?.general) {
+          const brief = raw.general.split('.')[0] + '.';
+          text += ` ${brief}`;
+        }
+        text += '\n\n';
+      } catch {
+        const date2 = new Date(today);
+        date2.setDate(today.getDate() + i);
+        text += `*${DAYS_RU[date2.getDay()]} ${date2.getDate()} ${MONTHS_RU[date2.getMonth()]}* — нет данных\n\n`;
+      }
+    }
+
+    const prevOffset = offset - 7;
+    const nextOffset = offset + 7;
+
+    try {
+      await ctx.editMessageText(text, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '← Пред. неделя', callback_data: `cal_${prevOffset}_${chartId}` },
+              { text: 'След. неделя →', callback_data: `cal_${nextOffset}_${chartId}` },
+            ],
+            [
+              { text: '📅 Сегодня', callback_data: `today_${chartId}` },
+              { text: '🏠 Меню', callback_data: 'main_menu' },
+            ],
+          ],
+        },
+      });
+    } catch {
+      await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '← Пред. неделя', callback_data: `cal_${prevOffset}_${chartId}` },
+              { text: 'След. неделя →', callback_data: `cal_${nextOffset}_${chartId}` },
+            ],
+            [
+              { text: '📅 Сегодня', callback_data: `today_${chartId}` },
+              { text: '🏠 Меню', callback_data: 'main_menu' },
+            ],
+          ],
+        },
+      });
+    }
+  }
+
+  private moonPhaseEmoji(phase: number): string {
+    if (phase < 0.05) return '🌑';
+    if (phase < 0.25) return '🌒';
+    if (phase < 0.45) return '🌓';
+    if (phase < 0.55) return '🌕';
+    if (phase < 0.75) return '🌖';
+    if (phase < 0.95) return '🌗';
+    return '🌘';
   }
 
   public static setInstance(instance: TelegramBotService) {
