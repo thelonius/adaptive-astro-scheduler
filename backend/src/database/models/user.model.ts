@@ -13,6 +13,7 @@ export interface User {
   updated_at: Date;
   last_seen_at: Date | null;
   is_active: boolean;
+  notifications_enabled: boolean;
   metadata: Record<string, any>;
 }
 
@@ -29,5 +30,6 @@ export interface UpdateUserInput {
   username?: string;
   last_seen_at?: Date;
   is_active?: boolean;
+  notifications_enabled?: boolean;
   metadata?: Record<string, any>;
 }

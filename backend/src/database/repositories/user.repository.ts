@@ -56,6 +56,10 @@ export class UserRepository {
       updates.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${paramIndex++}`);
       values.push(data.metadata);
     }
+    if (data.notifications_enabled !== undefined) {
+      updates.push(`notifications_enabled = $${paramIndex++}`);
+      values.push(data.notifications_enabled);
+    }
 
     if (updates.length === 0) return this.findById(id);
 
@@ -70,6 +74,20 @@ export class UserRepository {
 
     const result = await pool.query<User>(query, values);
     return result.rows[0] || null;
+  }
+
+  async findAllWithNotifications(): Promise<User[]> {
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE notifications_enabled = true AND telegram_id IS NOT NULL'
+    );
+    return result.rows;
+  }
+
+  async setNotifications(telegramId: number, enabled: boolean): Promise<void> {
+    await pool.query(
+      'UPDATE users SET notifications_enabled = $1, updated_at = NOW() WHERE telegram_id = $2',
+      [enabled, telegramId]
+    );
   }
 }
 
