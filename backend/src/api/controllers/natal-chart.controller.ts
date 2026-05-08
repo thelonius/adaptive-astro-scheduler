@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { zonedTimeToUtc } from 'date-fns-tz';
 import { createEphemerisCalculator } from '../../core/ephemeris';
 import { natalChartRepository } from '../../database/repositories';
 import type { DateTime } from '@adaptive-astro/shared/types';
@@ -47,9 +48,9 @@ export class NatalChartController {
         return;
       }
 
-      // Create DateTime object for birth moment
+      // Convert local birth time to UTC using the provided timezone
       const birthDateTime: DateTime = {
-        date: new Date(`${birthDate}T${birthTime}`),
+        date: zonedTimeToUtc(`${birthDate}T${birthTime}`, timezone as string),
         timezone: timezone as string,
         location: {
           latitude: parseFloat(latitude as string),

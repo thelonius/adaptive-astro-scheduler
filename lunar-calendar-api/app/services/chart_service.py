@@ -113,7 +113,7 @@ class ChartService:
                 "mc": round(houses_data["mc"], 4),
                 "vertex": round(houses_data.get("vertex", 0.0), 4)
             },
-            "houses": [round(c, 4) for c in houses_data["cusps"][1:]] if "error" not in houses_data else [],
+            "houses": [round(c, 4) for c in houses_data["cusps"]] if "error" not in houses_data else [],
             "planets": planets_data,
             "aspects": aspects_list,
             "rulerships": {
