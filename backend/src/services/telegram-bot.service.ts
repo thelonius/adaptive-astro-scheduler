@@ -6,6 +6,7 @@ import { PersonalizedAnalyticsService, PersonalizedDayAnalytics } from './person
 import { createEphemerisCalculator } from '../core/ephemeris';
 import { IEphemerisCalculator } from '../core/ephemeris';
 import { interpretationService } from './astrology/interpretation.service';
+import { LunarDayScheduler } from './lunar-day-scheduler';
 import type { DateTime } from '@adaptive-astro/shared/types';
 import type { CreateNatalChartInput } from '../database/models';
 import axios from 'axios';
@@ -52,6 +53,7 @@ export class TelegramBotService {
   private natalRepo: NatalChartRepository;
   private analyticsService!: PersonalizedAnalyticsService;
   private ephemeris!: IEphemerisCalculator;
+  private scheduler!: LunarDayScheduler;
   private isRunning: boolean = false;
   private static instance: TelegramBotService | null = null;
 
@@ -72,6 +74,12 @@ export class TelegramBotService {
       this.natalRepo = new NatalChartRepository();
       this.ephemeris = createEphemerisCalculator();
       this.analyticsService = new PersonalizedAnalyticsService(this.ephemeris);
+      this.scheduler = new LunarDayScheduler(
+        this.ephemeris,
+        this.userRepo,
+        this.natalRepo,
+        (chatId, text, extra) => this.bot.telegram.sendMessage(chatId, text, extra as any).then(() => {})
+      );
       console.log('🔧 Repositories and analytics service initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize services:', error);
@@ -79,6 +87,12 @@ export class TelegramBotService {
       this.natalRepo = new NatalChartRepository();
       this.ephemeris = createEphemerisCalculator();
       this.analyticsService = new PersonalizedAnalyticsService(this.ephemeris);
+      this.scheduler = new LunarDayScheduler(
+        this.ephemeris,
+        this.userRepo,
+        this.natalRepo,
+        (chatId, text, extra) => this.bot.telegram.sendMessage(chatId, text, extra as any).then(() => {})
+      );
     }
 
     // Middleware - use different path for local vs docker
@@ -401,22 +415,52 @@ export class TelegramBotService {
       }
     });
 
-    // Enhanced help command
+    // Subscribe to lunar day notifications
+    this.bot.command('subscribe', async (ctx) => {
+      try {
+        const telegramId = ctx.from?.id;
+        if (!telegramId) return;
+        await this.userRepo.setNotifications(telegramId, true);
+        await ctx.reply(
+          '🌙 *Подписка оформлена!*\n\n' +
+          'Буду присылать расклад в момент смены лунных суток.',
+          { parse_mode: 'Markdown' }
+        );
+      } catch (error) {
+        console.error('Error in /subscribe:', error);
+        await ctx.reply('Не удалось оформить подписку. Попробуй позже.');
+      }
+    });
+
+    // Unsubscribe from lunar day notifications
+    this.bot.command('unsubscribe', async (ctx) => {
+      try {
+        const telegramId = ctx.from?.id;
+        if (!telegramId) return;
+        await this.userRepo.setNotifications(telegramId, false);
+        await ctx.reply('🔕 Уведомления отключены.');
+      } catch (error) {
+        console.error('Error in /unsubscribe:', error);
+        await ctx.reply('Не удалось отключить уведомления. Попробуй позже.');
+      }
+    });
+
+    // Help command
     this.bot.command('help', async (ctx) => {
       try {
         await ctx.reply(
-          "🤖 *Astro Scheduler Commands:*\n\n" +
-          "/start - Begin setup or create your natal chart\n" +
-          "/today - Get personalized daily reading\n" +
-          "/charts - View and manage all your charts\n" +
-          "/event - Create an event chart for any moment\n" +
-          "/help - Show this help message\n\n" +
-          "✨ I can create natal charts (birth) and event charts (any significant moment) to provide astrological insights!",
+          '🤖 *Команды:*\n\n' +
+          '/start — начало работы / главное меню\n' +
+          '/today — персональный расклад на сегодня\n' +
+          '/charts — список карт\n' +
+          '/subscribe — подписаться на уведомления о смене лунного дня\n' +
+          '/unsubscribe — отписаться\n' +
+          '/help — эта справка\n',
           { parse_mode: 'Markdown' }
         );
       } catch (error) {
         console.error('Error in /help command:', error);
-        await ctx.reply('Available commands: /start, /today, /charts, /event, /help');
+        await ctx.reply('Команды: /start, /today, /charts, /subscribe, /unsubscribe, /help');
       }
     });
 
@@ -1053,6 +1097,10 @@ export class TelegramBotService {
 
       await this.startCustomPolling();
 
+      if (this.scheduler) {
+        this.scheduler.start();
+      }
+
       console.log('🤖 Telegram Bot started in polling mode!');
       console.log('📞 Bot is now listening for messages...');
       console.log('🎯 Enhanced Telegram bot with natal chart management is LIVE!');
@@ -1156,11 +1204,12 @@ export class TelegramBotService {
   private async setBotCommands() {
     try {
       const commands = [
-        { command: 'start', description: 'Begin setup or create your natal chart' },
-        { command: 'today', description: 'Get personalized daily reading' },
-        { command: 'charts', description: 'View and manage all your charts' },
-        { command: 'event', description: 'Create an event chart for any moment' },
-        { command: 'help', description: 'Show help message' }
+        { command: 'start', description: 'Главное меню' },
+        { command: 'today', description: 'Расклад на сегодня' },
+        { command: 'charts', description: 'Мои карты' },
+        { command: 'subscribe', description: 'Подписаться на уведомления о смене лунного дня' },
+        { command: 'unsubscribe', description: 'Отписаться от уведомлений' },
+        { command: 'help', description: 'Справка' },
       ];
 
       await this.bot.telegram.setMyCommands(commands);
