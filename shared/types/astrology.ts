@@ -76,6 +76,7 @@ export interface LunarDay {
   symbol: string;
   energy: LunarEnergyType;
   lunarPhase: LunarPhaseType;
+  endsAt?: Date;              // When this lunar day ends (UTC)
   moonPhase?: MoonPhase;      // Additional phase details
   colorPalette?: {
     base_colors: string[];

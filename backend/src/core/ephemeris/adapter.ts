@@ -154,9 +154,10 @@ export class EphemerisAdapter implements IEphemerisCalculator {
 
     return {
       number: response.number,
-      symbol: '🌙', // Default symbol since API is now data-only
+      symbol: '🌙',
       energy: this.getLunarEnergy(response.number),
       lunarPhase: this.parseLunarPhase(response.lunar_phase),
+      endsAt: new Date(response.ends_at),
       characteristics: {
         spiritual: `Lunar Day ${response.number}`,
         practical: `Starts: ${response.starts_at}, Ends: ${response.ends_at}`,
