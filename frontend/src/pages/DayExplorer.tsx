@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Container,
@@ -23,6 +23,8 @@ import { dayService, type CalendarDay } from '../services/dayService';
 import { useDynamicTheme } from '../theme/DynamicThemeProvider';
 import { LocationBar } from '../components/common/LocationBar';
 import { useLocationStore } from '../store/locationStore';
+import { transformAspectData } from '../utils/apiTransform';
+import type { CelestialBody, Aspect } from '@adaptive-astro/shared/types';
 
 const _MotionBox = motion(Box);
 const MotionCard = motion(Card);
@@ -104,6 +106,34 @@ const DayExplorer: React.FC = () => {
     useEffect(() => {
         fetchDayData();
     }, [fetchDayData]);
+
+    // Transit aspects from the API arrive as { planet1, planet2 } string names.
+    // The ZodiacWheel expects { body1, body2 } CelestialBody objects, so resolve
+    // them against the transit planets before handing data to the wheel.
+    const wheelData = useMemo(() => {
+        if (!dayData) return null;
+
+        const planets = Object.values(dayData.transits || {}) as CelestialBody[];
+        const planetsMap = new Map<string, CelestialBody>();
+        planets.forEach(p => planetsMap.set(p.name, p));
+
+        const aspects = (dayData.aspects || [])
+            .map(a => transformAspectData(a, planetsMap))
+            .filter((a): a is Aspect => a !== null);
+
+        return {
+            planets,
+            aspects,
+            houses: dayData.houses || [],
+            voidMoon: dayData.voidOfCourseMoon ? {
+                isVoid: true,
+                voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
+                voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString()
+            } : { isVoid: false },
+            planetaryHours: dayData.planetaryHours || [],
+            timestamp: selectedDate
+        };
+    }, [dayData, selectedDate]);
 
     const handleDateChange = (date: Date) => {
         const newDate = new Date(date);
@@ -305,18 +335,7 @@ const DayExplorer: React.FC = () => {
                             <CardBody display="flex" justifyContent="center">
                                 <ZodiacWheel
                                     date={selectedDate}
-                                    data={dayData ? {
-                                        planets: Object.values(dayData.transits || {}),
-                                        aspects: dayData.aspects || [],
-                                        houses: dayData.houses || [],
-                                        voidMoon: dayData.voidOfCourseMoon ? {
-                                            isVoid: true, // If it exists, it's void
-                                            voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
-                                            voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString()
-                                        } : { isVoid: false },
-                                        planetaryHours: dayData.planetaryHours || [],
-                                        timestamp: selectedDate
-                                    } as any : null}
+                                    data={wheelData}
                                     config={{
                                         size: 800,
                                         showHouses: showHouses,
