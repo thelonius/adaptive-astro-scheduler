@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Container,
@@ -19,6 +19,9 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
+import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import { transformAspectData } from '../utils/apiTransform';
+import type { Aspect, CelestialBody } from '@adaptive-astro/shared/types';
 import { dayService, type CalendarDay } from '../services/dayService';
 import { useDynamicTheme } from '../theme/DynamicThemeProvider';
 import { LocationBar } from '../components/common/LocationBar';
@@ -52,6 +55,31 @@ const DayExplorer: React.FC = () => {
     const [showAspects, setShowAspects] = useState(false);
     const [showHouses, setShowHouses] = useState(true);
     const [showRetrogrades, setShowRetrogrades] = useState(true);
+
+    // dayData.aspects приходят в сыром виде API (planet1/planet2). ZodiacWheel и его
+    // тултип ожидают Aspect c body1/body2. Без трансформации обращение к body1.name роняет виджет.
+    const wheelData: ZodiacWheelData | null = useMemo(() => {
+        if (!dayData) return null;
+        const planets = Object.values(dayData.transits || {}) as CelestialBody[];
+        const planetsMap = new Map(planets.map(p => [p.name, p]));
+        const aspects = (dayData.aspects || [])
+            .map(a => transformAspectData(a, planetsMap))
+            .filter((a): a is Aspect => a !== null);
+        return {
+            planets,
+            aspects,
+            houses: dayData.houses || [],
+            voidMoon: dayData.voidOfCourseMoon
+                ? {
+                    isVoid: true,
+                    voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
+                    voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString(),
+                }
+                : { isVoid: false },
+            planetaryHours: dayData.planetaryHours || [],
+            timestamp: selectedDate,
+        };
+    }, [dayData, selectedDate]);
 
     // Update URL when selectedDate changes
     useEffect(() => {
@@ -305,18 +333,7 @@ const DayExplorer: React.FC = () => {
                             <CardBody display="flex" justifyContent="center">
                                 <ZodiacWheel
                                     date={selectedDate}
-                                    data={dayData ? {
-                                        planets: Object.values(dayData.transits || {}),
-                                        aspects: dayData.aspects || [],
-                                        houses: dayData.houses || [],
-                                        voidMoon: dayData.voidOfCourseMoon ? {
-                                            isVoid: true, // If it exists, it's void
-                                            voidStart: dayData.voidOfCourseMoon.startTime?.date?.toString(),
-                                            voidEnd: dayData.voidOfCourseMoon.endTime?.date?.toString()
-                                        } : { isVoid: false },
-                                        planetaryHours: dayData.planetaryHours || [],
-                                        timestamp: selectedDate
-                                    } as any : null}
+                                    data={wheelData}
                                     config={{
                                         size: 800,
                                         showHouses: showHouses,
