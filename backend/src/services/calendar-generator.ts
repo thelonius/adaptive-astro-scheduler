@@ -336,14 +336,14 @@ export class CalendarGenerator {
     if (!planetsData || !planetsData.planets || !Array.isArray(planetsData.planets)) {
       console.error('❌ Invalid planets data received:', planetsData);
       // Return placeholder transits for all planets
-      const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+      const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
       planetNames.forEach(planetName => {
         transits[planetName] = this.getPlaceholderCelestialBody(planetName);
       });
       return transits;
     }
 
-    const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+    const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
 
     planetNames.forEach(planetName => {
       const apiPlanet = planetsData.planets.find((p: any) =>

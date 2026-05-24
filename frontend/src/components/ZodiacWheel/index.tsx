@@ -105,14 +105,8 @@ export const ZodiacWheel: React.FC<ZodiacWheelProps> = ({
   }, [data?.planets, data?.houses, config.size]);
 
   const aspectLines = useMemo(() => {
-    if (!data?.aspects || !config.showAspects) {
-      console.log('No aspects or showAspects disabled:', { aspects: data?.aspects?.length || 0, showAspects: config.showAspects });
-      return [];
-    }
-    console.log('Processing aspects:', data.aspects.length, 'with planet positions:', planetPositions.length);
-    const lines = calculateAspectLines(data.aspects, planetPositions, config.colorScheme);
-    console.log('Generated aspect lines:', lines.length);
-    return lines;
+    if (!data?.aspects || !config.showAspects) return [];
+    return calculateAspectLines(data.aspects, planetPositions, config.colorScheme);
   }, [data?.aspects, planetPositions, config.showAspects, config.colorScheme]);
 
   const innerPlanetPositions = useMemo(() => {

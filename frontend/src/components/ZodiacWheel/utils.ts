@@ -282,36 +282,18 @@ export function calculateAspectLines(
   planetPositions: PlanetPosition[],
   colorScheme: ColorScheme
 ): AspectLine[] {
-  console.log('Calculating aspect lines for:', aspects.length, 'aspects');
-
   const standardTypes = ['opposition', 'trine', 'square', 'sextile', 'quincunx']; // Exclude conjunction lines
   const filteredAspects = aspects.filter(aspect => {
     if (aspect.orb > 8) return false;
-    const type = (aspect.type || '').toLowerCase();
-    const passes = standardTypes.includes(type);
-    // Debug Moon aspects specifically
-    if (aspect.body1?.name === 'Moon' || aspect.body2?.name === 'Moon') {
-      console.log(`[Moon aspect] ${aspect.body1?.name}-${aspect.body2?.name}: type="${aspect.type}" orb=${aspect.orb} passes=${passes}`);
-    }
-    return passes;
+    return standardTypes.includes((aspect.type || '').toLowerCase());
   });
-  console.log('Aspects after orb/type filter:', filteredAspects.length);
 
   return filteredAspects
     .map(aspect => {
-      console.log(`Looking for planets: "${aspect.body1.name}" and "${aspect.body2.name}"`);
       const from = planetPositions.find(p => p.planet.name === aspect.body1.name);
       const to = planetPositions.find(p => p.planet.name === aspect.body2.name);
 
-      if (!from) {
-        console.warn('Planet not found for aspect body1:', aspect.body1.name, 'Available:', planetPositions.map(p => p.planet.name));
-        return null;
-      }
-
-      if (!to) {
-        console.warn('Planet not found for aspect body2:', aspect.body2.name, 'Available:', planetPositions.map(p => p.planet.name));
-        return null;
-      }
+      if (!from || !to) return null;
 
       // Handle missing aspect type
       const aspectType = (aspect.type || 'conjunction').toLowerCase();
@@ -320,8 +302,6 @@ export function calculateAspectLines(
       // Calculate strength based on orb (closer = stronger)
       const maxOrb = 8; // Default max orb
       const strength = 1 - Math.min(aspect.orb / maxOrb, 1);
-
-      console.log(`✓ Creating aspect line: ${aspect.body1.name} ${aspectType} ${aspect.body2.name} (orb: ${aspect.orb}°)`);
 
       return {
         aspect: { ...aspect, type: aspectType }, // Ensure type is set
