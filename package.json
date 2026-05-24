@@ -5,7 +5,8 @@
   "workspaces": [
     "backend",
     "frontend",
-    "shared"
+    "shared",
+    "packages/*"
   ],
   "scripts": {
     "dev": "./dev-start.sh && ./QUICK_START.sh",

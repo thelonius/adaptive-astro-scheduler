@@ -19,6 +19,14 @@ interface LunarDayData {
     additional_influences: string[];
     planetary_description: string;
     general_description: string;
+    symbol?: string;
+    general?: string;
+    business?: string;
+    health?: string;
+    relationships?: string;
+    warning?: string;
+    dreams?: string;
+    is_dark?: boolean;
 }
 
 interface LocalizationData {
@@ -126,6 +134,13 @@ export class InterpretationService {
             26: 'Toad', 27: 'Trident', 28: 'Lotus', 29: 'Octopus', 30: 'Golden Swan'
         };
         return symbols[num] || '';
+    }
+
+    /**
+     * Get raw lunar day data (for calendar views, rich descriptions)
+     */
+    public getLunarDayRaw(num: number): LunarDayData | null {
+        return this.lunarDays.find(d => d.lunar_day === num) ?? null;
     }
 
     /**
