@@ -9,7 +9,6 @@ interface AspectLinesProps {
 }
 
 export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
-  console.log('AspectLines received:', lines.length, 'lines for size:', size);
   // Group aspects by type for rendering order (weaker aspects behind)
   const sortedLines = [...lines].sort((a, b) => {
     const order = ['quincunx', 'sextile', 'trine', 'square', 'opposition', 'conjunction'];
@@ -129,8 +128,9 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
       {linesWithCoords.map((line, i) => {
         const { fromPoint, toPoint, strength, aspect } = line;
 
-        // Calculate stroke width based on aspect strength (make more visible)
-        const strokeWidth = Math.max(1, size * 0.002 * (1 + strength * 2));
+        // Tighter orb (higher strength) → thicker, brighter line; wide orb → thin and faint
+        const strokeWidth = size * 0.0012 + size * 0.004 * strength;
+        const lineOpacity = 0.28 + 0.62 * strength;
 
         // Different line styles for different aspects
         const getStrokeDasharray = (type: string) => {
@@ -182,9 +182,9 @@ export const AspectLines: React.FC<AspectLinesProps> = ({ lines, size }) => {
             stroke={getGradientUrl(aspect.type)}
             strokeWidth={strokeWidth}
             strokeDasharray={getStrokeDasharray(aspect.type)}
-            opacity={0.7 + strength * 0.2}
+            opacity={lineOpacity}
             initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.7 + strength * 0.2 }}
+            animate={{ pathLength: 1, opacity: lineOpacity }}
             transition={{
               pathLength: { type: 'spring', duration: 1.5, bounce: 0, delay: i * 0.1 },
               opacity: { duration: 0.5, delay: i * 0.1 },
