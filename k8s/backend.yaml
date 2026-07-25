@@ -37,8 +37,9 @@ spec:
               name: backend-secrets
               key: telegram-bot-token
               optional: true
+        # Бот работает через polling, вебхук не регистрируется
         - name: TELEGRAM_WEBHOOK_URL
-          value: "http://176.123.166.252:3000/webhook/telegram"
+          value: ""
         ports:
         - containerPort: 3000
 ---

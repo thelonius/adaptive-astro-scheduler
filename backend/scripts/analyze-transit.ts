@@ -6,7 +6,7 @@ import { DateTime } from '@adaptive-astro/shared/types';
 
 async function main() {
     // Setting up the services
-    const adapter = new EphemerisAdapter('http://176.123.166.252:8000');
+    const adapter = new EphemerisAdapter(process.env.EPHEMERIS_API_URL || 'http://localhost:8000');
     const detector = new CelestialEventsDetector(adapter);
     const service = new OptimalTimingService(detector);
 

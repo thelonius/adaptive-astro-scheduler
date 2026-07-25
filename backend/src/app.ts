@@ -30,8 +30,9 @@ export function createApp(): Express {
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://127.0.0.1:8000',
-      'http://176.123.166.252',
-      'https://176.123.166.252'
+      // Прод-адрес приходит из CORS_ORIGIN (через запятую), чтобы смена
+      // хоста не требовала правки кода — предыдущий IP пережил свой сервер
+      ...(process.env.CORS_ORIGIN?.split(',').map(o => o.trim()).filter(Boolean) ?? [])
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
