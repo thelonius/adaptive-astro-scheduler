@@ -7,65 +7,127 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
 jobs:
-  deploy:
-    name: Deploy to Production
+  # Раньше сборка шла на сервере (docker-compose up --build). На новом хосте
+  # 2 ядра и меньше гигабайта свободной памяти при живых соседях (ssd-radar,
+  # gpx-tracker, 3x-ui, shadowbox), поэтому vite-сборка переехала в CI.
+  build:
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: [] # runs independently; CI is a separate workflow
-
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: .
+            dockerfile: docker/Dockerfile.backend
+          - name: frontend
+            context: .
+            dockerfile: docker/Dockerfile.frontend
+          - name: ephemeris
+            context: lunar-calendar-api
+            dockerfile: lunar-calendar-api/Dockerfile.ephemeris
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Sync server to origin/main and rebuild containers
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:latest
+          # Фронт запекает адрес API в бандл на этапе сборки, поэтому публичный
+          # URL нужен здесь, а не в рантайме. Переменная репозитория
+          # ASTRO_PUBLIC_URL; дефолт — sslip.io-имя амстердамского хоста.
+          build-args: |
+            VITE_API_URL=${{ vars.ASTRO_PUBLIC_URL || 'https://astro-31-130-130-11.sslip.io:4443' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    name: Deploy to production
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Pull images and restart the stack
         uses: appleboy/ssh-action@v1
         env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          IMAGE_TAG: ${{ github.sha }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: NVIDIA_API_KEY
+          envs: IMAGE_PREFIX,IMAGE_TAG,GHCR_TOKEN,GHCR_USER,TELEGRAM_BOT_TOKEN,POSTGRES_PASSWORD,NVIDIA_API_KEY
           script: |
             set -e
             cd ${{ secrets.SSH_DEPLOY_PATH }}
+            COMPOSE="docker compose -f docker/docker-compose.prod.yml"
 
-            # Sync working tree to origin/main via git, not rsync.
-            # rsync left .git untouched and the working tree drifted from the
-            # index — modified + untracked entries that were actually just
-            # main's content rsynced over an old HEAD. reset --hard + clean -fd
-            # is idempotent and respects .gitignore (so .env, node_modules,
-            # dist, venv, __pycache__ stay put).
+            # Компоуз и init.sql берутся из репозитория, код — из образов.
             echo "--- Syncing repo to origin/main ---"
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
 
-            # Persist secrets to .env so docker-compose's ${VAR:-} substitution
-            # picks them up — both for this deploy and for any future manual
-            # `docker-compose restart` after an SSH session.
+            echo "--- Writing .env ---"
             umask 077
             cat > .env <<EOF
+            BACKEND_IMAGE=${IMAGE_PREFIX}/backend:${IMAGE_TAG}
+            FRONTEND_IMAGE=${IMAGE_PREFIX}/frontend:${IMAGE_TAG}
+            EPHEMERIS_IMAGE=${IMAGE_PREFIX}/ephemeris:${IMAGE_TAG}
+            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             NVIDIA_API_KEY=${NVIDIA_API_KEY}
             EOF
             umask 022
 
-            echo "--- Stopping containers ---"
-            docker-compose -f docker/docker-compose.yml down
+            # GITHUB_TOKEN живёт минуты и даёт read:packages на пакеты этого
+            # репозитория — долгоживущий PAT на сервере не нужен.
+            echo "--- ghcr login ---"
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
 
-            # Prune BEFORE the build, not after. The previous trailing prune
-            # only ran on success — when a build OOM'd on disk, old layers
-            # piled up and the next deploy hit the same wall. With down
-            # already done, every old image is unused, so -af is safe.
-            echo "--- Pruning old images and build cache ---"
-            docker image prune -af
-            docker builder prune -af
+            echo "--- Pulling images ---"
+            $COMPOSE pull
 
-            echo "--- Building and starting ---"
-            docker-compose -f docker/docker-compose.yml up -d --build --force-recreate
+            echo "--- Starting ---"
+            $COMPOSE up -d --remove-orphans
 
             echo "--- Running migrations ---"
-            docker-compose -f docker/docker-compose.yml exec -T backend npm run migrate 2>/dev/null || true
+            $COMPOSE exec -T backend npm run migrate 2>/dev/null || true
 
-            echo "--- Deploy complete: $(date) ---"
-            docker-compose -f docker/docker-compose.yml ps
+            docker logout ghcr.io
+
+            # Соседние стеки трогать нельзя, поэтому только висячие слои
+            # астро-образов, без -a.
+            echo "--- Pruning dangling layers ---"
+            docker image prune -f
+
+            $COMPOSE ps

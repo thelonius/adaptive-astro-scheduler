@@ -2,9 +2,20 @@
 
 ## Прод
 
-- Хост: `user1@176.123.166.252`, репо в `/home/user1/apps/adaptive-astro-scheduler`
-- Стек: docker compose из `docker/docker-compose.yml` (backend, frontend, ephemeris, postgres, redis)
-- Health: `http://176.123.166.252:3000/health`, фронт `http://176.123.166.252/`
+- Хост: `root@31.130.130.11` (Timeweb, Амстердам), репо в `/root/adaptive-astro-scheduler`, ключ `~/.ssh/cesium_replica_key`
+- Стек: `docker/docker-compose.prod.yml` (backend, frontend, ephemeris, postgres, redis)
+- Публичный адрес: `https://astro-31-130-130-11.sslip.io:4443`, health — `/api/health`
+
+Старый хост `user1@176.123.166.252` больше не используется: астро-стек оттуда удалён (2026-07, ни контейнеров, ни volume'ов), на боксе остались чужие сервисы.
+
+### Сервер общий
+
+На `31.130.130.11` кроме астро живут ssd-radar, gpx-tracker, 3x-ui, shadowbox (Outline VPN), prometheus, zabbix-agent и pm2 с cesium-route-renderer. Отсюда все ограничения:
+
+- **Порты**: заняты 80 и 4443 (ssd_radar_caddy), 443 (gpx-tracker-caddy), 8443 и 2053 (3x-ui), 3000/3002/3003/25880 (pm2). Астро не публикует наружу ничего
+- **Память**: 2 ГБ на весь бокс. У каждого сервиса в prod-compose стоит `mem_limit`, суммарно ~912 МБ. Менять их вверх — только вместе с swap
+- **TLS**: астро проксируется через `ssd_radar_caddy` (site-блок в `~/ssd/deploy/Caddyfile`), а не своим Caddy: ACME HTTP-01 требует порт 80, которым тот владеет. Связь через внешнюю docker-сеть `astro_edge`
+- `docker image prune` **только без `-a`**: `-a` снесёт слои соседних стеков
 
 ### SSH-доступ — read-only
 
@@ -14,14 +25,13 @@
 
 ### Деплой
 
-- **Правильно**: GitHub Actions `workflow_dispatch` (deploy.yml, добавлен в PR #7) — делает `git pull` на сервере и пересобирает контейнеры
+- **Правильно**: GitHub Actions (deploy.yml). Образы собираются в CI и пушатся в `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,frontend,ephemeris}`, сервер только делает `pull`. Собирать на сервере нельзя: двух ядер и ~900 МБ свободной памяти на vite не хватает
+- `VITE_API_URL` запекается в бандл на этапе сборки, поэтому публичный адрес задаётся переменной репозитория `ASTRO_PUBLIC_URL`, а не в рантайме
 - **Не использовать**: `deploy-full.sh` — он rsync'ит локальное рабочее дерево (включая незакоммиченное) и поощряет тот же anti-pattern, что и правки на сервере. Считать deprecated
 
-### Известные проблемы прода (на момент 2026-05-02)
+### Секреты
 
-1. **Грязное рабочее дерево**: ~100 modified + untracked файлов на сервере, удалена `AstroClock/`. Перед следующим деплоем нужно либо разобрать и закоммитить нужное, либо `git reset --hard origin/main` (с потерей)
-2. **nginx → backend port mismatch**: [docker/nginx.conf](docker/nginx.conf) проксирует `/api` и `/webhook` на `backend:3001`, контейнер слушает `3000` → все запросы через фронт получают 502. Прямой `:3000` работает
-3. **Telegram-бот не работает**: из RU-хоста заблокирован `api.telegram.org` (ETIMEDOUT). Нужен прокси или вынос на не-RU хост
+Токен бота утёк через публичный репозиторий (лежал в открытом виде с 26.01.2026 по 25.07.2026, бота угнали) и отозван. Никаких секретов в compose, k8s-манифестах и скриптах: только `${VAR}` из `.env`, который пишет deploy-workflow из GitHub secrets — `TELEGRAM_BOT_TOKEN`, `POSTGRES_PASSWORD`, `NVIDIA_API_KEY`.
 
 ## Локальная разработка
 
