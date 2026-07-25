@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: astro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: adaptiveastro/backend:latest
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:postgres@postgres:5432/adaptive_astro"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: EPHEMERIS_MODE
+          value: "api"
+        - name: EPHEMERIS_API_URL
+          value: "http://ephemeris:8000"
+        # kubectl -n astro create secret generic backend-secrets \
+        #   --from-literal=telegram-bot-token=<token from BotFather>
+        - name: TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: telegram-bot-token
+              optional: true
+        - name: TELEGRAM_WEBHOOK_URL
+          value: "http://176.123.166.252:3000/webhook/telegram"
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: astro
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend
+  ports:
+  - port: 3000
+    targetPort: 3000
