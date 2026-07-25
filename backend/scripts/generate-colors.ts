@@ -2,9 +2,11 @@ import { computeDayColorPalette } from '../../frontend/src/theme/natalDayColorEn
 import axios from 'axios';
 import fs from 'fs';
 
+const API_BASE = process.env.BACKEND_URL || 'http://localhost:3000';
+
 async function generate() {
     console.log("Рассчитываем натальную карту...");
-    const natalRes = await axios.post('http://176.123.166.252:3000/api/natal-chart/calculate', {
+    const natalRes = await axios.post(`${API_BASE}/api/natal-chart/calculate`, {
         birthDate: '1991-06-26',
         birthTime: '09:43',
         latitude: 55.7558,
@@ -29,7 +31,7 @@ async function generate() {
         let lunarDay = null;
 
         try {
-            const calendarRes = await axios.get(`http://176.123.166.252:3000/api/calendar/day`, {
+            const calendarRes = await axios.get(`${API_BASE}/api/calendar/day`, {
                 params: { date: dateStr, latitude: 55.7558, longitude: 37.6173, timezone: 'Europe/Moscow' }
             });
             transits = calendarRes.data.transitData;

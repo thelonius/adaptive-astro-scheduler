@@ -4,7 +4,7 @@
 
 - Хост: `root@31.130.130.11` (Timeweb, Амстердам), репо в `/root/adaptive-astro-scheduler`, ключ `~/.ssh/cesium_replica_key`
 - Стек: `docker/docker-compose.prod.yml` (backend, frontend, ephemeris, postgres, redis)
-- Публичный адрес: `https://astro-31-130-130-11.sslip.io:4443`, health — `/api/health`
+- Публичный адрес: `https://astro-31-130-130-11.sslip.io:4443`, health — `/health` (отдельный `location` в [docker/nginx.conf](docker/nginx.conf), иначе путь уходит в SPA-fallback)
 
 Старый хост `user1@176.123.166.252` больше не используется: астро-стек оттуда удалён (2026-07, ни контейнеров, ни volume'ов), на боксе остались чужие сервисы.
 

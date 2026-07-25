@@ -51,7 +51,7 @@ fi
 # Test remote ephemeris API
 echo ""
 echo "🌌 Testing Remote Ephemeris API..."
-EPHEMERIS_RESPONSE=$(curl -s http://176.123.166.252:3000/health)
+EPHEMERIS_RESPONSE=$(curl -s "${ASTRO_BASE_URL:-http://localhost:3000}/health")
 if [[ $EPHEMERIS_RESPONSE == *"healthy"* ]]; then
     echo "✅ Remote Ephemeris API: ACCESSIBLE"
 else
