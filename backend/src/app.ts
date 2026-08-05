@@ -21,20 +21,36 @@ export function createApp(): Express {
   const app = express();
 
   // Middleware
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:8000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:8000',
+    // Прод-адрес приходит из CORS_ORIGIN (через запятую), чтобы смена
+    // хоста не требовала правки кода — предыдущий IP пережил свой сервер
+    ...(process.env.CORS_ORIGIN?.split(',').map(o => o.trim()).filter(Boolean) ?? [])
+  ];
+
+  // В разработке порт фронтенда плавающий: 5173 регулярно занят соседним
+  // проектом, и vite берёт первый свободный. Держать список портов в коде
+  // бессмысленно, поэтому локальные адреса разрешаются целиком — но только
+  // вне продакшена, где остаётся жёсткий белый список.
+  const isLocalhost = (origin: string) =>
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  const allowAnyLocalhost = process.env.NODE_ENV !== 'production';
+
   app.use(cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:8000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'http://127.0.0.1:8000',
-      // Прод-адрес приходит из CORS_ORIGIN (через запятую), чтобы смена
-      // хоста не требовала правки кода — предыдущий IP пережил свой сервер
-      ...(process.env.CORS_ORIGIN?.split(',').map(o => o.trim()).filter(Boolean) ?? [])
-    ],
+    origin: (origin, callback) => {
+      // Запросы без Origin — это curl, health-чеки и server-to-server.
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowAnyLocalhost && isLocalhost(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin ${origin} не разрешён`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
