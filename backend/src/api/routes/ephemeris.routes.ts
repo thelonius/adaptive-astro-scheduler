@@ -50,6 +50,11 @@ router.get('/moon-phase', async (req, res) => {
   await ephemerisController.getMoonPhase(req, res);
 });
 
+// GET /api/ephemeris/house-rulers - Управитель каждого дома и дом, где он стоит
+router.get('/house-rulers', async (req, res) => {
+  await ephemerisController.getHouseRulers(req, res);
+});
+
 // GET /api/ephemeris/dispositors - Get dispositor chains (who rules the ruler)
 router.get('/dispositors', async (req, res) => {
   await ephemerisController.getDispositorChains(req, res);
