@@ -1,10 +1,12 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useColorMode } from '@chakra-ui/react';
 import chroma from 'chroma-js';
 import { LunarDay } from '@adaptive-astro/shared/types/astrology';
 import { computeDayColorPalette, applyDayPaletteToCSS } from './natalDayColorEngine';
 import type { DayColorPalette } from './natalDayColorEngine';
+import { applyAstroPalette } from './astroPaletteAdapter';
+import type { AstroMoment } from './astroPaletteAdapter';
 import type { NatalChartData } from '../hooks/useNatalChart';
 
 interface DynamicThemeContextType {
@@ -25,6 +27,10 @@ interface DynamicThemeContextType {
         lunarDay?: any
     ) => DayColorPalette;
     isNatalThemeActive: boolean;
+
+    // astro-palette: OKLCH-токены момента, режим — от темы Chakra/ОС
+    applyAstroDayTheme: (date: Date, lat: number, lon: number) => AstroMoment;
+    astroMoment: AstroMoment | null;
 }
 
 const DynamicThemeContext = createContext<DynamicThemeContextType | undefined>(undefined);
@@ -57,6 +63,11 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
     // --- Новый API ---
     const [dayPalette, setDayPalette] = useState<DayColorPalette | null>(null);
     const [isNatalThemeActive, setIsNatalThemeActive] = useState(false);
+
+    // --- astro-palette ---
+    // Запоминаем входы момента, чтобы переприменять палитру при смене темы Chakra.
+    const astroInputsRef = useRef<{ date: Date; lat: number; lon: number } | null>(null);
+    const [astroMoment, setAstroMoment] = useState<AstroMoment | null>(null);
 
     // Старая функция обновления CSS-переменных (совместимость)
     const updateCssVariables = (primary: string, secondary: string, accent: string, bg: string) => {
@@ -93,6 +104,8 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
     };
 
     const resetTheme = () => {
+        astroInputsRef.current = null;
+        setAstroMoment(null);
         setPrimaryColor(defaultPrimary);
         setSecondaryColor(defaultSecondary);
         const defaultPalette = computeDayColorPalette(new Date());
@@ -127,6 +140,15 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
         return palette;
     }, [isDark]);
 
+    // astro-palette: применяем OKLCH-палитру момента, режим — от темы Chakra.
+    const applyAstroDayTheme = useCallback((date: Date, lat: number, lon: number): AstroMoment => {
+        astroInputsRef.current = { date, lat, lon };
+        const moment = applyAstroPalette(date, lat, lon, isDark ? 'dark' : 'light');
+        setAstroMoment(moment);
+        setIsNatalThemeActive(false);
+        return moment;
+    }, [isDark]);
+
     // Инициализация при монтировании — применяем дефолт по управителю дня
     useEffect(() => {
         const mode = isDark ? 'dark' : 'light';
@@ -141,6 +163,13 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
         const mode = isDark ? 'dark' : 'light';
         // Always update data-theme attribute regardless of whether palette is ready
         document.documentElement.setAttribute('data-theme', mode);
+        // Если активна astro-палитра — пересчитываем её под новый режим, не натальную.
+        const astro = astroInputsRef.current;
+        if (astro) {
+            const moment = applyAstroPalette(astro.date, astro.lat, astro.lon, mode);
+            setAstroMoment(moment);
+            return;
+        }
         const palette = dayPalette ?? computeDayColorPalette(new Date());
         applyDayPaletteToCSS(palette, mode);
         if (!dayPalette) setDayPalette(palette);
@@ -157,6 +186,8 @@ export const DynamicThemeProvider: React.FC<DynamicThemeProviderProps> = ({ chil
             dayPalette,
             applyNatalDayTheme,
             isNatalThemeActive,
+            applyAstroDayTheme,
+            astroMoment,
         }}>
             {children}
         </DynamicThemeContext.Provider>

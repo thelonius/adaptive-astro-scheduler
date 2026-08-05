@@ -1,0 +1,20 @@
+{
+  "name": "astro-palette",
+  "version": "0.1.0",
+  "description": "Автономный движок планетарно-часовой OKLCH-палитры: эфемериды, халдейские часы, фаза Луны, void-of-course. Без сети и зависимостей.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": ["src", "dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc",
+    "test": "node test/smoke.js"
+  },
+  "keywords": ["astrology", "oklch", "palette", "planetary-hours", "moon-phase", "ephemeris"],
+  "license": "MIT"
+}
