@@ -71,7 +71,7 @@ export async function buildDayContext(
 
     const [planetsResp, aspectsResp, voidMoonResp, illumination] = await Promise.all([
         deps.ephemeris.getPlanetsPositions(dt),
-        deps.ephemeris.getAspects(dt, 8),
+        deps.ephemeris.getAspects(dt),
         deps.ephemeris.getVoidOfCourseMoon(dt),
         deps.ephemeris.getMoonPhase(dt),
     ]);

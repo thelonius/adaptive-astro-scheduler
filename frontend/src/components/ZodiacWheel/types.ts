@@ -72,6 +72,10 @@ export const DEFAULT_COLORS: ColorScheme = {
     Uranus: '#00CED1',
     Neptune: '#4169E1',
     Pluto: '#8B008B',
+    Rahu: '#9aa5b1',
+    Ketu: '#9aa5b1',
+    Lilith: '#b388ff',
+    Chiron: '#7ed6a5',
   },
   aspects: {
     conjunction: '#FFD700',

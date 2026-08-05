@@ -30,7 +30,7 @@ export class AspectAnalysisController {
    * - latitude: number (default: 55.7558 - Moscow)
    * - longitude: number (default: 37.6173 - Moscow)
    * - timezone: IANA timezone (default: Europe/Moscow)
-   * - orb: number (default: 8)
+   * - orb: number (optional) - upper bound on the orb; each aspect keeps its own width otherwise
    * - topLimit: number (default: 5) - number of top aspects to return
    */
   async analyzeAspects(req: Request, res: Response): Promise<void> {
@@ -41,7 +41,7 @@ export class AspectAnalysisController {
         latitude = '55.7558',
         longitude = '37.6173',
         timezone = 'Europe/Moscow',
-        orb = '8',
+        orb,
         topLimit = '5',
       } = req.query;
 
@@ -67,10 +67,11 @@ export class AspectAnalysisController {
         },
       };
 
-      // Fetch aspects from ephemeris
+      // Fetch aspects from ephemeris. Орбис не задан — работает таблица
+      // aspects.json, у каждого типа своя ширина.
       const aspectsData = await this.ephemeris.getAspects(
         dateTime,
-        parseFloat(orb as string)
+        orb === undefined ? undefined : Number(orb)
       );
 
       if (!aspectsData || !aspectsData.aspects) {
@@ -174,7 +175,7 @@ export class AspectAnalysisController {
         latitude = '55.7558',
         longitude = '37.6173',
         timezone = 'Europe/Moscow',
-        orb = '8',
+        orb,
         minStrength,
         ranks,
       } = req.query;
@@ -195,7 +196,7 @@ export class AspectAnalysisController {
       // Fetch and score aspects
       const aspectsData = await this.ephemeris.getAspects(
         dateTime,
-        parseFloat(orb as string)
+        orb === undefined ? undefined : Number(orb)
       );
       const scoredAspects = AspectStrengthCalculator.scoreAspects(aspectsData.aspects);
 

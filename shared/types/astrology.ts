@@ -24,7 +24,12 @@ export type PlanetName =
   | 'Saturn'
   | 'Uranus'
   | 'Neptune'
-  | 'Pluto';
+  | 'Pluto'
+  // Дополнительные точки карты (не входят в классическую десятку)
+  | 'Rahu'    // Северный лунный узел
+  | 'Ketu'    // Южный лунный узел
+  | 'Lilith'  // Чёрная Луна (средний апогей)
+  | 'Chiron';
 
 export type ZodiacSignName =
   | 'Овен' | 'Телец' | 'Близнецы' | 'Рак'
@@ -76,6 +81,7 @@ export interface LunarDay {
   symbol: string;
   energy: LunarEnergyType;
   lunarPhase: LunarPhaseType;
+  startsAt?: Date;            // When this lunar day starts (UTC)
   endsAt?: Date;              // When this lunar day ends (UTC)
   moonPhase?: MoonPhase;      // Additional phase details
   colorPalette?: {
@@ -173,8 +179,11 @@ export interface AspectApiData {
   angle: number;              // Actual angle
   orb: number;                // Distance from exact
   is_exact?: boolean;         // Python API field
-  is_applying?: boolean;      // Python API field
-  isApplying?: boolean;       // camelCase alias
+  // null означает «направление неизвестно»: без скоростей планет сходимость
+  // не считается, и выдавать в этом случае false значит врать в половине
+  // случаев. Потребители должны различать null и false.
+  is_applying?: boolean | null;  // Python API field
+  isApplying?: boolean | null;   // camelCase alias
   interpretation: string;
 }
 

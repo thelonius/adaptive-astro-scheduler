@@ -264,14 +264,17 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   /**
    * Get aspects from API
    */
-  async getAspects(dateTime: DateTime, orb: number = 8, points?: string): Promise<AspectsApiResponse> {
+  async getAspects(dateTime: DateTime, orb?: number, points?: string): Promise<AspectsApiResponse> {
     const params: Record<string, string> = {
       date: this.formatDate(dateTime.date),
       time: this.formatTime(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
-      orb: orb.toString(),
     };
+    // Без параметра у каждого аспекта свой орбис из aspects.json. Раньше здесь
+    // жила восьмёрка по умолчанию, и она затирала таблицу: полусекстиль с
+    // орбисом 2° срабатывал в те же 8°, что соединение.
+    if (orb !== undefined) params.orb = orb.toString();
     if (points) params.points = points;
 
     const rawResponse = await this.fetch<any[]>('/api/v1/ephemeris/aspects', params);

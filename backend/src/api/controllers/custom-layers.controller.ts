@@ -444,7 +444,7 @@ export class CustomLayersController {
     try {
       const [planets, aspects, lunarDay, moonPhase, houses] = await Promise.all([
         this.ephemeris.getPlanetsPositions(dateTime),
-        this.ephemeris.getAspects(dateTime, 8),
+        this.ephemeris.getAspects(dateTime),
         this.ephemeris.getLunarDay(dateTime),
         this.ephemeris.getMoonPhase(dateTime),
         this.ephemeris.getHouses(dateTime, 'placidus')

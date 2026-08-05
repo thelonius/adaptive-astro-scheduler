@@ -227,6 +227,26 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
 
         return result
 
+    async def get_chart_points(self, date_time: DateTime, include):
+        """Get extra chart points (nodes, Lilith, Chiron) with caching."""
+        cache_key = self._make_cache_key(
+            "chart_points",
+            date=date_time.date,
+            lat=date_time.location.latitude,
+            lon=date_time.location.longitude,
+            include=",".join(sorted(p.value for p in include)),
+        )
+
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        result = await self.calculator.get_chart_points(date_time, include)
+        ttl = self._get_ttl(date_time)
+        self.cache.set(cache_key, result, ttl)
+
+        return result
+
     async def get_moon_phase(self, date_time: DateTime) -> MoonPhase:
         """Get moon phase with caching."""
         cache_key = self._make_cache_key(

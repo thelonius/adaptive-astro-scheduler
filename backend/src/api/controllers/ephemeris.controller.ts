@@ -32,6 +32,7 @@ export class EphemerisController {
         latitude = '55.7558',
         longitude = '37.6173',
         timezone = 'Europe/Moscow',
+        points = 'rahu,ketu,lilith,chiron',
       } = req.query;
 
       const dateTime: DateTime = {
@@ -43,7 +44,7 @@ export class EphemerisController {
         },
       };
 
-      const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+      const planets = await this.ephemeris.getPlanetsPositions(dateTime, points as string);
       res.json(planets);
     } catch (error) {
       console.error('Error fetching planetary positions:', error);
@@ -70,8 +71,17 @@ export class EphemerisController {
         date = new Date().toISOString().split('T')[0],
         time = '12:00:00',
         timezone = 'Europe/Moscow',
-        orb = '8',
+        orb,
+        points = 'rahu,ketu,lilith,chiron',
       } = req.query;
+
+      // Орбис не задан — работает таблица из aspects.json, у каждого аспекта
+      // своя ширина. Заданный сужает её, но не расширяет.
+      const orbCap = orb === undefined ? undefined : Number(orb);
+      if (orbCap !== undefined && !Number.isFinite(orbCap)) {
+        res.status(400).json({ error: 'Invalid orb', message: `orb must be a number, got "${orb}"` });
+        return;
+      }
 
       const dateTime: DateTime = {
         date: new Date(`${date}T${time}Z`), // time is UTC from frontend
@@ -79,7 +89,7 @@ export class EphemerisController {
         location: { latitude: 0, longitude: 0 }, // Not needed for aspects
       };
 
-      const aspects = await this.ephemeris.getAspects(dateTime, parseFloat(orb as string));
+      const aspects = await this.ephemeris.getAspects(dateTime, orbCap, points as string);
       res.json(aspects);
     } catch (error) {
       console.error('Error fetching aspects:', error);
