@@ -40,6 +40,7 @@ export {
   DEFAULT_ASPECT_COLORS,
   DEFAULT_PLANET_COLORS,
   resolvePalette,
+  monochromePalette,
 } from './palette/default';
 
 export { aspectField } from './patterns/aspectField';

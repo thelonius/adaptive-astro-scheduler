@@ -491,6 +491,10 @@ export function getPlanetSymbol(name: string): string {
     Uranus: '⛢',
     Neptune: '♆',
     Pluto: '♇',
+    Rahu: '☊',
+    Ketu: '☋',
+    Lilith: '⚸',
+    Chiron: '⚷',
   };
 
   return symbols[name] || name.charAt(0);
@@ -500,8 +504,11 @@ export function getPlanetSymbol(name: string): string {
  * Sort planets by orbital distance (inner to outer)
  */
 export function sortPlanetsByOrbit(planets: CelestialBody[]): CelestialBody[] {
-  const order = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+  const order = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Rahu', 'Ketu', 'Lilith', 'Chiron'];
   return [...planets].sort((a, b) => {
-    return order.indexOf(a.name) - order.indexOf(b.name);
+    // Неизвестные имена отправляем в конец, а не в начало (indexOf === -1).
+    const ai = order.indexOf(a.name);
+    const bi = order.indexOf(b.name);
+    return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi);
   });
 }

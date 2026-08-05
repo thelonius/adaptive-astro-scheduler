@@ -571,7 +571,7 @@ export class TelegramBotService {
       const [planets, houses, aspects, lunarDay, moonPhase] = await Promise.all([
         this.ephemeris.getPlanetsPositions(birthDateTime),
         this.ephemeris.getHouses(birthDateTime, 'placidus'),
-        this.ephemeris.getAspects(birthDateTime, 8),
+        this.ephemeris.getAspects(birthDateTime),
         this.ephemeris.getLunarDay(birthDateTime),
         this.ephemeris.getMoonPhase(birthDateTime),
       ]);
@@ -1262,7 +1262,7 @@ export class TelegramBotService {
     const [planets, houses, aspects, lunarDay, moonPhase] = await Promise.all([
       this.ephemeris.getPlanetsPositions(eventDateTime),
       this.ephemeris.getHouses(eventDateTime, 'placidus'),
-      this.ephemeris.getAspects(eventDateTime, 8),
+      this.ephemeris.getAspects(eventDateTime),
       this.ephemeris.getLunarDay(eventDateTime),
       this.ephemeris.getMoonPhase(eventDateTime),
     ]);

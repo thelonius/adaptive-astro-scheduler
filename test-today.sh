@@ -1,7 +1,7 @@
 #!/bin/bash
 
-BOT_TOKEN="8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
-CHAT_ID="263567616"
+BOT_TOKEN="${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN before running}"
+CHAT_ID="${TELEGRAM_CHAT_ID:?set TELEGRAM_CHAT_ID before running}"
 
 echo "🔍 Testing /today command..."
 

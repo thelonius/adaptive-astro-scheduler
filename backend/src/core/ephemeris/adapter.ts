@@ -38,12 +38,13 @@ interface MoonPhaseResponse {
  * Wraps the external Lunar Calendar & Ephemeris API
  * and normalizes output to match our type system.
  *
- * Base API URL: http://176.123.166.252:8000
+ * Адрес задаётся вызывающим (см. core/ephemeris/index.ts, который берёт его
+ * из EPHEMERIS_API_URL). Дефолт ниже — только для локального запуска.
  */
 export class EphemerisAdapter implements IEphemerisCalculator {
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = 'http://176.123.166.252:8000') {
+  constructor(baseUrl: string = 'http://localhost:8000') {
     this.baseUrl = baseUrl;
   }
 
@@ -181,14 +182,15 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   /**
    * Get planetary positions from API
    */
-  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
-    const params = {
+  async getPlanetsPositions(dateTime: DateTime, points?: string): Promise<PlanetsApiResponse> {
+    const params: Record<string, string> = {
       date: dateTime.date.toISOString().split('.')[0], // Remove milliseconds and timezone
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       elevation: '0',
       timezone: dateTime.timezone,
     };
+    if (points) params.points = points;
 
     const response = await this.fetch<PlanetsApiResponse>('/api/v1/ephemeris/planets', params);
 
@@ -262,12 +264,18 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   /**
    * Get aspects from API
    */
-  async getAspects(dateTime: DateTime, orb: number = 8): Promise<AspectsApiResponse> {
-    const params = {
+  async getAspects(dateTime: DateTime, orb?: number, points?: string): Promise<AspectsApiResponse> {
+    const params: Record<string, string> = {
       date: this.formatDate(dateTime.date),
       time: this.formatTime(dateTime.date),
-      orb: orb.toString(),
+      latitude: dateTime.location.latitude.toString(),
+      longitude: dateTime.location.longitude.toString(),
     };
+    // Без параметра у каждого аспекта свой орбис из aspects.json. Раньше здесь
+    // жила восьмёрка по умолчанию, и она затирала таблицу: полусекстиль с
+    // орбисом 2° срабатывал в те же 8°, что соединение.
+    if (orb !== undefined) params.orb = orb.toString();
+    if (points) params.points = points;
 
     const rawResponse = await this.fetch<any[]>('/api/v1/ephemeris/aspects', params);
 

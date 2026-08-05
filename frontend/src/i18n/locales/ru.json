@@ -29,7 +29,31 @@
     "quickLinks_testDesc": "Полное тестирование с автоматическими тестами, сценариями и настройками",
     "quickLinks_demoLabel": "Демо-страница:",
     "quickLinks_demoDesc": "Интерактивная демонстрация с живым управлением и сменой тем",
-    "optimalTimingV2": "Intent-based планировщик (v2)"
+    "optimalTimingV2": "Intent-based планировщик (v2)",
+    "section": {
+      "chart": "Карта",
+      "day": "День",
+      "time": "Время",
+      "lab": "Лаборатория"
+    },
+    "short": {
+      "natalChart": "Натальная карта",
+      "chartLibrary": "Библиотека карт",
+      "dayExplorer": "Проводник по дню",
+      "celestialEvents": "Небесные события",
+      "optimalTiming": "Оптимальное время",
+      "optimalTimingV2": "Intent-планировщик",
+      "schedulerLab": "Лаборатория",
+      "testPage": "Колесо (тест)",
+      "demoPage": "Колесо (демо)"
+    },
+    "toggleSidebar": "Свернуть меню",
+    "menu": "Меню",
+    "homeHint": {
+      "dayExplorer": "Что сегодня в небе и что с этим делать",
+      "natalChart": "Построить карту и разобрать по факторам",
+      "optimalTiming": "Подобрать день под задачу"
+    }
   },
   "location": {
     "changeLocation": "Сменить локацию",
@@ -199,7 +223,8 @@
     "planetaryPositions": "Положения планет",
     "linkCopied": "Ссылка скопирована!",
     "linkCopiedDesc": "Настройки даты и времени сохранены в буфер обмена.",
-    "failedLoad": "Не удалось загрузить данные дня"
+    "failedLoad": "Не удалось загрузить данные дня",
+    "aspectInterpretations": "Толкования аспектов"
   },
   "natalChart": {
     "title": "Натальная карта",

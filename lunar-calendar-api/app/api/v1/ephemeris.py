@@ -38,6 +38,39 @@ def get_calculator() -> CachedEphemerisCalculator:
     return _calculator
 
 
+# Алиасы для доп. точек карты: принимаем и англ. ключи, и узлы по-разному.
+_CHART_POINT_ALIASES = {
+    "rahu": PlanetName.RAHU,
+    "northnode": PlanetName.RAHU,
+    "north_node": PlanetName.RAHU,
+    "ketu": PlanetName.KETU,
+    "southnode": PlanetName.KETU,
+    "south_node": PlanetName.KETU,
+    "nodes": None,  # разворачивается в оба узла
+    "lilith": PlanetName.LILITH,
+    "blackmoon": PlanetName.LILITH,
+    "chiron": PlanetName.CHIRON,
+}
+
+
+def parse_chart_points(points: Optional[str]) -> List[PlanetName]:
+    """Парсит query-параметр points=rahu,ketu,lilith,chiron в список PlanetName."""
+    if not points:
+        return []
+    result: List[PlanetName] = []
+    for raw in points.split(","):
+        key = raw.strip().lower().replace(" ", "")
+        if not key:
+            continue
+        if key == "nodes":
+            result.extend([PlanetName.RAHU, PlanetName.KETU])
+        elif key in _CHART_POINT_ALIASES and _CHART_POINT_ALIASES[key] is not None:
+            result.append(_CHART_POINT_ALIASES[key])
+    # уникализируем, сохраняя порядок
+    seen = set()
+    return [p for p in result if not (p in seen or seen.add(p))]
+
+
 # ============================================================================
 # Request/Response Models
 # ============================================================================
@@ -98,7 +131,8 @@ class AspectResponse(BaseModel):
     angle: float
     orb: float
     is_exact: bool
-    is_applying: bool
+    # null, когда сходимость посчитать не удалось (нет скоростей планет)
+    is_applying: Optional[bool] = None
 
 
 class RetrogradePlanetResponse(BaseModel):
@@ -160,12 +194,14 @@ async def get_planet_positions(
     latitude: float = Query(..., ge=-90, le=90, description="Observer latitude"),
     longitude: float = Query(..., ge=-180, le=180, description="Observer longitude"),
     elevation: float = Query(0.0, description="Observer elevation (meters)"),
-    timezone: str = Query("UTC", description="IANA timezone")
+    timezone: str = Query("UTC", description="IANA timezone"),
+    points: Optional[str] = Query(None, description="Extra chart points, comma-separated: rahu,ketu,nodes,lilith,chiron")
 ):
     """
     Get positions of all major planets.
 
-    Returns positions for Sun, Moon, and all major planets.
+    Returns positions for Sun, Moon, and all major planets. Optionally appends
+    extra chart points (lunar nodes, Black Moon Lilith, Chiron) via `points`.
     """
     try:
         # Parse date or use current time
@@ -185,9 +221,14 @@ async def get_planet_positions(
         calculator = get_calculator()
         positions = await calculator.get_planets_positions(date_time)
 
+        bodies = list(positions.to_list())
+        extra = parse_chart_points(points)
+        if extra:
+            bodies.extend(await calculator.get_chart_points(date_time, extra))
+
         # Convert to response format
         planets_list = []
-        for planet in positions.to_list():
+        for planet in bodies:
             planets_list.append(PlanetPositionResponse(
                 name=planet.name.value,
                 longitude=planet.longitude,
@@ -346,12 +387,18 @@ async def get_aspects(
     date: Optional[str] = Query(None, description="ISO format date (UTC)"),
     latitude: float = Query(55.7558, description="Observer latitude"),
     longitude: float = Query(37.6173, description="Observer longitude"),
-    orb: Optional[float] = Query(None, ge=0, le=15, description="Custom orb in degrees")
+    orb: Optional[float] = Query(None, ge=0, le=15, description="Upper bound on the orb in degrees; narrows the per-aspect defaults, never widens them"),
+    points: Optional[str] = Query(None, description="Extra chart points, comma-separated: rahu,ketu,nodes,lilith,chiron")
 ):
     """
     Calculate aspects between all planets.
 
-    Returns list of aspects found with the specified orb tolerance.
+    Each aspect type has its own orb (app/data/aspects.json), wider for the
+    luminaries; `orb` only caps those widths. Passing a single number as the
+    orb for every type is what filled the output with sesquiquadrates at 7°.
+
+    Extra chart points (nodes, Lilith, Chiron) participate in aspects when
+    passed via `points`.
     """
     try:
         if date:
@@ -367,7 +414,11 @@ async def get_aspects(
 
         calculator = get_calculator()
         positions = await calculator.get_planets_positions(date_time)
-        aspects = await calculator.calculate_aspects(positions.to_list(), orb)
+        bodies = list(positions.to_list())
+        extra = parse_chart_points(points)
+        if extra:
+            bodies.extend(await calculator.get_chart_points(date_time, extra))
+        aspects = await calculator.calculate_aspects(bodies, orb)
 
         return [
             AspectResponse(

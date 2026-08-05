@@ -25,8 +25,8 @@ Your Docker standardization is now complete! We've successfully created a unifie
    - Database persistence across restarts
 
 4. **Smart Dependency Resolution**
-   - Uses remote ephemeris API (176.123.166.252:3000)
-   - Avoids complex Python/C library builds in Docker
+   - Ephemeris runs as its own container, reached at `ephemeris:8000`
+   - Avoids complex Python/C library builds in the backend image
    - All services communicate internally via Docker networks
    - Environment variables properly configured
 

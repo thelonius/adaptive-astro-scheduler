@@ -3,6 +3,13 @@ import { createEphemerisCalculator } from '../../core/ephemeris';
 import type { DateTime } from '@adaptive-astro/shared/types';
 import { interpretationService } from '../../services/astrology/interpretation.service';
 import { zonedTimeToUtc } from 'date-fns-tz';
+import {
+  computeHouseRulers,
+  type HouseCusp,
+  type PlanetPosition,
+  type RulershipSystem,
+} from '../../services/house-rulers';
+import { corpusRepository } from '../../database/repositories/corpus.repository';
 
 /**
  * Ephemeris Controller
@@ -32,6 +39,7 @@ export class EphemerisController {
         latitude = '55.7558',
         longitude = '37.6173',
         timezone = 'Europe/Moscow',
+        points = 'rahu,ketu,lilith,chiron',
       } = req.query;
 
       const dateTime: DateTime = {
@@ -43,7 +51,7 @@ export class EphemerisController {
         },
       };
 
-      const planets = await this.ephemeris.getPlanetsPositions(dateTime);
+      const planets = await this.ephemeris.getPlanetsPositions(dateTime, points as string);
       res.json(planets);
     } catch (error) {
       console.error('Error fetching planetary positions:', error);
@@ -70,8 +78,17 @@ export class EphemerisController {
         date = new Date().toISOString().split('T')[0],
         time = '12:00:00',
         timezone = 'Europe/Moscow',
-        orb = '8',
+        orb,
+        points = 'rahu,ketu,lilith,chiron',
       } = req.query;
+
+      // Орбис не задан — работает таблица из aspects.json, у каждого аспекта
+      // своя ширина. Заданный сужает её, но не расширяет.
+      const orbCap = orb === undefined ? undefined : Number(orb);
+      if (orbCap !== undefined && !Number.isFinite(orbCap)) {
+        res.status(400).json({ error: 'Invalid orb', message: `orb must be a number, got "${orb}"` });
+        return;
+      }
 
       const dateTime: DateTime = {
         date: new Date(`${date}T${time}Z`), // time is UTC from frontend
@@ -79,7 +96,7 @@ export class EphemerisController {
         location: { latitude: 0, longitude: 0 }, // Not needed for aspects
       };
 
-      const aspects = await this.ephemeris.getAspects(dateTime, parseFloat(orb as string));
+      const aspects = await this.ephemeris.getAspects(dateTime, orbCap, points as string);
       res.json(aspects);
     } catch (error) {
       console.error('Error fetching aspects:', error);
@@ -363,6 +380,82 @@ export class EphemerisController {
       console.error('Error fetching dispositor chains:', error);
       res.status(500).json({
         error: 'Failed to fetch dispositor chains',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * GET /ephemeris/house-rulers
+   *
+   * Управитель каждого дома и дом, в котором он стоит, вместе с
+   * толкованиями из раздела RHH корпуса. Одним запросом, потому что
+   * пар всегда двенадцать и разносить их по вызовам нет смысла.
+   */
+  async getHouseRulers(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        date = new Date().toISOString().split('T')[0],
+        time = '12:00:00',
+        latitude = '55.7558',
+        longitude = '37.6173',
+        timezone = 'Europe/Moscow',
+        system = 'traditional',
+        houseSystem = 'placidus',
+        withTexts = 'true',
+      } = req.query;
+
+      const dateTime: DateTime = {
+        date: new Date(`${date}T${time}Z`),
+        timezone: timezone as string,
+        location: {
+          latitude: parseFloat(latitude as string),
+          longitude: parseFloat(longitude as string),
+        },
+      };
+
+      const [houses, planetsPayload] = await Promise.all([
+        this.ephemeris.getHouses(dateTime, houseSystem as string),
+        this.ephemeris.getPlanetsPositions(dateTime, 'rahu,ketu,lilith,chiron'),
+      ]);
+
+      // Адаптеры отдают то голый массив, то обёртку с полем: mock-adapter и
+      // кэширующий слой расходятся в форме. Разворачиваем обе.
+      const unwrap = <T,>(payload: unknown, field: string): T[] => {
+        if (Array.isArray(payload)) return payload as T[];
+        const inner = (payload as Record<string, unknown>)?.[field];
+        return Array.isArray(inner) ? (inner as T[]) : [];
+      };
+
+      const planets = unwrap<PlanetPosition>(planetsPayload, 'planets');
+      const cusps = unwrap<HouseCusp>(houses, 'houses');
+
+      const placements = computeHouseRulers(
+        cusps,
+        planets,
+        (system as RulershipSystem) === 'modern' ? 'modern' : 'traditional',
+      );
+
+      if (withTexts !== 'true' || placements.length === 0) {
+        res.json({ system, placements });
+        return;
+      }
+
+      const texts = await corpusRepository.findHouseRulers(
+        placements.map((p) => ({ house: p.house, rulerHouse: p.rulerHouse })),
+      );
+
+      res.json({
+        system,
+        placements: placements.map((p) => ({
+          ...p,
+          interpretations: texts.get(`${p.house}|${p.rulerHouse}`) ?? [],
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching house rulers:', error);
+      res.status(500).json({
+        error: 'Failed to fetch house rulers',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
     }

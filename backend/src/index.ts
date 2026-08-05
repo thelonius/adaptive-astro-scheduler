@@ -22,12 +22,20 @@ async function start() {
 
     const app = createApp();
 
-    // Start Telegram Bot (non-blocking)
-    const botService = new TelegramBotService();
-    TelegramBotService.setInstance(botService);
-    botService.launch().catch(err => {
-      console.error('Bot launch failed:', err);
-    });
+    // Собственный бот выключен по умолчанию. Роль телеграм-интерфейса сейчас
+    // играет @misgirbot через openclaw-gateway, он ходит в этот API по HTTP.
+    // Два поллера на один токен всё равно несовместимы: getUpdates второго
+    // клиента получает 409 Conflict.
+    // Чтобы вернуть встроенного бота: TELEGRAM_BOT_ENABLED=true и токен в env.
+    if (process.env.TELEGRAM_BOT_ENABLED === 'true' && process.env.TELEGRAM_BOT_TOKEN) {
+      const botService = new TelegramBotService();
+      TelegramBotService.setInstance(botService);
+      botService.launch().catch(err => {
+        console.error('Bot launch failed:', err);
+      });
+    } else {
+      console.log('🤖 Встроенный Telegram-бот выключен (TELEGRAM_BOT_ENABLED != true)');
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Adaptive Astro-Scheduler API`);

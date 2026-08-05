@@ -28,7 +28,7 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   /**
    * Generate mock planetary positions based on date
    */
-  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
+  async getPlanetsPositions(dateTime: DateTime, _points?: string): Promise<PlanetsApiResponse> {
     // Use date to generate consistent but varying positions
     const dayOfYear = this.getDayOfYear(dateTime.date);
 
@@ -84,7 +84,7 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
   /**
    * Generate mock aspects between planets
    */
-  async getAspects(dateTime: DateTime, orb: number = 8): Promise<AspectsApiResponse> {
+  async getAspects(dateTime: DateTime, orb: number = 8, _points?: string): Promise<AspectsApiResponse> {
     const planetsData = await this.getPlanetsPositions(dateTime);
     const planets = planetsData.planets;
     const aspects: AspectApiData[] = [];
@@ -299,8 +299,8 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
     // Speed in degrees per day
     const speed = isRetrograde ? -(360 / orbitalPeriod) : (360 / orbitalPeriod);
 
-    // Simplified distance (AU)
-    const distances: Record<PlanetName, number> = {
+    // Simplified distance (AU). Мок генерирует только классическую десятку.
+    const distances: Partial<Record<PlanetName, number>> = {
       Sun: 0,
       Moon: 0.00257,
       Mercury: 0.39,
@@ -320,7 +320,7 @@ export class MockEphemerisAdapter implements IEphemerisCalculator {
       zodiacSign,
       speed,
       isRetrograde,
-      distanceAU: distances[name],
+      distanceAU: distances[name] ?? 0,
     };
   }
 

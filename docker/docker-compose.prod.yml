@@ -1,0 +1,131 @@
+# Продакшн на амстердамском VDS (root@31.130.130.11), рядом с ssd-radar,
+# gpx-tracker, 3x-ui и shadowbox.
+#
+# Отличия от docker-compose.yml (старый одиночный хост):
+#  - образы тянутся из ghcr.io, на сервере ничего не собирается: там 2 ядра
+#    и меньше гигабайта свободной памяти, сборка фронта её съедала
+#  - наружу не публикуется ни один порт. 80/443/4443 заняты чужими Caddy,
+#    3000/3002/3003 держит pm2 с cesium-route-renderer. Трафик приходит
+#    через ssd_radar_caddy по сети astro_edge
+#  - у каждого сервиса mem_limit: сосед по боксу не должен падать, если
+#    астро потечёт
+#
+# Деплой: .github/workflows/deploy.yml (workflow_dispatch или push в main).
+# Вручную на сервере: docker compose -f docker/docker-compose.prod.yml pull && ... up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: astro_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: adaptive_astro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 224m
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # maxmemory ниже mem_limit, чтобы redis сам вытеснял ключи, а не ловил OOM-kill
+    command: ["redis-server", "--maxmemory", "32mb", "--maxmemory-policy", "allkeys-lru"]
+    container_name: astro_redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    mem_limit: 48m
+    restart: unless-stopped
+
+  ephemeris:
+    image: ${EPHEMERIS_IMAGE:?set EPHEMERIS_IMAGE in .env}
+    container_name: astro_ephemeris
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      API_RELOAD: "false"
+      PROJECT_NAME: Lunar Calendar & Ephemeris API
+      VERSION: "1.0.0"
+      API_V1_PREFIX: /api/v1
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ephemeris_cache:/tmp/skyfield-cache
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    mem_limit: 320m
+    restart: unless-stopped
+
+  backend:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE in .env}
+    container_name: astro_backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/adaptive_astro
+      REDIS_URL: redis://redis:6379
+      EPHEMERIS_MODE: api
+      # По имени сервиса, а не через публичный IP: на старом хосте бэкенд
+      # ходил в собственную эфемериду через интернет и обратно
+      EPHEMERIS_API_URL: http://ephemeris:8000
+      # Бот работает через polling, вебхук не регистрируется. Пустая строка
+      # оставлена намеренно: telegram-bot.service делает deleteWebhook() на старте
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_URL: ""
+      # Фронт и API живут на одном origin, так что CORS в норме не срабатывает.
+      # Задано на случай обращений со стороны
+      CORS_ORIGIN: ${ASTRO_PUBLIC_URL:-https://astro-31-130-130-11.sslip.io:4443}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_BASE_URL: ${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: adaptive_astro
+      PGHOST: postgres
+      PGPORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ephemeris:
+        condition: service_healthy
+    mem_limit: 288m
+    restart: unless-stopped
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE in .env}
+    container_name: astro_frontend
+    depends_on:
+      - backend
+    # Единственный контейнер в astro_edge: nginx внутри него уже проксирует
+    # /api и /webhook на backend:3000, так что Caddy достаточно видеть его одного
+    networks:
+      - default
+      - astro_edge
+    mem_limit: 32m
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  ephemeris_cache:
+
+networks:
+  default:
+    name: astro_network
+  astro_edge:
+    external: true

@@ -116,15 +116,15 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     }
   }
 
-  async getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse> {
-    const cacheKey = this.getCacheKey('planets', dateTime);
+  async getPlanetsPositions(dateTime: DateTime, points?: string): Promise<PlanetsApiResponse> {
+    const cacheKey = this.getCacheKey(`planets${points ? `-${points}` : ''}`, dateTime);
     const cached = await this.cache.get<PlanetsApiResponse>(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const result = await this.calculator.getPlanetsPositions(dateTime);
+    const result = await this.calculator.getPlanetsPositions(dateTime, points);
     await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
 
     return result;
@@ -186,15 +186,15 @@ export class CachedEphemerisCalculator implements IEphemerisCalculator {
     return result;
   }
 
-  async getAspects(dateTime: DateTime, orb: number = 8): Promise<AspectsApiResponse> {
-    const cacheKey = this.getCacheKey(`aspects-orb${orb}`, dateTime);
+  async getAspects(dateTime: DateTime, orb?: number, points?: string): Promise<AspectsApiResponse> {
+    const cacheKey = this.getCacheKey(`aspects-orb${orb ?? 'default'}${points ? `-${points}` : ''}`, dateTime);
     const cached = await this.cache.get<AspectsApiResponse>(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const result = await this.calculator.getAspects(dateTime, orb);
+    const result = await this.calculator.getAspects(dateTime, orb, points);
     await this.cache.set(cacheKey, result, this.getTTL(dateTime.date));
 
     return result;

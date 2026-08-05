@@ -63,7 +63,7 @@ export class ChartController {
       const [planetsRes, housesRes, aspectsRes] = await Promise.all([
         this.ephemeris.getPlanetsPositions(ephemerisInput),
         this.ephemeris.getHouses(ephemerisInput, 'placidus'),
-        this.ephemeris.getAspects(ephemerisInput, 8),
+        this.ephemeris.getAspects(ephemerisInput),
       ]);
 
       let lunarDay = null;

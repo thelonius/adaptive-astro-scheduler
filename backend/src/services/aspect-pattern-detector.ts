@@ -29,7 +29,7 @@ export class AspectPatternDetector {
    */
   async detectPatterns(
     dateTime: DateTime,
-    orb: number = 8
+    orb?: number
   ): Promise<AspectPattern[]> {
     // Fetch planets and aspects
     const [planetsData, aspectsData] = await Promise.all([

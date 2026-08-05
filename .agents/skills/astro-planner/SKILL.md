@@ -20,7 +20,8 @@ Use this skill whenever you need to:
 The skill requires the **local or remote ephemeris API** to be running.
 
 - **Local Docker** (default for dev): `http://localhost:8000`
-- **Production server**: `http://176.123.166.252:8000`
+- **Production**: not published. The service is only reachable from inside the
+  compose network at `http://ephemeris:8000`
 
 Check API availability:
 ```bash
@@ -80,8 +81,8 @@ cd /Users/eddubnitsky/adaptive-astro-scheduler/backend
 npx tsx scripts/analyze-transit.ts
 ```
 
-> ⚠️ Requires the ephemeris API to be reachable at `http://176.123.166.252:8000`.
-> To test with local Docker, change the adapter URL in the script.
+> ⚠️ Requires the ephemeris API to be reachable. The script reads
+> `EPHEMERIS_API_URL` and falls back to `http://localhost:8000`.
 
 **Output sections**:
 - 🌙 Current Moon State (illumination %, lunar day, sign)
@@ -92,7 +93,7 @@ npx tsx scripts/analyze-transit.ts
 
 ## API Endpoints Reference
 
-Base URL: `http://localhost:8000` (local) or `http://176.123.166.252:8000` (prod)
+Base URL: `http://localhost:8000` (local) or `http://ephemeris:8000` (inside the compose network)
 
 | Method | Path | Description |
 |---|---|---|

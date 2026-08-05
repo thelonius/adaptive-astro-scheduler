@@ -5,7 +5,10 @@ This module defines all data types used in ephemeris calculations,
 matching the TypeScript interface specification.
 """
 
+import json
 from datetime import datetime
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional, Literal, Callable, Dict, List
 from dataclasses import dataclass
 from enum import Enum
@@ -75,6 +78,13 @@ class PlanetName(str, Enum):
     URANUS = "Uranus"
     NEPTUNE = "Neptune"
     PLUTO = "Pluto"
+    # Дополнительные точки натальной карты. В классическую десятку не входят:
+    # PlanetPositions/to_list и логика лунного дня/планетных часов адресуют
+    # планеты поимённо и эти значения не трогают.
+    RAHU = "Rahu"        # Восходящий лунный узел (Северный)
+    KETU = "Ketu"        # Нисходящий лунный узел (Южный)
+    LILITH = "Lilith"    # Чёрная Луна (средний апогей Луны)
+    CHIRON = "Chiron"
 
 
 class ZodiacSignName(str, Enum):
@@ -327,11 +337,13 @@ class Aspect:
     angle: float              # Exact angle in degrees
     orb: float                # Orb (difference from exact)
     is_exact: bool            # Within acceptable orb?
-    is_applying: bool         # Is the aspect getting tighter?
+    # None означает «неизвестно»: без скоростей планет сходимость не считается,
+    # а выдавать в этом случае «separating» — врать в половине случаев.
+    is_applying: Optional[bool] = None
 
     def __str__(self) -> str:
         orb_str = f"{self.orb:.2f}°"
-        applying = "applying" if self.is_applying else "separating"
+        applying = {True: "applying", False: "separating"}.get(self.is_applying, "direction unknown")
         return (f"{self.body1.name.value} {self.aspect_type.value} "
                 f"{self.body2.name.value} (orb: {orb_str}, {applying})")
 
@@ -397,6 +409,94 @@ def angle_difference(angle1: float, angle2: float) -> float:
 def is_within_orb(angle: float, target: float, orb: float) -> bool:
     """Check if angle is within orb of target."""
     return angle_difference(angle, target) <= orb
+
+
+# Орбисы берутся из app/data/aspects.json — того же файла, что читает
+# AspectEngine. DEFAULT_ORBS ниже оставлен запасным вариантом на случай, если
+# файла нет: пока таблиц было две, они расходились (трин 8° против 7°,
+# секстиль 6° против 4°), и один и тот же момент давал разный набор аспектов
+# в зависимости от того, через какой эндпоинт пришёл запрос.
+_ASPECTS_JSON = Path(__file__).resolve().parents[2] / "data" / "aspects.json"
+
+# Светилам традиция даёт орбис шире, чем остальным планетам.
+LUMINARY_NAMES = {"Sun", "Moon"}
+
+
+@lru_cache(maxsize=1)
+def _orb_table() -> Dict[str, Dict[str, float]]:
+    """`{'trine': {'default': 7, 'luminaries': 8}, ...}` из aspects.json."""
+    try:
+        with _ASPECTS_JSON.open(encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    table: Dict[str, Dict[str, float]] = {}
+    for category in ("major", "minor"):
+        for name, definition in (data.get(category) or {}).items():
+            orb = (definition or {}).get("orb")
+            if isinstance(orb, dict):
+                table[name] = orb
+    return table
+
+
+def _body_name(body_or_name) -> str:
+    """«Sun» и из тела, и из PlanetName, и из строки.
+
+    Через `.name` идти нельзя: у члена перечисления это «SUN», а у
+    CelestialBody — сам PlanetName. Enum проверяется первым.
+    """
+    if isinstance(body_or_name, Enum):
+        return str(body_or_name.value)
+    name = getattr(body_or_name, "name", body_or_name)
+    if isinstance(name, Enum):
+        return str(name.value)
+    return str(name)
+
+
+def orb_for(
+    aspect_type,
+    body1=None,
+    body2=None,
+    cap: Optional[float] = None,
+) -> float:
+    """Орбис для аспекта: своя ширина у каждого типа, шире для светил.
+
+    `cap` — верхняя граница, которую просит вызывающая сторона. Именно
+    граница, а не замена: если передать одно число на все типы аспектов,
+    полусекстиль с орбисом 2° начнёт срабатывать в те же 8°, что соединение,
+    и выдача заполнится шумом.
+    """
+    key = str(getattr(aspect_type, "value", aspect_type))
+    row = _orb_table().get(key)
+    if row:
+        luminary = _body_name(body1) in LUMINARY_NAMES or _body_name(body2) in LUMINARY_NAMES
+        width = row.get("luminaries" if luminary else "default", row.get("default", 6.0))
+    else:
+        width = DEFAULT_ORBS.get(aspect_type, 6.0)
+    return min(float(width), float(cap)) if cap is not None else float(width)
+
+
+def aspect_applying(body1, body2, target_angle: float) -> Optional[bool]:
+    """Сжимается ли орб. `None`, если скорости планет неизвестны.
+
+    Знак производной орба зависит не только от разницы скоростей, но и от
+    того, с какой стороны от точного угла стоит пара: при расстоянии больше
+    целевого сходящимся будет сближение, при меньшем — расхождение. Поэтому
+    сравнения скоростей между собой недостаточно.
+    """
+    v1, v2 = getattr(body1, "speed", 0.0) or 0.0, getattr(body2, "speed", 0.0) or 0.0
+    if v1 == 0.0 and v2 == 0.0:
+        return None
+
+    delta = (normalize_angle(body2.longitude) - normalize_angle(body1.longitude)) % 360
+    separation = delta if delta <= 180 else 360 - delta
+    # На ближней полуокружности расстояние растёт со скоростью v2 - v1, на
+    # дальней — с обратным знаком.
+    d_separation = (v2 - v1) if delta <= 180 else -(v2 - v1)
+
+    if separation == target_angle:
+        return False
+    return d_separation < 0 if separation > target_angle else d_separation > 0
 
 
 # ============================================================================

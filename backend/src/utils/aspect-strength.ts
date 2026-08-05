@@ -45,6 +45,8 @@ export class AspectStrengthCalculator {
   static calculateStrength(aspect: Aspect | any): ScoredAspect {
     // Handle both camelCase and snake_case API formats
     const aspectType = aspect.type || aspect.aspect_type;
+    // null от API означает «направление неизвестно». Такой аспект бонуса за
+    // сходимость не получает: гадать в плюс нельзя, это завысило бы оценку.
     const isApplying = aspect.isApplying ?? aspect.is_applying ?? false;
 
     const maxOrb = this.getMaxOrbForAspectType(aspectType);

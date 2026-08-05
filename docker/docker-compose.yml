@@ -1,3 +1,8 @@
+# Полный стек на одной машине: собирает образы локально и публикует порты
+# наружу. Годится для прогона прод-конфигурации на своём железе.
+#
+# Прод живёт в docker-compose.prod.yml (образы из ghcr, портов наружу нет,
+# TLS через соседний Caddy). Этот файл на прод-сервер не смотрит.
 version: '3.8'
 
 services:
@@ -72,9 +77,12 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/adaptive_astro
       REDIS_URL: redis://redis:6379
       EPHEMERIS_MODE: api
-      EPHEMERIS_API_URL: http://176.123.166.252:8000
-      TELEGRAM_BOT_TOKEN: "8533167222:AAFhy1o23kD0x702K1FhhxvZCehryGRm7YE"
-      TELEGRAM_WEBHOOK_URL: "http://176.123.166.252:3000/webhook/telegram"
+      # По имени сервиса: раньше здесь стоял публичный IP и бэкенд ходил
+      # в соседний контейнер через интернет и обратно
+      EPHEMERIS_API_URL: http://ephemeris:8000
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      # Бот работает через polling, вебхук не регистрируется
+      TELEGRAM_WEBHOOK_URL: ""
       # NVIDIA NIM — used by /api/optimal-timing/v2/find-with-intent.
       # Sourced from .env on the server (written by the deploy workflow
       # from the NVIDIA_API_KEY GitHub secret). Empty here means the
@@ -104,7 +112,10 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.frontend
       args:
-        VITE_API_URL: http://176.123.166.252:3000
+        # Тот же origin, что и SPA: nginx внутри контейнера сам проксирует
+        # /api на backend:3000. Пустую строку сюда класть нельзя — config.ts
+        # трактует её как «не задано» и уходит на localhost:3001
+        VITE_API_URL: ${VITE_API_URL:-http://localhost}
     container_name: astro_frontend
     ports:
       - "80:80"

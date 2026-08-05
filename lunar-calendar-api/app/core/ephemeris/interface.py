@@ -132,7 +132,8 @@ class IEphemerisCalculator(ABC):
 
         Args:
             bodies: Array of celestial bodies to check
-            orb: Orb tolerance in degrees (uses defaults if not specified)
+            orb: Upper bound on the orb in degrees. Per-aspect widths apply
+                 either way; this only narrows them.
 
         Returns:
             Array of aspects found

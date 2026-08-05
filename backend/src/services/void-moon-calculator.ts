@@ -39,13 +39,13 @@ export class VoidMoonCalculator {
     }
 
     // Get Moon's aspects for the current day and next day
-    const aspectsToday = await this.ephemeris.getAspects(dateTime, 8);
+    const aspectsToday = await this.ephemeris.getAspects(dateTime);
 
     // Calculate next day to check for aspects crossing into next sign
     const tomorrow = new Date(dateTime.date);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowDateTime: DateTime = { ...dateTime, date: tomorrow };
-    const aspectsTomorrow = await this.ephemeris.getAspects(tomorrowDateTime, 8);
+    const aspectsTomorrow = await this.ephemeris.getAspects(tomorrowDateTime);
 
     // Get Moon aspects (aspects involving the Moon)
     const moonAspects = [

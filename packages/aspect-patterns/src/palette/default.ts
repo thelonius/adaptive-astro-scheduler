@@ -40,3 +40,18 @@ export function resolvePalette(p?: Palette): Required<Pick<Palette, 'background'
     aspects: { ...DEFAULT_PALETTE.aspects, ...(p?.aspects ?? {}) },
   };
 }
+
+/**
+ * Creates a simple monochrome palette where the background is the ink color
+ * and all astronomical elements use the accent color.
+ */
+export function monochromePalette(accent: string, ink: string, _opts?: any): Palette {
+  return {
+    background: ink,
+    aspects: Object.keys(DEFAULT_ASPECT_COLORS).reduce((acc, key) => {
+      acc[key as unknown as AspectAngle] = accent;
+      return acc;
+    }, {} as Partial<Record<AspectAngle, string>>),
+    planets: {}, // Use resolvePalette to fill in defaults or keep them transparent
+  };
+}

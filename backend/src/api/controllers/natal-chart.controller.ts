@@ -24,8 +24,7 @@ export class NatalChartController {
    * - latitude: number
    * - longitude: number
    * - timezone: string
-   * - includeNodes: boolean (optional, default: false)
-   * - includeLilith: boolean (optional, default: false)
+   * - points: string (optional, default: 'rahu,ketu,lilith,chiron'; '' to disable)
    */
   async calculateNatalChart(req: Request, res: Response): Promise<void> {
     try {
@@ -35,8 +34,7 @@ export class NatalChartController {
         latitude,
         longitude,
         timezone,
-        includeNodes = false,
-        includeLilith = false,
+        points,
       } = req.body;
 
       // Validate required fields
@@ -58,11 +56,16 @@ export class NatalChartController {
         },
       };
 
+      // Дополнительные точки карты: узлы, Чёрная Луна, Хирон. По умолчанию
+      // включаем все три; вызывающий может переопределить или отключить (points: '').
+      const chartPoints =
+        typeof points === 'string' ? points : 'rahu,ketu,lilith,chiron';
+
       // Fetch all necessary data in parallel
       const [planets, houses, aspects, lunarDay, moonPhase] = await Promise.all([
-        this.ephemeris.getPlanetsPositions(birthDateTime),
+        this.ephemeris.getPlanetsPositions(birthDateTime, chartPoints),
         this.ephemeris.getHouses(birthDateTime, 'placidus'),
-        this.ephemeris.getAspects(birthDateTime, 8),
+        this.ephemeris.getAspects(birthDateTime, undefined, chartPoints),
         this.ephemeris.getLunarDay(birthDateTime),
         this.ephemeris.getMoonPhase(birthDateTime),
       ]);
@@ -85,24 +88,6 @@ export class NatalChartController {
         moonPhase,
         calculatedAt: new Date().toISOString(),
       };
-
-      // Add optional points if requested
-      if (includeNodes) {
-        // Lunar nodes calculation would go here
-        // For now, we'll add a placeholder
-        (natalChart as any).lunarNodes = {
-          northNode: null,
-          southNode: null,
-          note: 'Lunar nodes calculation not yet implemented',
-        };
-      }
-
-      if (includeLilith) {
-        // Black Moon Lilith calculation would go here
-        (natalChart as any).blackMoon = {
-          note: 'Black Moon Lilith calculation not yet implemented',
-        };
-      }
 
       res.json(natalChart);
     } catch (error) {

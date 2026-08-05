@@ -5,6 +5,7 @@ import ephemerisRoutes from './api/routes/ephemeris.routes';
 import natalChartRoutes from './api/routes/natal-chart.routes';
 import analyticsRoutes from './api/routes/analytics.routes';
 import aspectAnalysisRoutes from './api/routes/aspect-analysis.routes';
+import corpusRoutes from './api/routes/corpus.routes';
 import customLayersRoutes from './api/routes/custom-layers.routes';
 import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
@@ -20,19 +21,36 @@ export function createApp(): Express {
   const app = express();
 
   // Middleware
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:8000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:8000',
+    // Прод-адрес приходит из CORS_ORIGIN (через запятую), чтобы смена
+    // хоста не требовала правки кода — предыдущий IP пережил свой сервер
+    ...(process.env.CORS_ORIGIN?.split(',').map(o => o.trim()).filter(Boolean) ?? [])
+  ];
+
+  // В разработке порт фронтенда плавающий: 5173 регулярно занят соседним
+  // проектом, и vite берёт первый свободный. Держать список портов в коде
+  // бессмысленно, поэтому локальные адреса разрешаются целиком — но только
+  // вне продакшена, где остаётся жёсткий белый список.
+  const isLocalhost = (origin: string) =>
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  const allowAnyLocalhost = process.env.NODE_ENV !== 'production';
+
   app.use(cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:8000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'http://127.0.0.1:8000',
-      'http://176.123.166.252',
-      'https://176.123.166.252'
-    ],
+    origin: (origin, callback) => {
+      // Запросы без Origin — это curl, health-чеки и server-to-server.
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowAnyLocalhost && isLocalhost(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin ${origin} не разрешён`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -56,6 +74,7 @@ export function createApp(): Express {
   app.use('/api/natal-chart', natalChartRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/aspects', aspectAnalysisRoutes);
+  app.use('/api/corpus', corpusRoutes);
   app.use('/api/custom-layers', customLayersRoutes);
   app.use('/api/celestial-events', celestialEventsRoutes);
   app.use('/api/optimal-timing', optimalTimingRoutes);

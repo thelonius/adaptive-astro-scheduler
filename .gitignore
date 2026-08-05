@@ -18,6 +18,7 @@ out/
 
 # Environment variables
 .env
+*.bak
 .env.local
 .env.development.local
 .env.test.local
@@ -40,6 +41,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -63,8 +65,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -73,6 +73,7 @@ wheels/
 .installed.cfg
 *.egg
 venv/
+.venv/
 
 # Temporary files
 *.tmp
@@ -92,3 +93,44 @@ docker-compose.override.yml
 # Misc
 .turbo
 backend/var/
+.superpowers/
+
+# Исходные архивы ZET: 8 МБ бинарников, версионировать нечего
+zet/*.rar
+zet/*.zip
+
+# Пересобирается из zet/Txt4.rar скриптами scripts/ml/
+zet/corpus.jsonl
+zet/corpus_report.json
+zet/library/
+zet/dataset.json
+zet/chroma_db/
+
+# Локальные черновики: разовые прогоны, отчёты по своей карте, эксперименты.
+# Живут на диске, в историю не идут.
+....
+yandex_likes.m3u
+yandex_likes_to_m3u.py
+writer_reviewer_workflow/
+color-palettes-lunar-cycle-*.md
+lunar-cycle-report-*.md
+backend/test-*.ts
+backend/health-scan.ts
+backend/scripts/nastya-resolution-plan.ts
+backend/scripts/resolve-conflict.ts
+backend/scripts/temp-personal-report.ts
+lunar-calendar-api/animodar.py
+lunar-calendar-api/check_2045.py
+lunar-calendar-api/compare_ephemeris.py
+lunar-calendar-api/get_ascs.py
+lunar-calendar-api/get_aspects.py
+lunar-calendar-api/get_chart.py
+lunar-calendar-api/get_houses.py
+lunar-calendar-api/hours_26may.py
+lunar-calendar-api/rect.py
+lunar-calendar-api/relocation.py
+lunar-calendar-api/retro_windows.py
+lunar-calendar-api/sky_now.py
+lunar-calendar-api/state_of_nature.py
+lunar-calendar-api/trutine.py
+lunar-calendar-api/voc_moon.py

@@ -95,16 +95,17 @@ environment:
   - NODE_ENV=development  # or production
   - DATABASE_URL=postgresql://astro_user:astro_password@postgres:5432/adaptive_astro
   - REDIS_URL=redis://redis:6379
-  - EPHEMERIS_API_URL=http://176.123.166.252:3000
+  - EPHEMERIS_API_URL=http://ephemeris:8000
   - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
 ```
 
 ## External Dependencies
 
-### Remote Ephemeris API
-- **URL:** http://176.123.166.252:3000
+### Ephemeris API
+- **URL:** `http://ephemeris:8000` (service name inside the compose network)
 - **Purpose:** Astronomical calculations and ephemeris data
-- **Why Remote:** Avoids complex Python/Swiss Ephemeris dependency builds in Docker
+- **Note:** It used to be a remote host reached over the public internet. It now
+  runs as a container in the same stack, so nothing leaves the Docker network.
 
 ## Management Commands
 

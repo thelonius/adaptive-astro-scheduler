@@ -24,15 +24,16 @@ export interface IEphemerisCalculator {
    * @param dateTime - Date, time, and location
    * @returns Planet positions from API
    */
-  getPlanetsPositions(dateTime: DateTime): Promise<PlanetsApiResponse>;
+  getPlanetsPositions(dateTime: DateTime, points?: string): Promise<PlanetsApiResponse>;
 
   /**
    * Get aspects between planets for a given date/time
    * @param dateTime - Date and time
-   * @param orb - Orb tolerance (default: 8 degrees)
+   * @param orb - Upper bound on the orb in degrees; omit to use each aspect's own width
+   * @param points - Optional comma-separated extra chart points (rahu,ketu,nodes,lilith,chiron)
    * @returns Planetary aspects from API
    */
-  getAspects(dateTime: DateTime, orb?: number): Promise<AspectsApiResponse>;
+  getAspects(dateTime: DateTime, orb?: number, points?: string): Promise<AspectsApiResponse>;
 
   /**
    * Get astrological houses for a given date/time/location

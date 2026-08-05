@@ -38,9 +38,10 @@ from .types import (
     EphemerisError,
     EphemerisErrorCode,
     ASPECT_ANGLES,
-    DEFAULT_ORBS,
     angle_difference,
+    aspect_applying,
     is_within_orb,
+    orb_for,
 )
 
 
@@ -218,6 +219,103 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                 message=f"Failed to calculate planet positions: {str(e)}",
                 details={"date_time": str(date_time)}
             )
+
+    # Дополнительные точки карты, которых нет в классической десятке.
+    EXTRA_POINTS = {PlanetName.RAHU, PlanetName.KETU, PlanetName.LILITH, PlanetName.CHIRON}
+
+    async def get_chart_points(
+        self,
+        date_time: DateTime,
+        include: List[PlanetName],
+    ) -> List[CelestialBody]:
+        """Считает узлы (Раху/Кету), Чёрную Луну и Хирона как CelestialBody.
+
+        Узлы и Лилит работают на аналитической эфемериде. Хирон — астероид,
+        ему нужен файл seas_18.se1: если его нет, точка пропускается, а не
+        роняет весь расчёт карты.
+        """
+        from app.calculators._swe_import import swe, HAS_SWE
+
+        wanted = {p for p in include if p in self.EXTRA_POINTS}
+        if not HAS_SWE or not wanted:
+            return []
+
+        self._ensure_swe_ephe_path(swe)
+
+        dt = date_time.date
+        if dt.tzinfo is None:
+            dt = pytz.UTC.localize(dt)
+        else:
+            dt = dt.astimezone(pytz.UTC)
+        jd = swe.julday(
+            dt.year, dt.month, dt.day,
+            dt.hour + dt.minute / 60.0 + dt.second / 3600.0,
+            swe.GREG_CAL,
+        )
+        flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+
+        points: List[CelestialBody] = []
+
+        # Узлы считаем парой: Кету всегда напротив Раху (+180°).
+        if PlanetName.RAHU in wanted or PlanetName.KETU in wanted:
+            try:
+                res, _ = swe.calc_ut(jd, swe.MEAN_NODE, flags)
+                rahu_lon, node_speed = res[0] % 360, res[3]
+                if PlanetName.RAHU in wanted:
+                    points.append(self._make_chart_point(PlanetName.RAHU, rahu_lon, 0.0, node_speed))
+                if PlanetName.KETU in wanted:
+                    points.append(self._make_chart_point(PlanetName.KETU, (rahu_lon + 180) % 360, 0.0, node_speed))
+            except Exception as e:
+                print(f"[chart-points] lunar nodes failed: {e}")
+
+        if PlanetName.LILITH in wanted:
+            try:
+                res, _ = swe.calc_ut(jd, swe.MEAN_APOG, flags)
+                points.append(self._make_chart_point(PlanetName.LILITH, res[0] % 360, res[1], res[3]))
+            except Exception as e:
+                print(f"[chart-points] lilith failed: {e}")
+
+        if PlanetName.CHIRON in wanted:
+            try:
+                res, _ = swe.calc_ut(jd, swe.CHIRON, flags)
+                points.append(self._make_chart_point(PlanetName.CHIRON, res[0] % 360, res[1], res[3]))
+            except Exception as e:
+                print(f"[chart-points] chiron failed (нет seas_18.se1?): {e}")
+
+        return points
+
+    def _make_chart_point(
+        self, name: PlanetName, longitude: float, latitude: float, speed: float
+    ) -> CelestialBody:
+        return CelestialBody(
+            name=name,
+            longitude=longitude,
+            latitude=latitude,
+            zodiac_sign=ZodiacSign.from_longitude(longitude),
+            speed=speed,
+            is_retrograde=speed < 0,
+            distance_au=0.0,
+        )
+
+    def _ensure_swe_ephe_path(self, swe) -> None:
+        """Указывает swisseph каталог с .se1 (нужен для Хирона)."""
+        candidates = []
+        env_dir = os.environ.get('EPHEMERIS_DATA_DIR')
+        if env_dir:
+            candidates.append(os.path.join(env_dir, 'swisseph'))
+        env_swe = os.environ.get('SWISSEPH_DATA')
+        if env_swe:
+            candidates.append(env_swe)
+        here = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.abspath(os.path.join(here, '..', '..', '..'))
+        candidates.append(os.path.join(repo_root, 'swisseph_data'))
+        for d in candidates:
+            try:
+                if os.path.isdir(d) and any(f.endswith('.se1') for f in os.listdir(d)):
+                    swe.set_ephe_path(d)
+                    return
+            except OSError:
+                continue
 
     def _calculate_planet_position(
         self,
@@ -657,7 +755,8 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
 
         Args:
             bodies: List of celestial bodies
-            orb: Custom orb (overrides defaults)
+            orb: Upper bound on the orb, in degrees. Per-aspect widths from
+                 app/data/aspects.json still apply; this only narrows them.
 
         Returns:
             List of aspects found
@@ -673,15 +772,11 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
 
                     # Check each aspect type
                     for aspect_type, aspect_angle in ASPECT_ANGLES.items():
-                        default_orb = DEFAULT_ORBS[aspect_type]
-                        use_orb = orb if orb is not None else default_orb
+                        use_orb = orb_for(aspect_type, body1, body2, cap=orb)
 
                         if is_within_orb(separation, aspect_angle, use_orb):
                             actual_orb = abs(separation - aspect_angle)
-
-                            # Determine if applying or separating
-                            # (requires speed calculation - simplified here)
-                            is_applying = body2.speed > body1.speed
+                            is_applying = aspect_applying(body1, body2, aspect_angle)
 
                             aspect = Aspect(
                                 body1=body1,
