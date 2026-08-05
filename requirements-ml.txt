@@ -1,0 +1,21 @@
+# MLOps & Tracking
+mlflow==2.11.3
+
+# NLP & Embeddings
+sentence-transformers==2.6.1
+torch==2.2.1
+transformers==4.39.3
+chromadb==0.4.24
+
+# API & Web
+fastapi==0.110.1
+uvicorn==0.29.0
+python-multipart==0.0.9
+
+# Data Processing
+pandas==2.2.1
+numpy==1.26.4
+python-dotenv==1.0.1
+
+# Заливка корпуса ZET в Postgres (scripts/ml/load_corpus.py)
+psycopg[binary]==3.3.4

@@ -5,6 +5,7 @@ import ephemerisRoutes from './api/routes/ephemeris.routes';
 import natalChartRoutes from './api/routes/natal-chart.routes';
 import analyticsRoutes from './api/routes/analytics.routes';
 import aspectAnalysisRoutes from './api/routes/aspect-analysis.routes';
+import corpusRoutes from './api/routes/corpus.routes';
 import customLayersRoutes from './api/routes/custom-layers.routes';
 import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
@@ -57,6 +58,7 @@ export function createApp(): Express {
   app.use('/api/natal-chart', natalChartRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/aspects', aspectAnalysisRoutes);
+  app.use('/api/corpus', corpusRoutes);
   app.use('/api/custom-layers', customLayersRoutes);
   app.use('/api/celestial-events', celestialEventsRoutes);
   app.use('/api/optimal-timing', optimalTimingRoutes);
