@@ -1,0 +1,35 @@
+name: astro_clock
+description: "Астро-часы: транзиты к натальной карте с толкованиями"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Толкования с бэкенда. Карта считается локально и в сети не нуждается.
+  http: ^1.2.2
+
+  # Кэш толкований и задел под локальный корпус: один раз показанный текст
+  # должен остаться доступным без сети.
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
+
+  # Натальные данные, место и адрес API.
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
