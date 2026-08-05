@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ephemeris
+  namespace: astro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ephemeris
+  template:
+    metadata:
+      labels:
+        app: ephemeris
+    spec:
+      containers:
+      - name: ephemeris
+        image: adaptiveastro/ephemeris:latest
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          timeoutSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ephemeris
+  namespace: astro
+spec:
+  selector:
+    app: ephemeris
+  ports:
+  - port: 8000
+    targetPort: 8000
