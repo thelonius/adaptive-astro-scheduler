@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     Box,
     Container,
@@ -17,9 +17,10 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains } from '../components/DayExplorer';
+import { DateNavigator, DayAnalysis, FavoriteDays, DispositorChains, AspectInterpretations, HouseRulers } from '../components/DayExplorer';
 import { ZodiacWheel } from '../components/ZodiacWheel';
-import type { ZodiacWheelData } from '../components/ZodiacWheel/types';
+import type { ZodiacWheelData, ColorScheme } from '../components/ZodiacWheel/types';
+import { DEFAULT_COLORS } from '../components/ZodiacWheel/types';
 import { transformAspectData } from '../utils/apiTransform';
 import type { Aspect, CelestialBody } from '@adaptive-astro/shared/types';
 import { dayService, type CalendarDay } from '../services/dayService';
@@ -43,7 +44,7 @@ const DayExplorer: React.FC = () => {
     });
 
     const [dayData, setDayData] = useState<CalendarDay | null>(null);
-    const { applyNatalDayTheme } = useDynamicTheme();
+    const { applyAstroDayTheme, astroMoment } = useDynamicTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [_isFavorite, _setIsFavorite] = useState(false);
@@ -55,6 +56,20 @@ const DayExplorer: React.FC = () => {
     const [showAspects, setShowAspects] = useState(false);
     const [showHouses, setShowHouses] = useState(true);
     const [showRetrogrades, setShowRetrogrades] = useState(true);
+
+    // Круг заполняет всю ширину контейнера (1:1, высота следует за шириной).
+    const wheelContainerRef = useRef<HTMLDivElement>(null);
+    const [wheelSize, setWheelSize] = useState(0);
+    useEffect(() => {
+        const el = wheelContainerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(entries => {
+            setWheelSize(Math.max(entries[0].contentRect.width, 280));
+        });
+        ro.observe(el);
+        setWheelSize(Math.max(el.getBoundingClientRect().width, 280));
+        return () => ro.disconnect();
+    }, []);
 
     // dayData.aspects приходят в сыром виде API (planet1/planet2). ZodiacWheel и его
     // тултип ожидают Aspect c body1/body2. Без трансформации обращение к body1.name роняет виджет.
@@ -80,6 +95,21 @@ const DayExplorer: React.FC = () => {
             timestamp: selectedDate,
         };
     }, [dayData, selectedDate]);
+
+    // Структурные цвета круга (фон, кольцо, текст, деления, дома) берём из OKLCH-
+    // палитры момента; цвета планет и аспектов остаются каноничными (несут смысл).
+    const wheelColorScheme: ColorScheme = useMemo(() => {
+        const p = astroMoment?.palette;
+        if (!p) return DEFAULT_COLORS;
+        return {
+            ...DEFAULT_COLORS,
+            background: p['--color-bg'] ?? DEFAULT_COLORS.background,
+            zodiacRing: p['--color-surface'] ?? DEFAULT_COLORS.zodiacRing,
+            zodiacText: p['--color-text-muted'] ?? DEFAULT_COLORS.zodiacText,
+            degreeMarks: p['--color-border'] ?? DEFAULT_COLORS.degreeMarks,
+            houses: p['--color-border'] ?? DEFAULT_COLORS.houses,
+        };
+    }, [astroMoment]);
 
     // Update URL when selectedDate changes
     useEffect(() => {
@@ -117,9 +147,7 @@ const DayExplorer: React.FC = () => {
             );
             setDayData(data);
 
-            if (data.lunarDay) {
-                applyNatalDayTheme(selectedDate, null, null, data.lunarDay);
-            }
+            applyAstroDayTheme(selectedDate, userLocation.latitude, userLocation.longitude);
         } catch (err) {
             console.error(err);
             const message = err instanceof Error ? err.message : t('dayExplorer.failedLoad');
@@ -127,7 +155,7 @@ const DayExplorer: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedDate, applyNatalDayTheme, userLocation]);
+    }, [selectedDate, applyAstroDayTheme, userLocation]);
 
     useEffect(() => {
         fetchDayData();
@@ -314,45 +342,60 @@ const DayExplorer: React.FC = () => {
                         isLoading={isLoading}
                     />
 
-                    {/* Main Content Grid */}
-                    <Box
-                        display="grid"
-                        gridTemplateColumns={{ base: "1fr", lg: "1.5fr 1fr" }}
-                        gap={8}
+                    {/* Zodiac Wheel — full-width row */}
+                    <MotionCard
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
                         width="100%"
                     >
-                        {/* Left: Planetary Positions (Zodiac Wheel) */}
-                        <MotionCard
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <CardHeader>
-                                <Heading size="md">✨ {t('dayExplorer.planetaryPositions')}</Heading>
-                            </CardHeader>
-                            <CardBody display="flex" justifyContent="center">
+                        <CardHeader>
+                            <Heading size="md">✨ {t('dayExplorer.planetaryPositions')}</Heading>
+                        </CardHeader>
+                        <CardBody ref={wheelContainerRef} display="flex" justifyContent="center">
+                            {wheelSize > 0 && (
                                 <ZodiacWheel
                                     date={selectedDate}
                                     data={wheelData}
                                     config={{
-                                        size: 800,
+                                        size: wheelSize,
                                         showHouses: showHouses,
                                         showAspects: showAspects, // Controlled by state
-                                        showRetrogrades: showRetrogrades
+                                        showRetrogrades: showRetrogrades,
+                                        colorScheme: wheelColorScheme
                                     }}
                                 />
-                            </CardBody>
-                        </MotionCard>
+                            )}
+                        </CardBody>
+                    </MotionCard>
 
-                        {/* Right: Analysis */}
+                    {/* Analysis — responsive grid below the wheel */}
+                    <Box
+                        display="grid"
+                        gridTemplateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+                        gap={6}
+                        width="100%"
+                        alignItems="start"
+                    >
+                        <DayAnalysis
+                            data={dayData}
+                            isLoading={isLoading}
+                            error={error}
+                            selectedDate={selectedDate}
+                        />
                         <VStack spacing={6} align="stretch">
-                            <DayAnalysis
-                                data={dayData}
-                                isLoading={isLoading}
-                                error={error}
-                                selectedDate={selectedDate}
-                            />
+                            <Card bg="var(--ag-surface)" borderColor="var(--ag-border)" borderWidth="1px">
+                                <CardHeader pb={2}>
+                                    <Heading size="sm" color="var(--ag-text)">
+                                        {t('dayExplorer.aspectInterpretations', 'Толкования аспектов')}
+                                    </Heading>
+                                </CardHeader>
+                                <CardBody pt={0}>
+                                    <AspectInterpretations aspects={wheelData?.aspects ?? []} />
+                                </CardBody>
+                            </Card>
                             <DispositorChains date={selectedDate} />
+                            <HouseRulers date={selectedDate} />
                             <FavoriteDays
                                 currentDate={selectedDate}
                                 onSelectDate={handleDateChange}
