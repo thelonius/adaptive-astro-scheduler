@@ -8,6 +8,13 @@ import type {
 } from '@adaptive-astro/shared/types/astrology';
 import type { NatalChart } from '../database/models';
 import { IEphemerisCalculator } from '../core/ephemeris';
+import {
+  orbAndDirection,
+  rankDailyTransits,
+  ASPECT_ANGLES,
+  MAX_ORB,
+  type TransitInput,
+} from './transit-strength';
 
 /**
  * Transit Types
@@ -21,6 +28,19 @@ export interface Transit {
   isExact: boolean; // True if orb < 1°
   isApplying: boolean; // True if getting closer
   interpretation: string;
+
+  // Ранжирование, см. transit-strength.ts
+  /** Значимость: насколько транзит весом сам по себе. */
+  strength: number;
+  /** Актуальность: происходит ли это именно сегодня. */
+  topicality: number;
+  /** strength × topicality — по этому полю отсортирована выдача. */
+  dailyScore: number;
+  /** Суток до точного аспекта при текущей скорости. */
+  daysToExact: number;
+  /** Транзит попадает на ось ASC/MC натальной карты. */
+  isAngular: boolean;
+  rank: 'weak' | 'moderate' | 'strong' | 'very-strong';
 }
 
 export interface HouseTransit {
@@ -77,10 +97,18 @@ export class TransitCalculator {
       this.ephemeris.getHouses(dateTime, natalChart.house_system || 'placidus'),
     ]);
 
+    // Углы натальной карты нужны для бонуса за угловость: транзит на ASC/MC
+    // весит заметно больше того же аспекта в середине дома.
+    const natalAngles = {
+      asc: natalChart.houses?.find((h: House) => h.number === 1)?.cusp,
+      mc: natalChart.houses?.find((h: House) => h.number === 10)?.cusp,
+    };
+
     // Calculate planet-to-planet transits
     const transits = this.calculatePlanetTransits(
       currentPlanets.planets,
-      Object.values(natalChart.planets)
+      Object.values(natalChart.planets),
+      natalAngles
     );
 
     // Calculate house transits
@@ -119,53 +147,57 @@ export class TransitCalculator {
    */
   private calculatePlanetTransits(
     currentPlanets: (CelestialBody | PlanetApiData)[],
-    natalPlanets: (CelestialBody | PlanetApiData)[]
+    natalPlanets: (CelestialBody | PlanetApiData)[],
+    natalAngles?: { asc?: number; mc?: number }
   ): Transit[] {
-    const transits: Transit[] = [];
-    const aspectTypes = [
-      { type: 'conjunction' as const, angle: 0, orb: 8 },
-      { type: 'sextile' as const, angle: 60, orb: 6 },
-      { type: 'square' as const, angle: 90, orb: 8 },
-      { type: 'trine' as const, angle: 120, orb: 8 },
-      { type: 'quincunx' as const, angle: 150, orb: 3 },
-      { type: 'opposition' as const, angle: 180, orb: 8 },
-    ];
+    const candidates: TransitInput[] = [];
 
     for (const transitPlanet of currentPlanets) {
       for (const natalPlanet of natalPlanets) {
-        // Calculate angular distance
-        let diff = Math.abs(transitPlanet.longitude - natalPlanet.longitude);
-        if (diff > 180) diff = 360 - diff;
+        for (const aspectType of Object.keys(ASPECT_ANGLES) as (keyof typeof ASPECT_ANGLES)[]) {
+          const { orb } = orbAndDirection(
+            transitPlanet.longitude,
+            natalPlanet.longitude,
+            aspectType,
+            transitPlanet.speed ?? 0
+          );
+          if (orb > MAX_ORB[aspectType]) continue;
 
-        // Check each aspect type
-        for (const aspect of aspectTypes) {
-          const orbDiff = Math.abs(diff - aspect.angle);
-
-          if (orbDiff <= aspect.orb) {
-            // Determine if applying or separating
-            // This is simplified - real calculation would consider speeds
-            const isApplying = transitPlanet.speed > 0;
-
-            transits.push({
-              transitingPlanet: transitPlanet.name,
-              natalPlanet: natalPlanet.name,
-              aspectType: aspect.type,
-              orb: orbDiff,
-              isExact: orbDiff < 1,
-              isApplying,
-              interpretation: this.interpretTransit(
-                transitPlanet.name,
-                natalPlanet.name,
-                aspect.type
-              ),
-            });
-          }
+          candidates.push({
+            transitingPlanet: transitPlanet.name,
+            natalPlanet: natalPlanet.name,
+            aspectType,
+            transitLongitude: transitPlanet.longitude,
+            natalLongitude: natalPlanet.longitude,
+            transitSpeed: transitPlanet.speed ?? 0,
+            natalAngles,
+          });
         }
       }
     }
 
-    // Sort by orb (tightest first)
-    return transits.sort((a, b) => a.orb - b.orb);
+    // Сортировка по актуальности, а не по орбису. Медленная планета,
+    // застрявшая в орбисе на полгода, не должна занимать верх дневного
+    // списка: значимость у неё высокая, но новостью дня она не является.
+    return rankDailyTransits(candidates).map(scored => ({
+      transitingPlanet: scored.transitingPlanet,
+      natalPlanet: scored.natalPlanet,
+      aspectType: scored.aspectType,
+      orb: scored.orb,
+      isExact: scored.isExact,
+      isApplying: scored.isApplying,
+      strength: scored.strength,
+      topicality: scored.topicality,
+      dailyScore: scored.dailyScore,
+      daysToExact: scored.daysToExact,
+      isAngular: scored.isAngular,
+      rank: scored.rank,
+      interpretation: this.interpretTransit(
+        scored.transitingPlanet,
+        scored.natalPlanet,
+        scored.aspectType
+      ),
+    }));
   }
 
   /**
