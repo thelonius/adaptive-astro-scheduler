@@ -29,7 +29,31 @@
     "quickLinks_testDesc": "Comprehensive testing with automated tests, manual scenarios, and configuration controls",
     "quickLinks_demoLabel": "Demo Page:",
     "quickLinks_demoDesc": "Interactive demonstration with live controls and theme switcher",
-    "optimalTimingV2": "Intent-based scheduler (v2)"
+    "optimalTimingV2": "Intent-based scheduler (v2)",
+    "section": {
+      "chart": "Chart",
+      "day": "Day",
+      "time": "Timing",
+      "lab": "Lab"
+    },
+    "short": {
+      "natalChart": "Natal chart",
+      "chartLibrary": "Chart library",
+      "dayExplorer": "Day explorer",
+      "celestialEvents": "Celestial events",
+      "optimalTiming": "Optimal timing",
+      "optimalTimingV2": "Intent scheduler",
+      "schedulerLab": "Scheduler lab",
+      "testPage": "Wheel (test)",
+      "demoPage": "Wheel (demo)"
+    },
+    "toggleSidebar": "Collapse menu",
+    "menu": "Menu",
+    "homeHint": {
+      "dayExplorer": "What's in the sky today and what to do with it",
+      "natalChart": "Build a chart and break it down by factor",
+      "optimalTiming": "Pick a day that fits the task"
+    }
   },
   "location": {
     "changeLocation": "Change location",
@@ -199,7 +223,8 @@
     "planetaryPositions": "Planetary Positions",
     "linkCopied": "Link copied!",
     "linkCopiedDesc": "Time and date configuration saved to clipboard.",
-    "failedLoad": "Failed to load day data"
+    "failedLoad": "Failed to load day data",
+    "aspectInterpretations": "Aspect interpretations"
   },
   "natalChart": {
     "title": "Natal Chart",

@@ -1,0 +1,264 @@
+/* Оболочка приложения: сайдбар + шапка + область контента.
+ *
+ * Портировано из mlops_tutor/frontend/src/index.css. Отличие одно, но
+ * существенное: тьютор держит свой слой --color-*, а здесь всё садится
+ * напрямую на --ag-*, которые крутит natalDayColorEngine. Поэтому
+ * акцент оболочки меняется вместе с цветом лунного дня без единой
+ * строчки JS.
+ *
+ * Все селекторы под .ag-shell и с префиксом ag-: внутри страниц живёт
+ * Chakra со своим глобальным резетом, пересекаться им незачем.
+ */
+
+.ag-shell {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--ag-bg);
+  color: var(--ag-text);
+}
+
+/* ── Сайдбар ── */
+.ag-sidebar {
+  width: 256px;
+  min-width: 256px;
+  background: var(--ag-surface);
+  border-right: 1px solid var(--ag-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.25s ease, min-width 0.25s ease, border-color 0.25s ease;
+}
+.ag-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  border-right-color: transparent;
+}
+
+.ag-sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ag-border);
+  flex-shrink: 0;
+}
+.ag-sidebar-header h1 {
+  font-family: var(--ag-font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ag-day-primary);
+  margin: 0;
+}
+.ag-sidebar-header p {
+  font-size: 11px;
+  color: var(--ag-text-muted);
+  margin: 2px 0 0;
+}
+
+.ag-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 16px;
+}
+.ag-nav::-webkit-scrollbar { width: 6px; }
+.ag-nav::-webkit-scrollbar-thumb {
+  background: var(--ag-border);
+  border-radius: 3px;
+}
+
+.ag-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px 2px;
+  border: none;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ag-text-muted);
+  cursor: default;
+  text-align: left;
+}
+.ag-section-header.collapsible { cursor: pointer; }
+.ag-section-header.collapsible:hover { color: var(--ag-text); }
+.ag-section-caret {
+  font-size: 8px;
+  transition: transform 0.15s;
+}
+.ag-section-caret.open { transform: rotate(90deg); }
+
+.ag-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--ag-text-muted);
+  font-size: 12.5px;
+  font-family: var(--ag-font-body);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.ag-nav-btn:hover {
+  background: color-mix(in oklch, var(--ag-text) 4%, transparent);
+  color: var(--ag-text);
+}
+.ag-nav-btn.active {
+  background: color-mix(in oklch, var(--ag-day-primary) 10%, transparent);
+  color: var(--ag-day-primary);
+}
+.ag-nav-icon {
+  font-size: 14px;
+  min-width: 18px;
+  text-align: center;
+}
+.ag-nav-title {
+  flex: 1;
+  line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Основная область ── */
+.ag-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ag-header {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--ag-border);
+  background: var(--ag-surface);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.ag-header-title {
+  font-family: var(--ag-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ag-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ag-sidebar-toggle,
+.ag-hamburger {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--ag-border);
+  background: transparent;
+  color: var(--ag-text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.ag-sidebar-toggle:hover,
+.ag-hamburger:hover {
+  background: color-mix(in oklch, var(--ag-text) 7%, transparent);
+  color: var(--ag-text);
+}
+.ag-hamburger { display: none; }
+
+/* Контент скроллится сам: страницы внутри Chakra-контейнеров и рассчитывают
+ * на собственный скролл, а не на общий скролл документа. */
+.ag-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ag-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+.ag-overlay.show { display: block; }
+
+/* ── Мобильная раскладка ── */
+@media (max-width: 768px) {
+  .ag-sidebar-toggle { display: none; }
+  .ag-hamburger { display: flex; }
+  .ag-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 999;
+    width: 280px;
+    min-width: 280px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ag-sidebar.collapsed {
+    width: 280px;
+    min-width: 280px;
+  }
+  .ag-sidebar.open { transform: translateX(0); }
+  .ag-header { padding: 10px 14px; gap: 10px; }
+  .ag-header-title { font-size: 13px; }
+}
+
+/* ── Глоссарий ──
+ * Термин помечается пунктиром; подсказку рисует TooltipController по
+ * document-level событиям, поэтому разметка термина ничего не знает о ней.
+ */
+.ag-gloss {
+  border-bottom: 1px dashed var(--ag-text-muted);
+  cursor: help;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ag-gloss:hover,
+.ag-gloss:focus-visible {
+  color: var(--ag-day-primary);
+  border-bottom-color: var(--ag-day-primary);
+  border-bottom-style: solid;
+  outline: none;
+}
+
+.ag-tooltip {
+  position: fixed;
+  max-width: 340px;
+  padding: 10px 13px;
+  background: var(--ag-surface);
+  color: var(--ag-text);
+  border: 1px solid var(--ag-border-strong);
+  border-radius: var(--ag-radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+  z-index: 1400;
+  pointer-events: none;
+  box-shadow: var(--ag-shadow-lg);
+}
+.ag-tooltip-body { white-space: pre-wrap; }
+.ag-tooltip-source {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ag-border);
+  font-size: 11px;
+  color: var(--ag-text-muted);
+}

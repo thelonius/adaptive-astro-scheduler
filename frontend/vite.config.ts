@@ -12,7 +12,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // Порт не прибит: 5173 бывает занят соседним проектом. Vite возьмёт
+    // PORT из окружения либо подберёт свободный.
+    port: Number(process.env.PORT) || undefined,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
