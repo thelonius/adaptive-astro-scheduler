@@ -25,6 +25,10 @@ dependencies:
   # Натальные данные, место и адрес API.
   shared_preferences: ^2.3.2
 
+  # BLE-пейринг с часами AstroClock и переключение WiFi на них.
+  flutter_blue_plus: ^1.35.3
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

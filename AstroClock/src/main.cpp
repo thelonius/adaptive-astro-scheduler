@@ -20,6 +20,11 @@
 #include <ArduinoOTA.h>
 #endif
 
+#include "ble.h"
+#ifdef ASTRO_USE_WIFI
+#include "wifi_task.h"
+#endif
+
 // Дисплей GC9A01 240x240 по SPI. Распиновка платы не менялась.
 class LGFX : public lgfx::LGFX_Device {
   lgfx::Panel_GC9A01 _panel_instance;
@@ -134,24 +139,31 @@ static double currentJD() {
   return ephem::julianDayFromUnix((long long)now);
 }
 
-#ifdef ASTRO_USE_WIFI
-static void syncTime() {
-  ui.drawStatus("WiFi...");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  for (int i = 0; i < 40 && WiFi.status() != WL_CONNECTED; i++) delay(500);
-  if (WiFi.status() != WL_CONNECTED) {
-    ui.drawStatus("WiFi fail");
-    return;
-  }
-  configTzTime(HOME_TZ, "pool.ntp.org", "time.google.com");
-  struct tm tmv;
-  for (int i = 0; i < 20 && !getLocalTime(&tmv, 500); i++) {
-  }
-  timeSynced = time(nullptr) > 1700000000;
+// --- мостик к BLE ------------------------------------------------------
 
-#ifdef ASTRO_ENABLE_OTA
-  // Радио остаётся включённым на весь аптайм — только пока это временный
-  // режим разработки. IP на экране, чтобы не искать его в роутере
+// wifi_task.h и ble.h не знают друг о друге и не знают про AstroUI: обе связи
+// проходят здесь, единственном месте, куда стянуты все #ifdef ASTRO_USE_WIFI
+static void bleStatusText(const char* s) { ui.drawStatus(s); }
+
+#ifdef ASTRO_USE_WIFI
+static uint8_t wifiStatusByte() { return (uint8_t)wifitask::status(); }
+static void wifiCommand(uint8_t cmd) {
+  if (cmd == 0x01) {
+    wifitask::requestOn(/*hold=*/true);
+  } else if (cmd == 0x00) {
+    wifitask::requestOff();
+  }
+}
+#else
+static uint8_t wifiStatusByte() { return 5; }  // UNSUPPORTED, см. ble-protocol.md
+static void wifiCommand(uint8_t) {}
+#endif
+
+#if defined(ASTRO_USE_WIFI) && defined(ASTRO_ENABLE_OTA)
+// OTA-сборка держит WiFi включённым весь аптайм (см. wifi_task.h,
+// requestOff() там no-op) — эту разовую настройку логично оставить в
+// main.cpp, а не тащить ArduinoOTA внутрь wifi_task.h ради одного env
+static void setupOta() {
   ArduinoOTA.setHostname("astroclock");
   if (strlen(OTA_PASS) > 0) ArduinoOTA.setPassword(OTA_PASS);
   ArduinoOTA.onStart([]() {
@@ -172,12 +184,6 @@ static void syncTime() {
   ArduinoOTA.begin();
   ui.drawStatus(WiFi.localIP().toString().c_str());
   delay(2500);
-#else
-  // Радио больше не нужно: эфемериды считаются на месте, а часы уходят
-  // медленнее, чем стоит держать питание на приёмнике
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-#endif
 }
 #endif
 
@@ -614,6 +620,10 @@ void setup() {
   prefs.begin("astro", false);
   mode = prefs.getInt("mode", MODE_BIWHEEL);
 
+  // Реклама BLE поднимается максимально рано и независимо от WiFi/времени —
+  // часы должны быть видны телефону сразу, не дожидаясь блокирующего NTP-шага
+  ble::begin(wifiCommand, wifiStatusByte, bleStatusText);
+
   ui.drawWheel();
   ui.drawStatus("natal...");
 
@@ -622,7 +632,21 @@ void setup() {
   tzset();
 
 #ifdef ASTRO_USE_WIFI
-  syncTime();
+  // Тот же одноразовый NTP-синк, что был раньше в блокирующей syncTime(), но
+  // теперь через общие с BLE-командой и loop() неблокирующие шаги wifi_task.h
+  wifitask::onStatusText(bleStatusText);
+  wifitask::requestOn(/*hold=*/false);
+  while (wifitask::status() == wifitask::CONNECTING ||
+         wifitask::status() == wifitask::CONNECTED) {
+    wifitask::poll();
+    delay(20);
+  }
+  timeSynced = time(nullptr) > 1700000000;
+#ifdef ASTRO_ENABLE_OTA
+  // Заливка по воздуху нужна независимо от того, подъехало ли время: часы
+  // без NTP всё равно держат сессию, начатую от момента сборки/NVS
+  if (WiFi.status() == WL_CONNECTED) setupOta();
+#endif
 #endif
 
   // Первое сохранение сразу: иначе выдернутые в первый час часы ничего не
@@ -654,6 +678,11 @@ void loop() {
 
 #ifdef ASTRO_ENABLE_OTA
   ArduinoOTA.handle();
+#endif
+  ble::poll();
+#ifdef ASTRO_USE_WIFI
+  wifitask::poll();
+  if (wifitask::status() == wifitask::SYNCED) timeSynced = true;
 #endif
 
   // В календаре короткий клик ждёт 400 мс: не пришёл ли второй. Двойной

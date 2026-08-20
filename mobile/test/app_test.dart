@@ -12,6 +12,7 @@ import 'package:astro_clock/data/interpretation/models.dart';
 import 'package:astro_clock/data/interpretation/source.dart';
 import 'package:astro_clock/data/settings.dart';
 import 'package:astro_clock/features/wheel/wheel_painter.dart';
+import 'package:astro_clock/state/device_controller.dart';
 import 'package:astro_clock/state/sky_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,7 +51,8 @@ class _MemoryCache extends LocalInterpretationStore {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<(Settings, SkyController, CompositeInterpretationSource)> build() async {
+  Future<(Settings, SkyController, CompositeInterpretationSource, DeviceController)>
+      build() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final Settings settings = Settings();
     await settings.load();
@@ -59,11 +61,15 @@ void main() {
       sources: <InterpretationSource>[LocalRuleInterpretationSource()],
       offlineOnly: true,
     );
-    return (settings, SkyController(settings), source);
+    // Не сопряжено (pairedDeviceId == null) — reconnectToSaved() в main()
+    // и без того не трогает BLE, если ничего запоминать. Здесь то же самое:
+    // конструктор ничего не открывает, тест не касается платформенных каналов
+    return (settings, SkyController(settings), source, DeviceController(settings));
   }
 
   testWidgets('карта рисуется на дефолтных натальных данных', (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src) =
+    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
+            DeviceController device) =
         await build();
 
     await tester.pumpWidget(AstroClockApp(
@@ -71,6 +77,7 @@ void main() {
       sky: sky,
       interpretations: src,
       cache: _MemoryCache(),
+      device: device,
     ));
     await tester.pump();
 
@@ -91,7 +98,8 @@ void main() {
 
   testWidgets('вкладка транзитов открывается и показывает список',
       (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src) =
+    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
+            DeviceController device) =
         await build();
 
     await tester.pumpWidget(AstroClockApp(
@@ -99,6 +107,7 @@ void main() {
       sky: sky,
       interpretations: src,
       cache: _MemoryCache(),
+      device: device,
     ));
     await tester.pump();
 
@@ -115,7 +124,8 @@ void main() {
   });
 
   testWidgets('толкование по правилу открывается без сети', (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src) =
+    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
+            DeviceController device) =
         await build();
 
     await tester.pumpWidget(AstroClockApp(
@@ -123,6 +133,7 @@ void main() {
       sky: sky,
       interpretations: src,
       cache: _MemoryCache(),
+      device: device,
     ));
     await tester.pump();
 
