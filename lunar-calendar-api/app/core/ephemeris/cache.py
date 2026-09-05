@@ -10,7 +10,7 @@ import json
 import logging
 import pickle  # Using pickle for complex astronomical structures
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any, Union
 from abc import ABC, abstractmethod
 
@@ -193,11 +193,13 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
         Past dates: cache forever (None)
         Future dates: cache for 24 hours
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         target = date_time.date
 
+        # Callers pass both naive (assumed UTC) and offset-aware datetimes, and
+        # comparing the two kinds raises instead of returning a TTL
         if target.tzinfo is None:
-            target = target.replace(tzinfo=None)
+            target = target.replace(tzinfo=timezone.utc)
 
         # If date is in the past, cache forever
         if target < now:

@@ -4,6 +4,7 @@ Ephemeris API Endpoints
 REST API for astronomical calculations.
 """
 
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException, Query
@@ -22,6 +23,8 @@ from app.core.ephemeris import (
 )
 
 # Create router
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/ephemeris", tags=["ephemeris"])
 
 # Initialize ephemeris calculator (singleton)
@@ -910,8 +913,12 @@ async def get_void_of_course_moon(
     try:
         if date:
             dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                # A bare date or a naive datetime is local time in `timezone`,
+                # otherwise "2026-09-05" silently means 00:00 UTC
+                dt = pytz.timezone(timezone).localize(dt)
         else:
-            dt = datetime.utcnow()
+            dt = datetime.now(pytz.UTC)
 
         date_time = DateTime(
             date=dt,
@@ -929,13 +936,14 @@ async def get_void_of_course_moon(
             is_void=True,
             start_time=voc.start_time,
             end_time=voc.end_time,
-            sign=voc.sign.value,
+            sign=voc.sign.name.value,
             duration_hours=voc.duration_hours,
             last_aspect_planet=voc.last_aspect_planet.value,
-            next_sign=voc.next_sign.value
+            next_sign=voc.next_sign.name.value
         )
 
     except Exception as e:
+        logger.exception("VoC Moon calculation failed for %s", date)
         raise HTTPException(status_code=500, detail=f"Error calculating VoC Moon: {str(e)}")
 
 

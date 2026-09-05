@@ -209,6 +209,43 @@ class LunarEngine:
 
         return t_start + (t_end - t_start) / 2
 
+    def get_active_voc_window(self, at: datetime) -> dict | None:
+        """
+        Returns the VoC window covering `at`, or None if the Moon is not void.
+
+        The window runs from the Moon's last exact major aspect inside its
+        current sign to the ingress into the next one, so the aspect that opens
+        it always lies in the past relative to `at`. Searching forward from `at`
+        finds the aspects that end the *next* window instead and never reports
+        a void Moon.
+        """
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=pytz.UTC)
+
+        ingress_dt = self._find_next_moon_ingress(at)
+        if ingress_dt is None:
+            return None
+
+        last_asp = self._find_last_moon_aspect_before(ingress_dt)
+        if last_asp is None:
+            return None
+
+        voc_start = last_asp["exact_at"]
+        if not (voc_start <= at < ingress_dt):
+            return None
+
+        return {
+            "voc_start": voc_start,
+            "voc_end": ingress_dt,
+            "duration_hours": round((ingress_dt - voc_start).total_seconds() / 3600, 2),
+            "last_aspect": {
+                "planet": last_asp["planet"],
+                "aspect": last_asp["aspect"],
+                "exact_at": last_asp["exact_at"],
+            },
+            "new_sign": self.SIGNS[self._moon_sign_index(ingress_dt)],
+        }
+
     def find_void_of_course_windows(
         self,
         start_dt: datetime,

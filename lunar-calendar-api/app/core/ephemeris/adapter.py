@@ -17,6 +17,7 @@ from skyfield.timelib import Time as SkyfieldTime
 
 from .interface import IEphemerisCalculator
 from app.calculators.ephemeris_core import ephemeris_core
+from app.calculators.lunar_engine import lunar_engine
 from .types import (
     DateTime,
     Location,
@@ -590,126 +591,42 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
         date_time: DateTime
     ) -> Optional[VoidOfCourseMoon]:
         """
-        Detect Void of Course Moon periods.
+        Detect whether the Moon is Void of Course at the requested moment.
+
+        Delegates to lunar_engine so that the ingress search, the backward scan
+        for the last aspect and the traditional planet set stay in one place.
         """
         try:
-            # 1. Get current Moon position and sign
-            moon_pos = ephemeris_core.get_planet_position("Moon", date_time.date)
-            moon_lon = moon_pos[0]
-            current_sign_idx = int(moon_lon / 30)
-            ingress_lon = (current_sign_idx + 1) * 30
-            
-            # 2. Find when Moon leaves current sign (Ingress)
-            # Rough estimate: Moon moves ~0.5 degree per hour
-            # We use a simple Newton-like search for precision
-            ingress_time = await self._find_ingress_time(date_time.date, ingress_lon)
-            
-            # 3. Find all major aspects between date_time and ingress_time
-            # Standard VoC uses Moon aspects with: Sun, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-            planets = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
-            
-            # Use a very early time as baseline
-            last_aspect_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
-            last_planet = None
-            
-            major_aspect_angles: List[float] = [0.0, 60.0, 90.0, 120.0, 180.0]
-            
-            for planet_name in planets:
-                # Find the last aspect of this planet with the Moon before ingress
-                aspect_time, aspect_angle = await self._find_last_moon_aspect(
-                    date_time.date, ingress_time, planet_name, major_aspect_angles
-                )
-                
-                if aspect_time and aspect_time > last_aspect_time:
-                    last_aspect_time = aspect_time
-                    last_planet = PlanetName(planet_name)
-            
-            # 4. Determine if we are currently in VoC
-            # VoC starts at last_aspect_time and ends at ingress_time
-            if last_planet and last_aspect_time <= date_time.date < ingress_time:
-                duration = (ingress_time - last_aspect_time).total_seconds() / 3600.0
-                
-                return VoidOfCourseMoon(
-                    start_time=last_aspect_time,
-                    end_time=ingress_time,
-                    sign=ZodiacSign.from_longitude(moon_lon),
-                    duration_hours=duration,
-                    last_aspect_planet=last_planet,
-                    next_sign=ZodiacSign.from_longitude(ingress_lon % 360)
-                )
-            
-            return None
-            
+            at = date_time.date
+            at = at.replace(tzinfo=pytz.UTC) if at.tzinfo is None else at.astimezone(pytz.UTC)
+
+            window = lunar_engine.get_active_voc_window(at)
+            if window is None:
+                return None
+
+            moon_lon = ephemeris_core.get_planet_position("Moon", at)[0]
+
+            return VoidOfCourseMoon(
+                start_time=window["voc_start"],
+                end_time=window["voc_end"],
+                sign=ZodiacSign.from_longitude(moon_lon),
+                duration_hours=window["duration_hours"],
+                last_aspect_planet=PlanetName(window["last_aspect"]["planet"]),
+                # Adding a full sign width lands in the next sign whatever the
+                # degree, unlike sampling the Moon at the ingress instant where
+                # rounding can leave it just short of the boundary.
+                next_sign=ZodiacSign.from_longitude(moon_lon + 30.0),
+            )
+
+        except EphemerisError:
+            raise
         except Exception as e:
-            # Log error but don't fail the whole request
-            return None
+            raise EphemerisError(
+                code=EphemerisErrorCode.CALCULATION_FAILED,
+                message=f"Failed to detect Void of Course Moon: {str(e)}",
+                details={"date_time": str(date_time)}
+            )
 
-    async def _find_ingress_time(self, start_dt: datetime, target_lon: float) -> datetime:
-        """Find the exact time (UTC) when Moon reaches target_lon."""
-        curr_dt = start_dt
-        for _ in range(5):  # 5 iterations of Newton's method is enough for < 1s precision
-            pos = ephemeris_core.get_planet_position("Moon", curr_dt)
-            curr_lon = pos[0]
-            speed = pos[3] / 24.0  # degrees per hour
-
-            diff = (target_lon - curr_lon)
-            if diff < -180: diff += 360
-            if diff > 180: diff -= 360
-
-            if abs(speed) < 1e-6:
-                # Moon stationary — step forward half a day and retry
-                curr_dt += timedelta(hours=12)
-                continue
-
-            dt_diff = diff / speed
-            # Clamp to avoid diverging steps
-            dt_diff = max(-48.0, min(48.0, dt_diff))
-            curr_dt += timedelta(hours=dt_diff)
-
-        return curr_dt
-
-    async def _find_last_moon_aspect(self, start_dt: datetime, end_dt: datetime, planet_name: str, angles: List[float]) -> Tuple[Optional[datetime], Optional[float]]:
-        """Find the time of the last aspect between Moon and planet before end_dt."""
-        import time as _time
-
-        last_found_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
-        last_found_angle = None
-
-        curr_dt = start_dt
-        step = timedelta(hours=2)
-        deadline = _time.monotonic() + 8.0  # 8-second hard limit per planet
-
-        prev_diff = self._get_moon_planet_diff(start_dt, planet_name)
-
-        while curr_dt < end_dt:
-            if _time.monotonic() > deadline:
-                break
-
-            next_dt = min(curr_dt + step, end_dt)
-            next_diff = self._get_moon_planet_diff(next_dt, planet_name)
-
-            for angle in angles:
-                d1 = (prev_diff - angle + 180) % 360 - 180
-                d2 = (next_diff - angle + 180) % 360 - 180
-
-                if d1 * d2 < 0:
-                    exact_time = curr_dt + (next_dt - curr_dt) * (abs(d1) / (abs(d1) + abs(d2)))
-                    if exact_time > last_found_time:
-                        last_found_time = exact_time
-                        last_found_angle = angle
-
-            curr_dt = next_dt
-            prev_diff = next_diff
-
-        if last_found_time.year == 1900:
-            return None, None
-
-        return last_found_time, last_found_angle
-
-    def _get_moon_planet_diff(self, dt: datetime, planet_name: str) -> float:
-        m_pos = ephemeris_core.get_planet_position("Moon", dt)
-        p_pos = ephemeris_core.get_planet_position(planet_name, dt)
-        return (m_pos[0] - p_pos[0]) % 360
 
     async def get_retrograde_planets(
         self,
