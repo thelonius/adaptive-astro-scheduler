@@ -402,6 +402,10 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
         return result
 
     # Stats methods
+    def clear_cache(self) -> None:
+        """Drop every cached entry."""
+        self.cache.clear()
+
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         backend = "in-memory"
