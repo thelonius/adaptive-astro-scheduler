@@ -26,6 +26,12 @@ COPY . .
 WORKDIR /app/shared
 RUN npm run build
 
+# astro-palette отдаёт типы из dist/, а dist лежит и в .gitignore, и в
+# .dockerignore, так что в сборку он не попадает никогда. Без этого шага tsc
+# фронтенда падает с TS7016 на импорте палитры.
+WORKDIR /app/packages/astro-palette
+RUN npm run build
+
 # Build frontend
 WORKDIR /app/frontend
 ARG VITE_API_URL

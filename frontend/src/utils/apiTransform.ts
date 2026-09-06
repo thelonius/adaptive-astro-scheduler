@@ -28,7 +28,9 @@ export function transformPlanetData(apiPlanet: PlanetApiData): CelestialBody {
     latitude: apiPlanet.latitude,
     zodiacSign: zodiacSign || ZODIAC_SIGNS[0], // Use first sign as fallback
     speed: apiPlanet.speed,
-    isRetrograde: apiPlanet.isRetrograde,
+    // Питон отдаёт is_retrograde, camelCase остался алиасом для моков.
+    // Оба поля необязательные, а сюда нужен строгий boolean
+    isRetrograde: apiPlanet.is_retrograde ?? apiPlanet.isRetrograde ?? false,
     distanceAU: apiPlanet.distanceAU,
   };
 }
