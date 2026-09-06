@@ -9,6 +9,7 @@ capacity to heal ourselves and others through those wounds.
 from datetime import datetime
 from typing import Dict
 import swisseph as swe
+from .interpretations import interpretation_ru
 
 from ..types import (
     DateTime,
@@ -118,7 +119,8 @@ def calculate_chiron(date_time: DateTime) -> ChironPosition:
         zodiac_sign=zodiac_sign,
         speed=speed,
         is_retrograde=is_retrograde,
-        distance_au=distance_au
+        distance_au=distance_au,
+        interpretation_ru=interpretation_ru("chiron", zodiac_sign)
     )
 
 

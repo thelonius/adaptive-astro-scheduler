@@ -14,6 +14,7 @@ Three types of Lilith:
 from datetime import datetime
 from typing import Dict
 import swisseph as swe
+from .interpretations import interpretation_ru
 
 from ..types import (
     DateTime,
@@ -120,7 +121,8 @@ def calculate_black_moon_lilith(
         longitude=longitude,
         latitude=latitude,
         zodiac_sign=zodiac_sign,
-        speed=speed
+        speed=speed,
+        interpretation_ru=interpretation_ru("lilith", zodiac_sign)
     )
 
 

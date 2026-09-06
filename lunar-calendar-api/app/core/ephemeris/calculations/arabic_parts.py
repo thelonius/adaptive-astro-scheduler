@@ -27,6 +27,7 @@ from ..types import (
     ZodiacSignName,
     normalize_angle,
 )
+from .interpretations import interpretation_ru as _interpretation_ru
 
 
 
@@ -61,6 +62,11 @@ def get_zodiac_sign(longitude: float) -> ZodiacSignName:
 
     return signs[sign_index]
 
+
+
+def _point_key(name: str) -> str:
+    """Data key for an Arabic part: "Part of Fortune" -> "part_of_fortune"."""
+    return name.strip().lower().replace(' ', '_')
 
 def is_nocturnal_chart(sun_longitude: float, ascendant_longitude: float) -> bool:
     """
@@ -136,7 +142,8 @@ def calculate_arabic_part(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal
+        is_nocturnal=is_nocturnal,
+        interpretation_ru=_interpretation_ru(_point_key(name), zodiac_sign)
     )
 
 
@@ -192,7 +199,8 @@ def calculate_part_of_fortune(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal
+        is_nocturnal=is_nocturnal,
+        interpretation_ru=_interpretation_ru("part_of_fortune", zodiac_sign)
     )
 
 
@@ -240,7 +248,8 @@ def calculate_part_of_spirit(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula=formula,
-        is_nocturnal=is_nocturnal
+        is_nocturnal=is_nocturnal,
+        interpretation_ru=_interpretation_ru("part_of_spirit", zodiac_sign)
     )
 
 
@@ -272,5 +281,6 @@ def calculate_part_of_eros(
         longitude=longitude,
         zodiac_sign=zodiac_sign,
         formula="Asc + Venus - Mars",
-        is_nocturnal=is_nocturnal
+        is_nocturnal=is_nocturnal,
+        interpretation_ru=_interpretation_ru("part_of_eros", zodiac_sign)
     )

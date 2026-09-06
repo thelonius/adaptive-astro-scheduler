@@ -523,6 +523,7 @@ class LunarNodeResponse(BaseModel):
     zodiac_sign: str
     speed: float
     is_retrograde: bool
+    interpretation_ru: str = ""
 
 
 class LunarNodesResponse(BaseModel):
@@ -538,6 +539,7 @@ class BlackMoonLilithResponse(BaseModel):
     latitude: float
     zodiac_sign: str
     speed: float
+    interpretation_ru: str = ""
 
 
 class ArabicPartResponse(BaseModel):
@@ -547,6 +549,7 @@ class ArabicPartResponse(BaseModel):
     zodiac_sign: str
     formula: str
     is_nocturnal: bool
+    interpretation_ru: str = ""
 
 
 class ChironResponse(BaseModel):
@@ -557,6 +560,7 @@ class ChironResponse(BaseModel):
     speed: float
     is_retrograde: bool
     distance_au: float
+    interpretation_ru: str = ""
 
 
 @router.get("/lunar-nodes", response_model=LunarNodesResponse)
@@ -606,7 +610,8 @@ async def get_lunar_nodes(
                 latitude=nodes.north_node.latitude,
                 zodiac_sign=nodes.north_node.zodiac_sign.value,
                 speed=nodes.north_node.speed,
-                is_retrograde=nodes.north_node.is_retrograde
+                is_retrograde=nodes.north_node.is_retrograde,
+                interpretation_ru=nodes.north_node.interpretation_ru
             ),
             south_node=LunarNodeResponse(
                 name=nodes.south_node.name,
@@ -614,7 +619,8 @@ async def get_lunar_nodes(
                 latitude=nodes.south_node.latitude,
                 zodiac_sign=nodes.south_node.zodiac_sign.value,
                 speed=nodes.south_node.speed,
-                is_retrograde=nodes.south_node.is_retrograde
+                is_retrograde=nodes.south_node.is_retrograde,
+                interpretation_ru=nodes.south_node.interpretation_ru
             )
         )
 
@@ -678,7 +684,8 @@ async def get_black_moon_lilith(
             longitude=lilith.longitude,
             latitude=lilith.latitude,
             zodiac_sign=lilith.zodiac_sign.value,
-            speed=lilith.speed
+            speed=lilith.speed,
+            interpretation_ru=lilith.interpretation_ru
         )
 
     except HTTPException:
@@ -727,7 +734,8 @@ async def get_chiron(
             zodiac_sign=chiron.zodiac_sign.value,
             speed=chiron.speed,
             is_retrograde=chiron.is_retrograde,
-            distance_au=chiron.distance_au
+            distance_au=chiron.distance_au,
+            interpretation_ru=chiron.interpretation_ru
         )
 
     except Exception as e:
@@ -779,7 +787,8 @@ async def get_part_of_fortune(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal
+            is_nocturnal=part.is_nocturnal,
+            interpretation_ru=part.interpretation_ru
         )
 
     except Exception as e:
@@ -831,7 +840,8 @@ async def get_part_of_spirit(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal
+            is_nocturnal=part.is_nocturnal,
+            interpretation_ru=part.interpretation_ru
         )
 
     except Exception as e:
