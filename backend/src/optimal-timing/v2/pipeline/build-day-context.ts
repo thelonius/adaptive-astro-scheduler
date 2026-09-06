@@ -92,7 +92,10 @@ export async function buildDayContext(
             longitude: apiPlanet.longitude,
             sign,
             speed: apiPlanet.speed,
-            isRetrograde: apiPlanet.isRetrograde,
+            // Питон отдаёт is_retrograde; camelCase-алиас оставлен для моков
+            // и старых вызовов. Читать только isRetrograde нельзя — с живой
+            // ручки там undefined, и предикат planet_retrograde молчал всегда.
+            isRetrograde: apiPlanet.is_retrograde ?? apiPlanet.isRetrograde ?? false,
         };
     }
     // Defensive: ensure all 10 planets have a snapshot. Missing

@@ -88,6 +88,16 @@ export class EphemerisAdapter implements IEphemerisCalculator {
   }
 
   /**
+   * Timestamp for the ephemeris service, keeping the Z.
+   *
+   * A naive timestamp there is read as local time in the `timezone` parameter,
+   * so dropping the suffix shifts the query by the UTC offset.
+   */
+  private utcParam(date: Date): string {
+    return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  }
+
+  /**
    * Format date for API
    */
   private formatDate(date: Date): string {
@@ -132,7 +142,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getMoonPhase(dateTime: DateTime): Promise<number> {
     const response = await this.fetch<MoonPhaseResponse>('/api/v1/ephemeris/moon-phase', {
-      date: dateTime.date.toISOString().split('.')[0], // Remove milliseconds and timezone
+      date: this.utcParam(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,
@@ -147,7 +157,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {
     const response = await this.fetch<LunarDayResponse>('/api/v1/ephemeris/lunar-day', {
-      date: dateTime.date.toISOString().split('.')[0],
+      date: this.utcParam(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,
@@ -184,7 +194,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getPlanetsPositions(dateTime: DateTime, points?: string): Promise<PlanetsApiResponse> {
     const params: Record<string, string> = {
-      date: dateTime.date.toISOString().split('.')[0], // Remove milliseconds and timezone
+      date: this.utcParam(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       elevation: '0',
@@ -209,7 +219,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getVoidOfCourseMoon(dateTime: DateTime): Promise<VoidMoonApiResponse> {
     const params = {
-      date: dateTime.date.toISOString().split('.')[0],
+      date: this.utcParam(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,
@@ -324,7 +334,7 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getPlanetaryHours(dateTime: DateTime): Promise<PlanetaryHoursApiResponse> {
     const params = {
-      date: dateTime.date.toISOString().split('.')[0],
+      date: this.utcParam(dateTime.date),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,

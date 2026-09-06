@@ -8,6 +8,7 @@ numpy
 pyswisseph
 python-multipart
 pytest
+pytest-asyncio
 httpx
 requests
 pytz

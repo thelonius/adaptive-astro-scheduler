@@ -118,6 +118,12 @@ class EphemerisCore:
         if HAS_SWE:
             if flags is None:
                 flags = swe.FLG_SWIEPH
+            # FLG_SPEED обязателен: без него swisseph кладёт в result[3..5] ровно
+            # 0.0, а не скорость. Тогда проверки вида speed < 0 всегда ложны, и
+            # ретроградность не находится нигде — ни в get_all_retrogrades, ни в
+            # адаптере, ни у Ньютона в _find_ingress_time. Дописываем флаг и к
+            # явно переданным, раз сигнатура обещает скорости в возвращаемом кортеже.
+            flags |= swe.FLG_SPEED
             if planet_name not in self.planets:
                 raise ValueError(f"Unknown planet: {planet_name}")
             tjd = self.get_swe_julian_day(dt)

@@ -88,6 +88,8 @@ class Settings extends ChangeNotifier {
   String _apiBase = defaultApiBase;
   bool _offlineOnly = false;
   int _theme = 0;
+  String? _pairedDeviceId;
+  String? _pairedDeviceName;
 
   /// Прод стоит за Caddy соседнего стека, порт 4443 — не опечатка.
   static const String defaultApiBase = 'https://astro-31-130-130-11.sslip.io:4443';
@@ -102,6 +104,10 @@ class Settings extends ChangeNotifier {
   /// 0 — живая палитра, дальше фиксированные, как на часах.
   int get theme => _theme;
 
+  /// remoteId сопряжённых часов (MAC на Android), null — не сопряжено.
+  String? get pairedDeviceId => _pairedDeviceId;
+  String? get pairedDeviceName => _pairedDeviceName;
+
   Uri get apiUri => Uri.parse(_apiBase);
 
   static const String _kNatal = 'natal';
@@ -109,6 +115,8 @@ class Settings extends ChangeNotifier {
   static const String _kApi = 'apiBase';
   static const String _kOffline = 'offlineOnly';
   static const String _kTheme = 'theme';
+  static const String _kDeviceId = 'pairedDeviceId';
+  static const String _kDeviceName = 'pairedDeviceName';
 
   Future<void> load() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -135,6 +143,8 @@ class Settings extends ChangeNotifier {
     _apiBase = prefs.getString(_kApi) ?? defaultApiBase;
     _offlineOnly = prefs.getBool(_kOffline) ?? false;
     _theme = prefs.getInt(_kTheme) ?? 0;
+    _pairedDeviceId = prefs.getString(_kDeviceId);
+    _pairedDeviceName = prefs.getString(_kDeviceName);
     notifyListeners();
   }
 
@@ -181,5 +191,20 @@ class Settings extends ChangeNotifier {
     notifyListeners();
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kTheme, value);
+  }
+
+  /// id/name null разом — «забыть устройство».
+  Future<void> setPairedDevice(String? id, String? name) async {
+    _pairedDeviceId = id;
+    _pairedDeviceName = name;
+    notifyListeners();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (id == null) {
+      await prefs.remove(_kDeviceId);
+      await prefs.remove(_kDeviceName);
+    } else {
+      await prefs.setString(_kDeviceId, id);
+      await prefs.setString(_kDeviceName, name ?? '');
+    }
   }
 }

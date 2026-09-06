@@ -46,6 +46,10 @@
 
 Правя `AstroClock/src/ephemeris.h`, `transits.h`, `lunar*.h` или `palette.h`, надо править и `mobile/lib/core/ephemeris/`: это один алгоритм в двух записях, и `mobile/tool/compare_port.py` расхождение поймает.
 
+### BLE-пейринг часов с приложением
+
+Канал связи телефон↔часы — `AstroClock/src/ble.h` (NimBLE) + `mobile/lib/state/device_controller.dart`, протокол в [AstroClock/docs/ble-protocol.md](AstroClock/docs/ble-protocol.md). Этап 1 (пейринг, вкл/выкл WiFi на часах) реализован и закоммичен, но не проверен на живом железе — статус и чек-лист см. [docs/superpowers/plans/2026-08-20-astroclock-ble-pairing-status.md](docs/superpowers/plans/2026-08-20-astroclock-ble-pairing-status.md). Загрузка натальных карт и конфигурация быстрого доступа на часах — следующие этапы, ещё не начаты.
+
 ### Глифы на круглом экране
 
 Всё символьное на 240×240 рисуется растром 13×13 из `AstroClock/src/glyphs.h`, а не примитивами `drawCircle`/`drawLine`/`drawArc`. Отрисовка дугами на этом размере уже дважды подводила: знаки зодиака читались плохо, а у планет Меркурий выходил неотличим от Венеры (рожки в дугу не укладывались, оставался тот же кружок с крестом) и крюк Сатурна заворачивался в букву «J».

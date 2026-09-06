@@ -16,14 +16,16 @@ import 'features/settings/settings_screen.dart';
 import 'features/transits/transit_list_screen.dart';
 import 'features/wheel/wheel_screen.dart';
 import 'features/wheel/wheel_theme.dart';
+import 'state/device_controller.dart';
 import 'state/sky_controller.dart';
 
-/// Доступ к сервисам без внешних пакетов состояния: их тут ровно четыре.
+/// Доступ к сервисам без внешних пакетов состояния: их тут пять.
 class AppScope extends InheritedWidget {
   final Settings settings;
   final SkyController sky;
   final InterpretationSource interpretations;
   final LocalInterpretationStore cache;
+  final DeviceController device;
 
   const AppScope({
     super.key,
@@ -31,6 +33,7 @@ class AppScope extends InheritedWidget {
     required this.sky,
     required this.interpretations,
     required this.cache,
+    required this.device,
     required super.child,
   });
 
@@ -45,7 +48,8 @@ class AppScope extends InheritedWidget {
   bool updateShouldNotify(AppScope old) =>
       settings != old.settings ||
       sky != old.sky ||
-      interpretations != old.interpretations;
+      interpretations != old.interpretations ||
+      device != old.device;
 }
 
 class AstroClockApp extends StatelessWidget {
@@ -53,6 +57,7 @@ class AstroClockApp extends StatelessWidget {
   final SkyController sky;
   final InterpretationSource interpretations;
   final LocalInterpretationStore cache;
+  final DeviceController device;
 
   const AstroClockApp({
     super.key,
@@ -60,6 +65,7 @@ class AstroClockApp extends StatelessWidget {
     required this.sky,
     required this.interpretations,
     required this.cache,
+    required this.device,
   });
 
   @override
@@ -69,6 +75,7 @@ class AstroClockApp extends StatelessWidget {
       sky: sky,
       interpretations: interpretations,
       cache: cache,
+      device: device,
       child: AnimatedBuilder(
         animation: Listenable.merge(<Listenable>[sky, settings]),
         builder: (BuildContext context, _) {

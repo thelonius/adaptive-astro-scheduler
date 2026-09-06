@@ -5,6 +5,8 @@
 /// а не ломает экран.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app.dart';
@@ -14,6 +16,7 @@ import 'data/interpretation/local_rule_source.dart';
 import 'data/interpretation/remote_source.dart';
 import 'data/interpretation/source.dart';
 import 'data/settings.dart';
+import 'state/device_controller.dart';
 import 'state/sky_controller.dart';
 
 Future<void> main() async {
@@ -41,10 +44,17 @@ Future<void> main() async {
     interpretations.offlineOnly = settings.offlineOnly;
   });
 
+  final DeviceController device = DeviceController(settings);
+  // Без await: если часы рядом и уже сопряжены, ОС переподключит в фоне.
+  // Запуск приложения ждать BLE не должен, в отличие от settings.load()
+  // (локальный диск, быстро)
+  unawaited(device.reconnectToSaved());
+
   runApp(AstroClockApp(
     settings: settings,
     sky: SkyController(settings),
     interpretations: interpretations,
     cache: cache,
+    device: device,
   ));
 }

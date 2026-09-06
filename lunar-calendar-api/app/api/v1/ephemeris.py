@@ -4,6 +4,7 @@ Ephemeris API Endpoints
 REST API for astronomical calculations.
 """
 
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException, Query
@@ -22,10 +23,29 @@ from app.core.ephemeris import (
 )
 
 # Create router
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/ephemeris", tags=["ephemeris"])
 
 # Initialize ephemeris calculator (singleton)
 _calculator = None
+
+
+def _parse_query_datetime(date: Optional[str], timezone: Optional[str] = None) -> datetime:
+    """Turn the `date` query parameter into an aware datetime.
+
+    A naive value, a bare date included, is local time in `timezone`, or UTC
+    on the endpoints that take no timezone. Reading it as UTC everywhere made
+    `date=2026-09-05` mean midnight UTC, which shifts every answer that depends
+    on the hour — the lunar day and the void Moon among them — by the offset.
+    """
+    if not date:
+        return datetime.now(pytz.UTC)
+
+    dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        dt = pytz.timezone(timezone).localize(dt) if timezone else dt.replace(tzinfo=pytz.UTC)
+    return dt
 
 
 def get_calculator() -> CachedEphemerisCalculator:
@@ -205,10 +225,7 @@ async def get_planet_positions(
     """
     try:
         # Parse date or use current time
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -270,10 +287,7 @@ async def get_moon_phase(
     Returns illumination percentage, phase name, and emoji.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -312,10 +326,7 @@ async def get_lunar_day(
     Returns lunar day number, symbol, and characteristics.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -352,10 +363,7 @@ async def get_retrograde_planets(
     Get list of planets currently in retrograde motion.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date)
 
         date_time = DateTime(
             date=dt,
@@ -401,10 +409,7 @@ async def get_aspects(
     passed via `points`.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date)
 
         date_time = DateTime(
             date=dt,
@@ -453,10 +458,9 @@ async def get_houses(
     Requires exact birth date, time, and location.
     """
     try:
-        # Combine date and time (keep naive)
-        dt_str = f"{date}T{time}"
-        # Keep it naive so cache.py comparing with datetime.utcnow() doesn't break
-        dt = datetime.fromisoformat(dt_str)
+        # `time` is documented as UTC and there is no timezone parameter here,
+        # so a naive value carries the right instant as it stands
+        dt = datetime.fromisoformat(f"{date}T{time}")
 
         date_time = DateTime(
             date=dt,
@@ -519,6 +523,7 @@ class LunarNodeResponse(BaseModel):
     zodiac_sign: str
     speed: float
     is_retrograde: bool
+    interpretation_ru: str = ""
 
 
 class LunarNodesResponse(BaseModel):
@@ -534,6 +539,7 @@ class BlackMoonLilithResponse(BaseModel):
     latitude: float
     zodiac_sign: str
     speed: float
+    interpretation_ru: str = ""
 
 
 class ArabicPartResponse(BaseModel):
@@ -543,6 +549,7 @@ class ArabicPartResponse(BaseModel):
     zodiac_sign: str
     formula: str
     is_nocturnal: bool
+    interpretation_ru: str = ""
 
 
 class ChironResponse(BaseModel):
@@ -553,6 +560,7 @@ class ChironResponse(BaseModel):
     speed: float
     is_retrograde: bool
     distance_au: float
+    interpretation_ru: str = ""
 
 
 @router.get("/lunar-nodes", response_model=LunarNodesResponse)
@@ -580,15 +588,7 @@ async def get_lunar_nodes(
     try:
         from app.core.ephemeris.calculations.nodes import calculate_lunar_nodes, calculate_true_node
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -610,7 +610,8 @@ async def get_lunar_nodes(
                 latitude=nodes.north_node.latitude,
                 zodiac_sign=nodes.north_node.zodiac_sign.value,
                 speed=nodes.north_node.speed,
-                is_retrograde=nodes.north_node.is_retrograde
+                is_retrograde=nodes.north_node.is_retrograde,
+                interpretation_ru=nodes.north_node.interpretation_ru
             ),
             south_node=LunarNodeResponse(
                 name=nodes.south_node.name,
@@ -618,7 +619,8 @@ async def get_lunar_nodes(
                 latitude=nodes.south_node.latitude,
                 zodiac_sign=nodes.south_node.zodiac_sign.value,
                 speed=nodes.south_node.speed,
-                is_retrograde=nodes.south_node.is_retrograde
+                is_retrograde=nodes.south_node.is_retrograde,
+                interpretation_ru=nodes.south_node.interpretation_ru
             )
         )
 
@@ -656,15 +658,7 @@ async def get_black_moon_lilith(
         from app.core.ephemeris.calculations.lilith import calculate_black_moon_lilith
         from app.core.ephemeris import LilithType
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -690,7 +684,8 @@ async def get_black_moon_lilith(
             longitude=lilith.longitude,
             latitude=lilith.latitude,
             zodiac_sign=lilith.zodiac_sign.value,
-            speed=lilith.speed
+            speed=lilith.speed,
+            interpretation_ru=lilith.interpretation_ru
         )
 
     except HTTPException:
@@ -721,15 +716,7 @@ async def get_chiron(
     try:
         from app.core.ephemeris.calculations.chiron import calculate_chiron
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -747,7 +734,8 @@ async def get_chiron(
             zodiac_sign=chiron.zodiac_sign.value,
             speed=chiron.speed,
             is_retrograde=chiron.is_retrograde,
-            distance_au=chiron.distance_au
+            distance_au=chiron.distance_au,
+            interpretation_ru=chiron.interpretation_ru
         )
 
     except Exception as e:
@@ -756,10 +744,6 @@ async def get_chiron(
 
 @router.get("/part-of-fortune", response_model=ArabicPartResponse)
 async def get_part_of_fortune(
-    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
-    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
-    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
-    timezone: str = Query("UTC", description="Timezone"),
     ascendant: float = Query(..., description="Ascendant longitude (0-360°)"),
     sun: float = Query(..., description="Sun longitude (0-360°)"),
     moon: float = Query(..., description="Moon longitude (0-360°)")
@@ -774,11 +758,10 @@ async def get_part_of_fortune(
     - Day chart: Ascendant + Moon - Sun
     - Night chart: Ascendant + Sun - Moon
 
+    Day or night is decided by where the Sun stands relative to the Ascendant,
+    so the part needs neither a date nor a location.
+
     Args:
-        date: ISO format datetime (for determining day/night)
-        latitude: Observer latitude
-        longitude: Observer longitude
-        timezone: Timezone name
         ascendant: Ascendant longitude in degrees
         sun: Sun longitude in degrees
         moon: Moon longitude in degrees
@@ -799,7 +782,8 @@ async def get_part_of_fortune(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal
+            is_nocturnal=part.is_nocturnal,
+            interpretation_ru=part.interpretation_ru
         )
 
     except Exception as e:
@@ -808,10 +792,6 @@ async def get_part_of_fortune(
 
 @router.get("/part-of-spirit", response_model=ArabicPartResponse)
 async def get_part_of_spirit(
-    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
-    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
-    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
-    timezone: str = Query("UTC", description="Timezone"),
     ascendant: float = Query(..., description="Ascendant longitude (0-360°)"),
     sun: float = Query(..., description="Sun longitude (0-360°)"),
     moon: float = Query(..., description="Moon longitude (0-360°)")
@@ -826,11 +806,10 @@ async def get_part_of_spirit(
     - Day chart: Ascendant + Sun - Moon
     - Night chart: Ascendant + Moon - Sun
 
+    Day or night is decided by where the Sun stands relative to the Ascendant,
+    so the part needs neither a date nor a location.
+
     Args:
-        date: ISO format datetime (for determining day/night)
-        latitude: Observer latitude
-        longitude: Observer longitude
-        timezone: Timezone name
         ascendant: Ascendant longitude in degrees
         sun: Sun longitude in degrees
         moon: Moon longitude in degrees
@@ -851,7 +830,8 @@ async def get_part_of_spirit(
             longitude=part.longitude,
             zodiac_sign=part.zodiac_sign.value,
             formula=part.formula,
-            is_nocturnal=part.is_nocturnal
+            is_nocturnal=part.is_nocturnal,
+            interpretation_ru=part.interpretation_ru
         )
 
     except Exception as e:
@@ -908,10 +888,7 @@ async def get_void_of_course_moon(
     Check if Moon is currently Void of Course.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -929,13 +906,14 @@ async def get_void_of_course_moon(
             is_void=True,
             start_time=voc.start_time,
             end_time=voc.end_time,
-            sign=voc.sign.value,
+            sign=voc.sign.name.value,
             duration_hours=voc.duration_hours,
             last_aspect_planet=voc.last_aspect_planet.value,
-            next_sign=voc.next_sign.value
+            next_sign=voc.next_sign.name.value
         )
 
     except Exception as e:
+        logger.exception("VoC Moon calculation failed for %s", date)
         raise HTTPException(status_code=500, detail=f"Error calculating VoC Moon: {str(e)}")
 
 
@@ -950,10 +928,7 @@ async def get_planetary_hours(
     Get 24 planetary hours for the given date.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -1007,28 +982,14 @@ async def get_solar_times(
     try:
         from app.calculators.solar_engine import solar_engine
 
-        # Parse date
-        if date:
-            try:
-                dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-            except ValueError:
-                # Try parsing as date-only
-                from datetime import date as date_type
-                d = date_type.fromisoformat(date[:10])
-                dt = datetime(d.year, d.month, d.day, tzinfo=pytz.UTC)
-        else:
-            dt = datetime.utcnow().replace(tzinfo=pytz.UTC)
-
-        # Ensure timezone-aware
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=pytz.UTC)
+        dt = _parse_query_datetime(date, timezone)
 
         # Calculate solar times (returns UTC datetimes)
         solar = solar_engine.get_solar_times(dt, latitude, longitude, elevation)
 
         # Convert to target timezone for output
         tz = pytz.timezone(timezone)
-        now_utc = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now_utc = datetime.now(pytz.UTC)
         now_local = now_utc.astimezone(tz)
 
         def fmt(d_utc) -> Optional[str]:

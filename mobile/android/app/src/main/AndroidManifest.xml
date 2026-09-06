@@ -1,4 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- BLE-пейринг с часами AstroClock: сканирование по имени/UUID сервиса,
+         не для геолокации устройства -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- Legacy-модель разрешений для Android 11 и старше (minSdk 24) -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="30"/>
+    <!-- Второстепенная функция: не должна блокировать установку на
+         устройства без BLE, поэтому required="false" -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+
     <application
         android:label="astro_clock"
         android:name="${applicationName}"

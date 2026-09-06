@@ -12,11 +12,12 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Tuple
 from skyfield.api import load, Topos, wgs84
-from skyfield.almanac import find_discrete, moon_phases
+from skyfield.almanac import find_discrete, find_risings, moon_phases
 from skyfield.timelib import Time as SkyfieldTime
 
 from .interface import IEphemerisCalculator
 from app.calculators.ephemeris_core import ephemeris_core
+from app.calculators.lunar_engine import lunar_engine
 from .types import (
     DateTime,
     Location,
@@ -451,64 +452,76 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
 
     async def get_lunar_day(self, date_time: DateTime) -> LunarDay:
         """
-        Calculate lunar day (1-30) for given date/time.
+        Calculate the lunar day (1-30) at the requested instant.
 
-        Args:
-            date_time: Date and time
+        Day 1 runs from the new moon to the first moonrise, every later day
+        from one moonrise to the next, and the running day is cut short by the
+        next new moon. Same boundaries as AstroClock/src/lunar.h and
+        app/services/lunar_calculator.py, so the three clients agree.
 
-        Returns:
-            LunarDay object with number and metadata
+        Moonrise depends on the observer, so date_time.location is part of the
+        answer rather than decoration.
         """
         try:
-            # Find new moons around the target date (always work in UTC)
+            # Work in UTC, then drop the tzinfo: Skyfield wants naive UTC
             target = date_time.date
             if target.tzinfo is None:
                 target = target.replace(tzinfo=pytz.UTC)
             elif target.tzinfo != pytz.UTC:
                 target = target.astimezone(pytz.UTC)
-
-            # Convert to naive for Skyfield compatibility
             target_naive = target.replace(tzinfo=None)
-            new_moons = self._find_new_moons_around(target_naive)
 
+            new_moons = self._find_new_moons_around(target_naive)
             if not new_moons:
-                # Fallback calculation
                 return await self._calculate_lunar_day_fallback(date_time)
 
-            # Find the new moon that starts the current cycle
-            target_midday = target_naive.replace(hour=12, minute=0, second=0, microsecond=0)
-            reference_new_moon = None
-
+            previous_new_moon = None
+            next_new_moon = None
             for nm in new_moons:
                 nm_dt = nm.utc_datetime().replace(tzinfo=None)
-                if nm_dt <= target_midday:
-                    reference_new_moon = nm_dt
+                if nm_dt <= target_naive:
+                    previous_new_moon = nm_dt
+                elif next_new_moon is None:
+                    next_new_moon = nm_dt
+
+            if previous_new_moon is None:
+                return await self._calculate_lunar_day_fallback(date_time)
+
+            # A lunar day never runs past ~26 hours, so two days of margin is
+            # enough to catch the moonrise that closes the current one
+            moonrises = self._find_moonrises_between(
+                previous_new_moon,
+                target_naive + timedelta(days=2),
+                date_time.location
+            )
+
+            lunar_day_num = 1
+            starts_at_naive = previous_new_moon
+            ends_at_naive = None
+
+            for rise in moonrises:
+                if rise <= target_naive and lunar_day_num < 30:
+                    lunar_day_num += 1
+                    starts_at_naive = rise
                 else:
+                    ends_at_naive = rise
                     break
 
-            if reference_new_moon is None:
-                reference_new_moon = new_moons[0].utc_datetime().replace(tzinfo=None)
+            if ends_at_naive is None or (next_new_moon is not None and next_new_moon < ends_at_naive):
+                ends_at_naive = next_new_moon
+            if ends_at_naive is None:
+                ends_at_naive = starts_at_naive + timedelta(days=1)
 
-            # Calculate lunar day number based on elapsed time
-            elapsed = (target_midday - reference_new_moon).total_seconds() / 86400
-            lunar_day_num = int(elapsed) + 1
-
-            # Clamp to valid range
-            lunar_day_num = max(1, min(30, lunar_day_num))
-
-            # Calculate start and end times (return as UTC-aware)
-            starts_at_naive = reference_new_moon + timedelta(days=lunar_day_num - 1)
-            ends_at_naive = reference_new_moon + timedelta(days=lunar_day_num)
             starts_at = starts_at_naive.replace(tzinfo=pytz.UTC)
             ends_at = ends_at_naive.replace(tzinfo=pytz.UTC)
-            duration_hours = 24.0  # Approximate
+            duration_hours = round((ends_at - starts_at).total_seconds() / 3600.0, 2)
 
             # Determine energy and phase
             moon_phase = await self.get_moon_phase(date_time)
 
             # Get metadata
             symbol, energy = self.LUNAR_DAY_METADATA.get(lunar_day_num, (None, None))
-            
+
             # Get characteristics from JSON
             characteristics = None
             ld_data = self.lunar_days_data.get(lunar_day_num)
@@ -548,6 +561,35 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
                 message=f"Failed to calculate lunar day: {str(e)}",
                 details={"date_time": str(date_time)}
             )
+
+    def _find_moonrises_between(
+        self,
+        start: datetime,
+        end: datetime,
+        location: Location
+    ) -> List[datetime]:
+        """Moonrise times (naive UTC) strictly after `start` and before `end`."""
+        t0 = self._to_skyfield_time(start.replace(tzinfo=pytz.UTC))
+        t1 = self._to_skyfield_time(end.replace(tzinfo=pytz.UTC))
+
+        # find_risings instead of find_discrete over risings_and_settings: the
+        # latter samples every 6 hours and silently drops a moonrise whenever
+        # the Moon is above the horizon for less than that, which at 56°N
+        # happens around the southernmost declinations. A missed rise shifts
+        # every following lunar day of the cycle by one.
+        times, above_horizon = find_risings(
+            self._create_observer(location), self.moon, t0, t1
+        )
+
+        rises = []
+        for t, risen in zip(times, above_horizon):
+            if not risen:
+                continue  # never cleared the horizon that day
+            rise = t.utc_datetime().replace(tzinfo=None)
+            if rise > start:
+                rises.append(rise)
+        return rises
+
 
     def _find_new_moons_around(self, target_date: datetime) -> List[SkyfieldTime]:
         """Find new moons within ±60 days of target date."""
@@ -590,126 +632,42 @@ class SkyfieldEphemerisAdapter(IEphemerisCalculator):
         date_time: DateTime
     ) -> Optional[VoidOfCourseMoon]:
         """
-        Detect Void of Course Moon periods.
+        Detect whether the Moon is Void of Course at the requested moment.
+
+        Delegates to lunar_engine so that the ingress search, the backward scan
+        for the last aspect and the traditional planet set stay in one place.
         """
         try:
-            # 1. Get current Moon position and sign
-            moon_pos = ephemeris_core.get_planet_position("Moon", date_time.date)
-            moon_lon = moon_pos[0]
-            current_sign_idx = int(moon_lon / 30)
-            ingress_lon = (current_sign_idx + 1) * 30
-            
-            # 2. Find when Moon leaves current sign (Ingress)
-            # Rough estimate: Moon moves ~0.5 degree per hour
-            # We use a simple Newton-like search for precision
-            ingress_time = await self._find_ingress_time(date_time.date, ingress_lon)
-            
-            # 3. Find all major aspects between date_time and ingress_time
-            # Standard VoC uses Moon aspects with: Sun, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-            planets = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
-            
-            # Use a very early time as baseline
-            last_aspect_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
-            last_planet = None
-            
-            major_aspect_angles: List[float] = [0.0, 60.0, 90.0, 120.0, 180.0]
-            
-            for planet_name in planets:
-                # Find the last aspect of this planet with the Moon before ingress
-                aspect_time, aspect_angle = await self._find_last_moon_aspect(
-                    date_time.date, ingress_time, planet_name, major_aspect_angles
-                )
-                
-                if aspect_time and aspect_time > last_aspect_time:
-                    last_aspect_time = aspect_time
-                    last_planet = PlanetName(planet_name)
-            
-            # 4. Determine if we are currently in VoC
-            # VoC starts at last_aspect_time and ends at ingress_time
-            if last_planet and last_aspect_time <= date_time.date < ingress_time:
-                duration = (ingress_time - last_aspect_time).total_seconds() / 3600.0
-                
-                return VoidOfCourseMoon(
-                    start_time=last_aspect_time,
-                    end_time=ingress_time,
-                    sign=ZodiacSign.from_longitude(moon_lon),
-                    duration_hours=duration,
-                    last_aspect_planet=last_planet,
-                    next_sign=ZodiacSign.from_longitude(ingress_lon % 360)
-                )
-            
-            return None
-            
+            at = date_time.date
+            at = at.replace(tzinfo=pytz.UTC) if at.tzinfo is None else at.astimezone(pytz.UTC)
+
+            window = lunar_engine.get_active_voc_window(at)
+            if window is None:
+                return None
+
+            moon_lon = ephemeris_core.get_planet_position("Moon", at)[0]
+
+            return VoidOfCourseMoon(
+                start_time=window["voc_start"],
+                end_time=window["voc_end"],
+                sign=ZodiacSign.from_longitude(moon_lon),
+                duration_hours=window["duration_hours"],
+                last_aspect_planet=PlanetName(window["last_aspect"]["planet"]),
+                # Adding a full sign width lands in the next sign whatever the
+                # degree, unlike sampling the Moon at the ingress instant where
+                # rounding can leave it just short of the boundary.
+                next_sign=ZodiacSign.from_longitude(moon_lon + 30.0),
+            )
+
+        except EphemerisError:
+            raise
         except Exception as e:
-            # Log error but don't fail the whole request
-            return None
+            raise EphemerisError(
+                code=EphemerisErrorCode.CALCULATION_FAILED,
+                message=f"Failed to detect Void of Course Moon: {str(e)}",
+                details={"date_time": str(date_time)}
+            )
 
-    async def _find_ingress_time(self, start_dt: datetime, target_lon: float) -> datetime:
-        """Find the exact time (UTC) when Moon reaches target_lon."""
-        curr_dt = start_dt
-        for _ in range(5):  # 5 iterations of Newton's method is enough for < 1s precision
-            pos = ephemeris_core.get_planet_position("Moon", curr_dt)
-            curr_lon = pos[0]
-            speed = pos[3] / 24.0  # degrees per hour
-
-            diff = (target_lon - curr_lon)
-            if diff < -180: diff += 360
-            if diff > 180: diff -= 360
-
-            if abs(speed) < 1e-6:
-                # Moon stationary — step forward half a day and retry
-                curr_dt += timedelta(hours=12)
-                continue
-
-            dt_diff = diff / speed
-            # Clamp to avoid diverging steps
-            dt_diff = max(-48.0, min(48.0, dt_diff))
-            curr_dt += timedelta(hours=dt_diff)
-
-        return curr_dt
-
-    async def _find_last_moon_aspect(self, start_dt: datetime, end_dt: datetime, planet_name: str, angles: List[float]) -> Tuple[Optional[datetime], Optional[float]]:
-        """Find the time of the last aspect between Moon and planet before end_dt."""
-        import time as _time
-
-        last_found_time = datetime(1900, 1, 1, tzinfo=pytz.UTC)
-        last_found_angle = None
-
-        curr_dt = start_dt
-        step = timedelta(hours=2)
-        deadline = _time.monotonic() + 8.0  # 8-second hard limit per planet
-
-        prev_diff = self._get_moon_planet_diff(start_dt, planet_name)
-
-        while curr_dt < end_dt:
-            if _time.monotonic() > deadline:
-                break
-
-            next_dt = min(curr_dt + step, end_dt)
-            next_diff = self._get_moon_planet_diff(next_dt, planet_name)
-
-            for angle in angles:
-                d1 = (prev_diff - angle + 180) % 360 - 180
-                d2 = (next_diff - angle + 180) % 360 - 180
-
-                if d1 * d2 < 0:
-                    exact_time = curr_dt + (next_dt - curr_dt) * (abs(d1) / (abs(d1) + abs(d2)))
-                    if exact_time > last_found_time:
-                        last_found_time = exact_time
-                        last_found_angle = angle
-
-            curr_dt = next_dt
-            prev_diff = next_diff
-
-        if last_found_time.year == 1900:
-            return None, None
-
-        return last_found_time, last_found_angle
-
-    def _get_moon_planet_diff(self, dt: datetime, planet_name: str) -> float:
-        m_pos = ephemeris_core.get_planet_position("Moon", dt)
-        p_pos = ephemeris_core.get_planet_position(planet_name, dt)
-        return (m_pos[0] - p_pos[0]) % 360
 
     async def get_retrograde_planets(
         self,

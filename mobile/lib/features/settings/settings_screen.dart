@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../app.dart';
 import '../../data/interpretation/cache_store.dart';
 import '../../data/settings.dart';
+import '../device/device_status_section.dart';
 import '../wheel/wheel_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final Settings settings = scope.settings;
 
     return AnimatedBuilder(
-      animation: settings,
+      animation: Listenable.merge(<Listenable>[settings, scope.device]),
       builder: (BuildContext context, _) {
         final NatalData n = settings.natal;
         return SafeArea(
@@ -84,6 +85,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       .setPlace(Place(settings.place.title, lat, lon)),
                 ),
               ),
+
+              DeviceStatusSection(controller: scope.device),
 
               _section(context, 'Оформление'),
               ListTile(

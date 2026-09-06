@@ -10,7 +10,7 @@ import json
 import logging
 import pickle  # Using pickle for complex astronomical structures
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any, Union
 from abc import ABC, abstractmethod
 
@@ -193,11 +193,15 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
         Past dates: cache forever (None)
         Future dates: cache for 24 hours
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         target = date_time.date
 
+        # The old guard tested `tzinfo is None` and then stripped a tzinfo that
+        # was not there, so it did nothing at all and offset-aware dates reached
+        # the comparison below and raised TypeError: any ?date=...+00:00 request
+        # answered 500 on a cold cache. Both sides are aware UTC now.
         if target.tzinfo is None:
-            target = target.replace(tzinfo=None)
+            target = target.replace(tzinfo=timezone.utc)
 
         # If date is in the past, cache forever
         if target < now:
@@ -400,6 +404,10 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
         return result
 
     # Stats methods
+    def clear_cache(self) -> None:
+        """Drop every cached entry."""
+        self.cache.clear()
+
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         backend = "in-memory"

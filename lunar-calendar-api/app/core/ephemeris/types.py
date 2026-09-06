@@ -519,6 +519,7 @@ class LunarNode:
     zodiac_sign: ZodiacSignName
     speed: float           # Daily motion in degrees
     is_retrograde: bool    # Nodes are always retrograde (moving backward)
+    interpretation_ru: str = ""   # Reading for this node in this sign
 
 
 @dataclass
@@ -536,6 +537,7 @@ class BlackMoonLilith:
     latitude: float
     zodiac_sign: ZodiacSignName
     speed: float           # Daily motion
+    interpretation_ru: str = ""   # Reading for Lilith in this sign
 
 
 @dataclass
@@ -546,6 +548,7 @@ class ArabicPart:
     zodiac_sign: ZodiacSignName
     formula: str          # Formula used: e.g., "Asc + Moon - Sun"
     is_nocturnal: bool    # Whether nocturnal formula was used
+    interpretation_ru: str = ""   # Reading for this part in this sign
 
 
 @dataclass
@@ -557,3 +560,4 @@ class ChironPosition:
     speed: float          # Daily motion
     is_retrograde: bool
     distance_au: float    # Distance from Earth in AU
+    interpretation_ru: str = ""   # Reading for Chiron in this sign
