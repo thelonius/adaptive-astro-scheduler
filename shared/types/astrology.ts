@@ -161,7 +161,9 @@ export interface PlanetApiData {
   zodiacSign: string;
   degree: number;             // Degree within sign (0-30)
   speed: number;              // Degrees per day
-  isRetrograde: boolean;
+  // Python API uses snake_case; camelCase kept for backwards-compat
+  is_retrograde?: boolean;    // Raw from Python API
+  isRetrograde?: boolean;     // Normalised camelCase alias
   distanceAU: number;
 }
 

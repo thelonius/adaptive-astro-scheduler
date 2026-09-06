@@ -196,8 +196,10 @@ class CachedEphemerisCalculator(IEphemerisCalculator):
         now = datetime.now(timezone.utc)
         target = date_time.date
 
-        # Callers pass both naive (assumed UTC) and offset-aware datetimes, and
-        # comparing the two kinds raises instead of returning a TTL
+        # The old guard tested `tzinfo is None` and then stripped a tzinfo that
+        # was not there, so it did nothing at all and offset-aware dates reached
+        # the comparison below and raised TypeError: any ?date=...+00:00 request
+        # answered 500 on a cold cache. Both sides are aware UTC now.
         if target.tzinfo is None:
             target = target.replace(tzinfo=timezone.utc)
 

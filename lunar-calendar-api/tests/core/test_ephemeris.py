@@ -257,11 +257,13 @@ async def test_lunar_day_at_new_moon(calculator, moscow_location):
 async def test_mercury_retrograde_detection(calculator, moscow_location):
     """
     Test Mercury retrograde detection.
-    Mercury is retrograde from February 15 to March 10, 2026.
+    Mercury is retrograde from February 27 to March 21, 2026 (swisseph).
+    25 февраля Меркурий ещё директен (+0.13°/сут, тормозит перед стоянкой),
+    поэтому опорная дата взята из середины окна.
     """
     # During retrograde
     dt_retro = DateTime(
-        date=datetime(2026, 2, 25, 12, 0, 0),
+        date=datetime(2026, 3, 5, 12, 0, 0),
         timezone="UTC",
         location=moscow_location
     )
