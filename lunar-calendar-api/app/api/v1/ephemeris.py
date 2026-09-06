@@ -744,10 +744,6 @@ async def get_chiron(
 
 @router.get("/part-of-fortune", response_model=ArabicPartResponse)
 async def get_part_of_fortune(
-    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
-    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
-    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
-    timezone: str = Query("UTC", description="Timezone"),
     ascendant: float = Query(..., description="Ascendant longitude (0-360°)"),
     sun: float = Query(..., description="Sun longitude (0-360°)"),
     moon: float = Query(..., description="Moon longitude (0-360°)")
@@ -762,11 +758,10 @@ async def get_part_of_fortune(
     - Day chart: Ascendant + Moon - Sun
     - Night chart: Ascendant + Sun - Moon
 
+    Day or night is decided by where the Sun stands relative to the Ascendant,
+    so the part needs neither a date nor a location.
+
     Args:
-        date: ISO format datetime (for determining day/night)
-        latitude: Observer latitude
-        longitude: Observer longitude
-        timezone: Timezone name
         ascendant: Ascendant longitude in degrees
         sun: Sun longitude in degrees
         moon: Moon longitude in degrees
@@ -797,10 +792,6 @@ async def get_part_of_fortune(
 
 @router.get("/part-of-spirit", response_model=ArabicPartResponse)
 async def get_part_of_spirit(
-    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
-    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
-    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
-    timezone: str = Query("UTC", description="Timezone"),
     ascendant: float = Query(..., description="Ascendant longitude (0-360°)"),
     sun: float = Query(..., description="Sun longitude (0-360°)"),
     moon: float = Query(..., description="Moon longitude (0-360°)")
@@ -815,11 +806,10 @@ async def get_part_of_spirit(
     - Day chart: Ascendant + Sun - Moon
     - Night chart: Ascendant + Moon - Sun
 
+    Day or night is decided by where the Sun stands relative to the Ascendant,
+    so the part needs neither a date nor a location.
+
     Args:
-        date: ISO format datetime (for determining day/night)
-        latitude: Observer latitude
-        longitude: Observer longitude
-        timezone: Timezone name
         ascendant: Ascendant longitude in degrees
         sun: Sun longitude in degrees
         moon: Moon longitude in degrees
