@@ -317,8 +317,12 @@ async def get_lunar_day(
     try:
         if date:
             dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+            if dt.tzinfo is None:
+                # The lunar day changes at moonrise, so the hour of the query
+                # decides the answer: a bare date means local midnight here
+                dt = pytz.timezone(timezone).localize(dt)
         else:
-            dt = datetime.utcnow()
+            dt = datetime.now(pytz.UTC)
 
         date_time = DateTime(
             date=dt,

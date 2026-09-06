@@ -226,23 +226,25 @@ class LunarCalculator:
 
         moonrise_times = []
 
-        # Search each day individually to avoid Skyfield missing events
-        for day_offset in range(days + 1):  # +1 to ensure we cover the full range
-            day_start = start_datetime + timedelta(days=day_offset)
-            day_end = day_start + timedelta(days=1)
+        # find_risings rather than find_discrete over risings_and_settings: the
+        # latter samples every 6 hours and drops a moonrise whenever the Moon
+        # clears the horizon for less than that, which at 56°N happens around
+        # the southernmost declinations. One missed rise renumbers the rest of
+        # the cycle, so the day-by-day scan that used to paper over it is gone.
+        end_datetime = start_datetime + timedelta(days=days)
+        t0 = self.ts.utc(start_datetime.replace(tzinfo=pytz.UTC))
+        t1 = self.ts.utc(end_datetime.replace(tzinfo=pytz.UTC))
 
-            t0 = self.ts.utc(day_start.year, day_start.month, day_start.day, 0, 0, 0)
-            t1 = self.ts.utc(day_end.year, day_end.month, day_end.day, 0, 0, 0)
+        times, above_horizon = almanac.find_risings(
+            self.earth + self.location, self.moon, t0, t1
+        )
 
-            f = almanac.risings_and_settings(self.eph, self.moon, self.location)
-            times, events = almanac.find_discrete(t0, t1, f)
-
-            for t, is_rise in zip(times, events):
-                if is_rise:
-                    mr_time = t.utc_datetime().replace(tzinfo=None)
-                    # Only add if after start_datetime and not a duplicate
-                    if mr_time >= start_datetime and (not moonrise_times or mr_time > moonrise_times[-1]):
-                        moonrise_times.append(mr_time)
+        for t, risen in zip(times, above_horizon):
+            if not risen:
+                continue  # never cleared the horizon that day
+            mr_time = t.utc_datetime().replace(tzinfo=None)
+            if mr_time >= start_datetime:
+                moonrise_times.append(mr_time)
 
         # Cache the result
         self._moonrise_cache[cache_key] = moonrise_times

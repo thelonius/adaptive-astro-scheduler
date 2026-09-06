@@ -230,18 +230,23 @@ async def test_lunar_day_valid_range(calculator, moscow_location):
 
 @pytest.mark.asyncio
 async def test_lunar_day_at_new_moon(calculator, moscow_location):
-    """Lunar day should be 1 at new moon."""
-    # New Moon on February 17, 2026
-    dt = DateTime(
+    """The new moon opens lunar day 1; a minute earlier still belongs to the old cycle."""
+    # New Moon on 2026-02-17 at 12:01:10 UTC, so noon that day is still the
+    # tail of the previous cycle — the original 12:00 in this test missed the
+    # new moon by 70 seconds and expected day 1 anyway
+    before = DateTime(
         date=datetime(2026, 2, 17, 12, 0, 0),
         timezone="UTC",
         location=moscow_location
     )
+    after = DateTime(
+        date=datetime(2026, 2, 17, 12, 30, 0),
+        timezone="UTC",
+        location=moscow_location
+    )
 
-    lunar_day = await calculator.get_lunar_day(dt)
-
-    # Should be day 1 or very close (within a day either side)
-    assert 1 <= lunar_day.number <= 2
+    assert (await calculator.get_lunar_day(before)).number == 30
+    assert (await calculator.get_lunar_day(after)).number == 1
 
 
 # ============================================================================

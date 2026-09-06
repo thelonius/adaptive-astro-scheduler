@@ -147,7 +147,9 @@ export class EphemerisAdapter implements IEphemerisCalculator {
    */
   async getLunarDay(dateTime: DateTime): Promise<LunarDay> {
     const response = await this.fetch<LunarDayResponse>('/api/v1/ephemeris/lunar-day', {
-      date: dateTime.date.toISOString().split('.')[0],
+      // Keep the Z: the ephemeris service reads a naive timestamp as local time
+      // in `timezone`, which would shift this query by the UTC offset
+      date: dateTime.date.toISOString().replace(/\.\d{3}Z$/, 'Z'),
       latitude: dateTime.location.latitude.toString(),
       longitude: dateTime.location.longitude.toString(),
       timezone: dateTime.timezone,
