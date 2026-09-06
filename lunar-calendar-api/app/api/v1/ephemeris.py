@@ -31,6 +31,23 @@ router = APIRouter(prefix="/ephemeris", tags=["ephemeris"])
 _calculator = None
 
 
+def _parse_query_datetime(date: Optional[str], timezone: Optional[str] = None) -> datetime:
+    """Turn the `date` query parameter into an aware datetime.
+
+    A naive value, a bare date included, is local time in `timezone`, or UTC
+    on the endpoints that take no timezone. Reading it as UTC everywhere made
+    `date=2026-09-05` mean midnight UTC, which shifts every answer that depends
+    on the hour — the lunar day and the void Moon among them — by the offset.
+    """
+    if not date:
+        return datetime.now(pytz.UTC)
+
+    dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        dt = pytz.timezone(timezone).localize(dt) if timezone else dt.replace(tzinfo=pytz.UTC)
+    return dt
+
+
 def get_calculator() -> CachedEphemerisCalculator:
     """Get or create the ephemeris calculator instance."""
     global _calculator
@@ -208,10 +225,7 @@ async def get_planet_positions(
     """
     try:
         # Parse date or use current time
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -273,10 +287,7 @@ async def get_moon_phase(
     Returns illumination percentage, phase name, and emoji.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -315,14 +326,7 @@ async def get_lunar_day(
     Returns lunar day number, symbol, and characteristics.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-            if dt.tzinfo is None:
-                # The lunar day changes at moonrise, so the hour of the query
-                # decides the answer: a bare date means local midnight here
-                dt = pytz.timezone(timezone).localize(dt)
-        else:
-            dt = datetime.now(pytz.UTC)
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -359,10 +363,7 @@ async def get_retrograde_planets(
     Get list of planets currently in retrograde motion.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date)
 
         date_time = DateTime(
             date=dt,
@@ -408,10 +409,7 @@ async def get_aspects(
     passed via `points`.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date)
 
         date_time = DateTime(
             date=dt,
@@ -460,10 +458,9 @@ async def get_houses(
     Requires exact birth date, time, and location.
     """
     try:
-        # Combine date and time (keep naive)
-        dt_str = f"{date}T{time}"
-        # Keep it naive so cache.py comparing with datetime.utcnow() doesn't break
-        dt = datetime.fromisoformat(dt_str)
+        # `time` is documented as UTC and there is no timezone parameter here,
+        # so a naive value carries the right instant as it stands
+        dt = datetime.fromisoformat(f"{date}T{time}")
 
         date_time = DateTime(
             date=dt,
@@ -587,15 +584,7 @@ async def get_lunar_nodes(
     try:
         from app.core.ephemeris.calculations.nodes import calculate_lunar_nodes, calculate_true_node
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -663,15 +652,7 @@ async def get_black_moon_lilith(
         from app.core.ephemeris.calculations.lilith import calculate_black_moon_lilith
         from app.core.ephemeris import LilithType
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -728,15 +709,7 @@ async def get_chiron(
     try:
         from app.core.ephemeris.calculations.chiron import calculate_chiron
 
-        # Parse date
-        if date:
-            dt_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt_obj = datetime.utcnow()
-
-        # Apply timezone
-        tz = pytz.timezone(timezone)
-        dt_obj = tz.localize(dt_obj) if dt_obj.tzinfo is None else dt_obj.astimezone(tz)
+        dt_obj = _parse_query_datetime(date, timezone)
 
         # Create DateTime object
         date_time = DateTime(
@@ -915,14 +888,7 @@ async def get_void_of_course_moon(
     Check if Moon is currently Void of Course.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-            if dt.tzinfo is None:
-                # A bare date or a naive datetime is local time in `timezone`,
-                # otherwise "2026-09-05" silently means 00:00 UTC
-                dt = pytz.timezone(timezone).localize(dt)
-        else:
-            dt = datetime.now(pytz.UTC)
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -962,10 +928,7 @@ async def get_planetary_hours(
     Get 24 planetary hours for the given date.
     """
     try:
-        if date:
-            dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-        else:
-            dt = datetime.utcnow()
+        dt = _parse_query_datetime(date, timezone)
 
         date_time = DateTime(
             date=dt,
@@ -1019,28 +982,14 @@ async def get_solar_times(
     try:
         from app.calculators.solar_engine import solar_engine
 
-        # Parse date
-        if date:
-            try:
-                dt = datetime.fromisoformat(date.replace('Z', '+00:00'))
-            except ValueError:
-                # Try parsing as date-only
-                from datetime import date as date_type
-                d = date_type.fromisoformat(date[:10])
-                dt = datetime(d.year, d.month, d.day, tzinfo=pytz.UTC)
-        else:
-            dt = datetime.utcnow().replace(tzinfo=pytz.UTC)
-
-        # Ensure timezone-aware
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=pytz.UTC)
+        dt = _parse_query_datetime(date, timezone)
 
         # Calculate solar times (returns UTC datetimes)
         solar = solar_engine.get_solar_times(dt, latitude, longitude, elevation)
 
         # Convert to target timezone for output
         tz = pytz.timezone(timezone)
-        now_utc = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        now_utc = datetime.now(pytz.UTC)
         now_local = now_utc.astimezone(tz)
 
         def fmt(d_utc) -> Optional[str]:
