@@ -101,7 +101,7 @@ def calculate_black_moon_lilith(
         planet = swe.INTP_APOG  # Interpolated apogee
 
     # Calculate Lilith position
-    result, flags = swe.calc_ut(jd, planet, swe.FLG_SWIEPH)
+    result, flags = swe.calc_ut(jd, planet, swe.FLG_SWIEPH | swe.FLG_SPEED)
 
     # Extract position data
     # result[0] = longitude

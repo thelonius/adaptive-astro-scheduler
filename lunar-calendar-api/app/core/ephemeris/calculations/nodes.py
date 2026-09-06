@@ -87,7 +87,7 @@ def calculate_lunar_nodes(date_time: DateTime) -> LunarNodes:
     # Calculate North Node (Mean Node)
     # SEFLG_SWIEPH = use Swiss Ephemeris
     # SE_MEAN_NODE = Mean Node (averaged position)
-    result, flags = swe.calc_ut(jd, swe.MEAN_NODE, swe.FLG_SWIEPH)
+    result, flags = swe.calc_ut(jd, swe.MEAN_NODE, swe.FLG_SWIEPH | swe.FLG_SPEED)
 
     # result[0] = longitude
     # result[1] = latitude (always 0 for nodes)
@@ -149,7 +149,7 @@ def calculate_true_node(date_time: DateTime) -> LunarNodes:
     jd = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute / 60.0)
 
     # Calculate True Node (Osculating Node)
-    result, flags = swe.calc_ut(jd, swe.TRUE_NODE, swe.FLG_SWIEPH)
+    result, flags = swe.calc_ut(jd, swe.TRUE_NODE, swe.FLG_SWIEPH | swe.FLG_SPEED)
 
     north_longitude = result[0]
     north_speed = result[3]

@@ -356,17 +356,22 @@ def test_nocturnal_chart_detection():
     """Test day/night chart detection."""
     from app.core.ephemeris.calculations.arabic_parts import is_nocturnal_chart
 
-    # Sun at 90° (MC), Asc at 0° -> Sun is above horizon (day chart)
-    assert is_nocturnal_chart(sun_longitude=90.0, ascendant_longitude=0.0) is False
+    # Houses run from the Ascendant through the 2nd, 3rd, 4th and so on with
+    # rising longitude, so Asc + 90° is the IC and Asc + 270° is the MC. This
+    # test used to label them the other way round and expected every answer
+    # inverted.
 
-    # Sun at 270° (IC), Asc at 0° -> Sun is below horizon (night chart)
-    assert is_nocturnal_chart(sun_longitude=270.0, ascendant_longitude=0.0) is True
+    # Sun at 90° = IC, Asc at 0° -> Sun at the lowest point (night chart)
+    assert is_nocturnal_chart(sun_longitude=90.0, ascendant_longitude=0.0) is True
 
-    # Sun at 45°, Asc at 0° -> Sun above horizon (day)
-    assert is_nocturnal_chart(sun_longitude=45.0, ascendant_longitude=0.0) is False
+    # Sun at 270° = MC, Asc at 0° -> Sun culminating (day chart)
+    assert is_nocturnal_chart(sun_longitude=270.0, ascendant_longitude=0.0) is False
 
-    # Sun at 200°, Asc at 0° -> Sun below horizon (night)
-    assert is_nocturnal_chart(sun_longitude=200.0, ascendant_longitude=0.0) is True
+    # Sun at 45°, Asc at 0° -> 2nd house, below the horizon (night)
+    assert is_nocturnal_chart(sun_longitude=45.0, ascendant_longitude=0.0) is True
+
+    # Sun at 200°, Asc at 0° -> past the Descendant, above the horizon (day)
+    assert is_nocturnal_chart(sun_longitude=200.0, ascendant_longitude=0.0) is False
 
 
 # ============================================================================
