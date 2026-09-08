@@ -7,6 +7,7 @@ import type {
   HousesApiResponse,
   PlanetaryHoursApiResponse,
 } from '@adaptive-astro/shared/types';
+import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared/constants/chart-points';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
 import { interpretationService } from './astrology/interpretation.service';
@@ -37,10 +38,10 @@ export class CalendarGenerator {
     ] = await Promise.all([
       this.ephemeris.getLunarDay(dateTime),
       this.ephemeris.getMoonPhase(dateTime),
-      this.ephemeris.getPlanetsPositions(dateTime),
+      this.ephemeris.getPlanetsPositions(dateTime, DEFAULT_CHART_POINTS),
       this.ephemeris.getVoidOfCourseMoon(dateTime),
       this.ephemeris.getRetrogradePlanets(dateTime),
-      this.ephemeris.getAspects(dateTime).catch(() => null as AspectsApiResponse | null),
+      this.ephemeris.getAspects(dateTime, undefined, DEFAULT_CHART_POINTS).catch(() => null as AspectsApiResponse | null),
       this.ephemeris.getHouses(dateTime, 'placidus').catch(() => null as HousesApiResponse | null),
       this.ephemeris.getPlanetaryHours(dateTime).catch(() => null as PlanetaryHoursApiResponse | null),
     ]);
@@ -332,10 +333,8 @@ export class CalendarGenerator {
   private convertPlanetApiDataToTransits(planetsData: any): any {
     const transits: any = {};
 
-    // Add null check for planets data
     if (!planetsData || !planetsData.planets || !Array.isArray(planetsData.planets)) {
       console.error('❌ Invalid planets data received:', planetsData);
-      // Return placeholder transits for all planets
       const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
       planetNames.forEach(planetName => {
         transits[planetName] = this.getPlaceholderCelestialBody(planetName);
@@ -343,19 +342,10 @@ export class CalendarGenerator {
       return transits;
     }
 
-    const planetNames = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-
-    planetNames.forEach(planetName => {
-      const apiPlanet = planetsData.planets.find((p: any) =>
-        p.name.toLowerCase() === planetName.toLowerCase()
-      );
-
-      if (apiPlanet) {
-        transits[planetName] = this.convertPlanetApiDataToCelestialBody(apiPlanet);
-      } else {
-        transits[planetName] = this.getPlaceholderCelestialBody(planetName);
-      }
-    });
+    for (const apiPlanet of planetsData.planets) {
+      const key = String(apiPlanet.name).toLowerCase();
+      transits[key] = this.convertPlanetApiDataToCelestialBody(apiPlanet);
+    }
 
     return transits;
   }
@@ -425,3 +415,4 @@ export class CalendarGenerator {
     };
   }
 }
+

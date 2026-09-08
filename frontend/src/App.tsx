@@ -5,6 +5,12 @@ import ZodiacWheelTest from './pages/ZodiacWheelTest';
 import ZodiacWheelDemo from './pages/ZodiacWheelDemo';
 import NatalChart from './pages/NatalChart';
 import ChartLibrary from './pages/ChartLibrary';
+import Synastry from './pages/Synastry';
+import Progressions from './pages/Progressions';
+import Draconic from './pages/Draconic';
+import HumanDesign from './pages/HumanDesign';
+import JyotishDasha from './pages/JyotishDasha';
+import Navamsa from './pages/Navamsa';
 import DayExplorer from './pages/DayExplorer';
 import { OptimalTiming } from './pages/OptimalTiming';
 import OptimalTimingV2 from './pages/OptimalTimingV2';
@@ -96,6 +102,12 @@ function App() {
           <Route path="/celestial-events" element={<CelestialEvents />} />
           <Route path="/day-explorer" element={<DayExplorer />} />
           <Route path="/chart-library" element={<ChartLibrary />} />
+          <Route path="/synastry" element={<Synastry />} />
+          <Route path="/progressions" element={<Progressions />} />
+          <Route path="/draconic" element={<Draconic />} />
+          <Route path="/human-design" element={<HumanDesign />} />
+          <Route path="/jyotish-dasha" element={<JyotishDasha />} />
+          <Route path="/navamsa" element={<Navamsa />} />
           <Route path="/natal-chart" element={<NatalChart />} />
           <Route path="/natal-chart/:id" element={<NatalChart />} />
           <Route path="/zodiac-wheel-test" element={<ZodiacWheelTest />} />

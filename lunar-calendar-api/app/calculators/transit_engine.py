@@ -11,6 +11,7 @@ from typing import Dict, List, Any
 from app.calculators.aspect_engine import aspect_engine
 from app.calculators.planetary_engine import planetary_engine
 from app.calculators.lunar_engine import lunar_engine
+from app.calculators.chart_points import DEFAULT_EXTRA_CHART_BODIES, get_extra_point_longitude
 
 class TransitEngine:
     """
@@ -19,7 +20,8 @@ class TransitEngine:
     
     TRANSITING_BODIES = [
         "Sun", "Moon", "Mercury", "Venus", "Mars",
-        "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
+        "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
+        *DEFAULT_EXTRA_CHART_BODIES,
     ]
     
     def __init__(self):
@@ -47,6 +49,10 @@ class TransitEngine:
         for planet in self.TRANSITING_BODIES:
             if planet == "Moon":
                 lon = lunar_engine.get_moon_longitude(transit_dt)
+            elif planet in DEFAULT_EXTRA_CHART_BODIES:
+                lon = get_extra_point_longitude(planet, transit_dt)
+                if lon is None:
+                    continue
             else:
                 lon = planetary_engine.core.get_planet_position(planet, transit_dt)[0]
             transits[planet] = lon

@@ -284,3 +284,25 @@ def calculate_part_of_eros(
         is_nocturnal=is_nocturnal,
         interpretation_ru=_interpretation_ru("part_of_eros", zodiac_sign)
     )
+
+
+def calculate_arabic_parts(
+    ascendant: float,
+    sun: float,
+    moon: float,
+    venus: float,
+    mars: float,
+) -> Dict[str, ArabicPart]:
+    """Calculate common Arabic parts from ascendant and planet longitudes."""
+    is_nocturnal = is_nocturnal_chart(sun, ascendant)
+    return {
+        "part_of_fortune": calculate_part_of_fortune(
+            ascendant, sun, moon, is_nocturnal=is_nocturnal
+        ),
+        "part_of_spirit": calculate_part_of_spirit(
+            ascendant, sun, moon, is_nocturnal=is_nocturnal
+        ),
+        "part_of_eros": calculate_part_of_eros(
+            ascendant, venus, mars, is_nocturnal=is_nocturnal
+        ),
+    }

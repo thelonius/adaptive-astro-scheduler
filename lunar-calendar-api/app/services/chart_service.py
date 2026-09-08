@@ -14,6 +14,7 @@ from app.calculators.lunar_engine import lunar_engine
 from app.calculators.house_engine import house_engine
 from app.calculators.aspect_engine import aspect_engine
 from app.calculators.dispositor_engine import dispositor_engine
+from app.calculators.chart_points import collect_extra_chart_bodies
 
 class ChartService:
     """
@@ -69,6 +70,8 @@ class ChartService:
                 "is_retrograde": is_retrograde,
                 "house": house_num
             }
+
+        planets_data.update(collect_extra_chart_bodies(dt))
             
         # 3. Calculate Aspects
         # Pass CHART_BODIES to filter out North Node or other points if we add them later

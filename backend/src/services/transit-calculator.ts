@@ -8,6 +8,7 @@ import type {
 } from '@adaptive-astro/shared/types/astrology';
 import type { NatalChart } from '../database/models';
 import { IEphemerisCalculator } from '../core/ephemeris';
+import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared/constants/chart-points';
 import {
   orbAndDirection,
   rankDailyTransits,
@@ -91,9 +92,10 @@ export class TransitCalculator {
       location: transitLocation,
     };
 
-    // Get current planetary positions
+    // Те же доп. точки, что и в натальной карте — иначе транзитный Хирон/узлы
+    // к натальным планетам не попадают в выдачу.
     const [currentPlanets, currentHouses] = await Promise.all([
-      this.ephemeris.getPlanetsPositions(dateTime),
+      this.ephemeris.getPlanetsPositions(dateTime, DEFAULT_CHART_POINTS),
       this.ephemeris.getHouses(dateTime, natalChart.house_system || 'placidus'),
     ]);
 

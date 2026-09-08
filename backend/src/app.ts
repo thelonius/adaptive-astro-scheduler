@@ -11,6 +11,7 @@ import celestialEventsRoutes from './api/routes/celestial-events.routes';
 import { optimalTimingRoutes } from './api/routes/optimal-timing.routes';
 import { travelRoutes } from './api/routes/travel.routes';
 import { createChartRoutes } from './api/routes/chart.routes';
+import chartAnalysisRoutes from './api/routes/chart-analysis.routes';
 import { natalChartRepository, userRepository } from './database/repositories';
 import { createOptimalTimingV2Router } from './optimal-timing/v2/api/router';
 
@@ -88,6 +89,7 @@ export function createApp(): Express {
     userRepository
   );
   app.use('/api/charts', chartRoutes);
+  app.use('/api/chart-analysis', chartAnalysisRoutes);
 
   // Telegram Bot Webhook (lazy-loaded to avoid circular dependencies at startup)
   app.post('/webhook/telegram', (req, res) => {

@@ -1,0 +1,88 @@
+{
+  "stars": [
+    {
+      "id": "regulus",
+      "name": "Regulus",
+      "swe_name": "Regulus,alLeo",
+      "magnitude": 1.4,
+      "nature": "Mars-Jupiter"
+    },
+    {
+      "id": "spica",
+      "name": "Spica",
+      "swe_name": "Spica,alVir",
+      "magnitude": 0.97,
+      "nature": "Venus-Mars"
+    },
+    {
+      "id": "aldebaran",
+      "name": "Aldebaran",
+      "swe_name": "Aldebaran,alTau",
+      "magnitude": 0.86,
+      "nature": "Mars"
+    },
+    {
+      "id": "antares",
+      "name": "Antares",
+      "swe_name": "Antares,alSco",
+      "magnitude": 0.91,
+      "nature": "Mars-Jupiter"
+    },
+    {
+      "id": "fomalhaut",
+      "name": "Fomalhaut",
+      "swe_name": "Fomalhaut,alPsA",
+      "magnitude": 1.16,
+      "nature": "Venus-Mercury"
+    },
+    {
+      "id": "sirius",
+      "name": "Sirius",
+      "swe_name": "Sirius,alCMa",
+      "magnitude": -1.46,
+      "nature": "Jupiter-Mars"
+    },
+    {
+      "id": "vega",
+      "name": "Vega",
+      "swe_name": "Vega,alLyr",
+      "magnitude": 0.03,
+      "nature": "Venus-Mercury"
+    },
+    {
+      "id": "pollux",
+      "name": "Pollux",
+      "swe_name": "Pollux,beGem",
+      "magnitude": 1.14,
+      "nature": "Mars"
+    },
+    {
+      "id": "betelgeuse",
+      "name": "Betelgeuse",
+      "swe_name": "Betelgeuse,alOri",
+      "magnitude": 0.42,
+      "nature": "Mars-Mercury"
+    },
+    {
+      "id": "altair",
+      "name": "Altair",
+      "swe_name": "Altair,alAql",
+      "magnitude": 0.76,
+      "nature": "Mars-Jupiter"
+    },
+    {
+      "id": "deneb",
+      "name": "Deneb",
+      "swe_name": "Deneb,alCyg",
+      "magnitude": 1.25,
+      "nature": "Venus"
+    },
+    {
+      "id": "algol",
+      "name": "Algol",
+      "swe_name": "Algol,bePer",
+      "magnitude": 2.12,
+      "nature": "Saturn-Jupiter"
+    }
+  ]
+}

@@ -26,4 +26,7 @@ router.get('/glossary', (req, res) => controller.glossary(req, res));
 // Что вообще лежит в таблице.
 router.get('/stats', (req, res) => controller.stats(req, res));
 
+// LLM-переписывание текстов корпуса (pass-through если CORPUS_WRITER_ENABLED=false).
+router.post('/rewrite', (req, res) => controller.rewrite(req, res));
+
 export default router;

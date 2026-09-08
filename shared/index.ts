@@ -9,3 +9,4 @@ export * from './types';
 
 // Export all constants
 export * from './constants/zodiac';
+export * from './constants/chart-points';

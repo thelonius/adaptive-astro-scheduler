@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import { corpusRepository, type AspectQuery } from '../../database/repositories/corpus.repository';
+import {
+  rewriteCorpusEntries,
+  type CorpusRewriteInput,
+} from '../../services/corpus-writer.service';
 
 /**
  * Имена планет в приложении и в корпусе не совпадают: shared-типы держат
@@ -151,6 +155,52 @@ export class CorpusController {
     } catch (error) {
       console.error('❌ corpus/stats failed:', error);
       res.status(500).json({ success: false, error: 'corpus lookup failed' });
+    }
+  }
+
+  /**
+   * POST /api/corpus/rewrite
+   * body: { entries: [{ body, author, source_title, label? }] }
+   *
+   * Переписывает тексты корпуса через LLM (если CORPUS_WRITER_ENABLED=true),
+   * иначе отдаёт pass-through с rewritten_body=body.
+   */
+  async rewrite(req: Request, res: Response): Promise<void> {
+    const raw = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const entries: CorpusRewriteInput[] = [];
+    const skipped: unknown[] = [];
+
+    for (const item of raw.slice(0, 50)) {
+      const body = typeof item?.body === 'string' ? item.body.trim() : '';
+      const author = typeof item?.author === 'string' ? item.author.trim() : '';
+      const source_title =
+        typeof item?.source_title === 'string' ? item.source_title.trim() : '';
+      if (!body || !author || !source_title) {
+        skipped.push(item);
+        continue;
+      }
+      const entry: CorpusRewriteInput = { body, author, source_title };
+      if (typeof item?.label === 'string' && item.label.trim()) {
+        entry.label = item.label.trim();
+      }
+      entries.push(entry);
+    }
+
+    if (entries.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'need entries: [{ body, author, source_title, label? }]',
+        skipped,
+      });
+      return;
+    }
+
+    try {
+      const result = await rewriteCorpusEntries(entries);
+      res.json({ success: true, ...result, skipped });
+    } catch (error) {
+      console.error('❌ corpus/rewrite failed:', error);
+      res.status(500).json({ success: false, error: 'corpus rewrite failed' });
     }
   }
 }

@@ -23,6 +23,12 @@ export const NAV: NavSection[] = [
         items: [
             { path: '/natal-chart', icon: '🌟', i18nKey: 'nav.short.natalChart', fallback: 'Натальная карта' },
             { path: '/chart-library', icon: '📚', i18nKey: 'nav.short.chartLibrary', fallback: 'Библиотека карт' },
+            { path: '/synastry', icon: '💞', i18nKey: 'nav.short.synastry', fallback: 'Синастрия' },
+            { path: '/progressions', icon: '⏳', i18nKey: 'nav.short.progressions', fallback: 'Прогрессии' },
+            { path: '/draconic', icon: '🐉', i18nKey: 'nav.short.draconic', fallback: 'Драконическая' },
+            { path: '/human-design', icon: '🔶', i18nKey: 'nav.short.humanDesign', fallback: 'Human Design' },
+            { path: '/jyotish-dasha', icon: '🕉', i18nKey: 'nav.short.jyotishDasha', fallback: 'Джйотиш Даша' },
+            { path: '/navamsa', icon: '⑨', i18nKey: 'nav.short.navamsa', fallback: 'Навамша D9' },
         ],
     },
     {

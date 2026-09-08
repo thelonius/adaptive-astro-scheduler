@@ -1,0 +1,31 @@
+{
+  "nakshatras": [
+    {"id": 1, "name": "Ashwini", "name_ru": "Ашвини", "ruler": "Ketu", "start_degree": 0.0, "symbol": "🐴"},
+    {"id": 2, "name": "Bharani", "name_ru": "Бхарани", "ruler": "Venus", "start_degree": 13.333333, "symbol": "⚹"},
+    {"id": 3, "name": "Krittika", "name_ru": "Криттика", "ruler": "Sun", "start_degree": 26.666667, "symbol": "🔪"},
+    {"id": 4, "name": "Rohini", "name_ru": "Рохини", "ruler": "Moon", "start_degree": 40.0, "symbol": "🛞"},
+    {"id": 5, "name": "Mrigashira", "name_ru": "Мригашира", "ruler": "Mars", "start_degree": 53.333333, "symbol": "🦌"},
+    {"id": 6, "name": "Ardra", "name_ru": "Ардра", "ruler": "Rahu", "start_degree": 66.666667, "symbol": "💧"},
+    {"id": 7, "name": "Punarvasu", "name_ru": "Пунарвасу", "ruler": "Jupiter", "start_degree": 80.0, "symbol": "🏹"},
+    {"id": 8, "name": "Pushya", "name_ru": "Пушья", "ruler": "Saturn", "start_degree": 93.333333, "symbol": "🌸"},
+    {"id": 9, "name": "Ashlesha", "name_ru": "Ашлеша", "ruler": "Mercury", "start_degree": 106.666667, "symbol": "🐍"},
+    {"id": 10, "name": "Magha", "name_ru": "Магха", "ruler": "Ketu", "start_degree": 120.0, "symbol": "👑"},
+    {"id": 11, "name": "Purva Phalguni", "name_ru": "Пурва Пхалгуни", "ruler": "Venus", "start_degree": 133.333333, "symbol": "🛏"},
+    {"id": 12, "name": "Uttara Phalguni", "name_ru": "Уттара Пхалгуни", "ruler": "Sun", "start_degree": 146.666667, "symbol": "🛏"},
+    {"id": 13, "name": "Hasta", "name_ru": "Хаста", "ruler": "Moon", "start_degree": 160.0, "symbol": "✋"},
+    {"id": 14, "name": "Chitra", "name_ru": "Читра", "ruler": "Mars", "start_degree": 173.333333, "symbol": "💎"},
+    {"id": 15, "name": "Swati", "name_ru": "Свати", "ruler": "Rahu", "start_degree": 186.666667, "symbol": "🌿"},
+    {"id": 16, "name": "Vishakha", "name_ru": "Вишакха", "ruler": "Jupiter", "start_degree": 200.0, "symbol": "🌳"},
+    {"id": 17, "name": "Anuradha", "name_ru": "Анурадха", "ruler": "Saturn", "start_degree": 213.333333, "symbol": "🪷"},
+    {"id": 18, "name": "Jyeshtha", "name_ru": "Джйештха", "ruler": "Mercury", "start_degree": 226.666667, "symbol": "⭕"},
+    {"id": 19, "name": "Mula", "name_ru": "Мула", "ruler": "Ketu", "start_degree": 240.0, "symbol": "🦁"},
+    {"id": 20, "name": "Purva Ashadha", "name_ru": "Пурва Ашадха", "ruler": "Venus", "start_degree": 253.333333, "symbol": "🐘"},
+    {"id": 21, "name": "Uttara Ashadha", "name_ru": "Уттара Ашадха", "ruler": "Sun", "start_degree": 266.666667, "symbol": "🐘"},
+    {"id": 22, "name": "Shravana", "name_ru": "Шравана", "ruler": "Moon", "start_degree": 280.0, "symbol": "👂"},
+    {"id": 23, "name": "Dhanishtha", "name_ru": "Дхаништха", "ruler": "Mars", "start_degree": 293.333333, "symbol": "🥁"},
+    {"id": 24, "name": "Shatabhisha", "name_ru": "Шатабхиша", "ruler": "Rahu", "start_degree": 306.666667, "symbol": "⚕"},
+    {"id": 25, "name": "Purva Bhadrapada", "name_ru": "Пурва Бхадрапада", "ruler": "Jupiter", "start_degree": 320.0, "symbol": "⚰"},
+    {"id": 26, "name": "Uttara Bhadrapada", "name_ru": "Уттара Бхадрапада", "ruler": "Saturn", "start_degree": 333.333333, "symbol": "🐍"},
+    {"id": 27, "name": "Revati", "name_ru": "Ревати", "ruler": "Mercury", "start_degree": 346.666667, "symbol": "🐟"}
+  ]
+}

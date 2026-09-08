@@ -552,6 +552,14 @@ class ArabicPartResponse(BaseModel):
     interpretation_ru: str = ""
 
 
+class ArabicPartsResponse(BaseModel):
+    """Arabic parts calculated from datetime and location."""
+    part_of_fortune: ArabicPartResponse
+    part_of_spirit: ArabicPartResponse
+    part_of_eros: ArabicPartResponse
+    is_nocturnal: bool
+
+
 class ChironResponse(BaseModel):
     """Chiron response."""
     longitude: float
@@ -561,6 +569,37 @@ class ChironResponse(BaseModel):
     is_retrograde: bool
     distance_au: float
     interpretation_ru: str = ""
+
+class FixedStarResponse(BaseModel):
+    """Fixed star position response."""
+    id: str
+    name: str
+    swe_name: str
+    longitude: float
+    latitude: float
+    zodiac_sign: str
+    magnitude: Optional[float] = None
+    nature: Optional[str] = None
+
+
+class FixedStarsResponse(BaseModel):
+    """Fixed stars for a given datetime."""
+    date: str
+    stars: List[FixedStarResponse]
+
+
+class MoonNakshatraResponse(BaseModel):
+    """Vedic Moon nakshatra response."""
+    nakshatra_id: int
+    name: str
+    name_ru: str
+    ruler: str
+    symbol: str
+    pada: int = Field(..., ge=1, le=4)
+    sidereal_longitude: float
+    degree_in_nakshatra: float
+    ayanamsa: float
+    is_gandanta: bool
 
 
 @router.get("/lunar-nodes", response_model=LunarNodesResponse)
@@ -740,6 +779,142 @@ async def get_chiron(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calculating Chiron: {str(e)}")
+
+@router.get("/fixed-stars", response_model=FixedStarsResponse)
+async def get_fixed_stars(
+    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
+    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+    timezone: str = Query("UTC", description="Timezone"),
+):
+    """
+    Calculate fixed star positions (Regulus, Spica, Aldebaran, etc.).
+
+    Uses Swiss Ephemeris fixstar data. Observer coordinates are accepted for
+    API consistency with other ephemeris endpoints; star positions depend on
+    time only.
+    """
+    try:
+        from app.core.ephemeris.calculations.fixed_stars import calculate_fixed_stars
+
+        dt_obj = _parse_query_datetime(date, timezone)
+        stars = calculate_fixed_stars(dt_obj)
+
+        return FixedStarsResponse(
+            date=dt_obj.isoformat(),
+            stars=[
+                FixedStarResponse(
+                    id=star.id,
+                    name=star.name,
+                    swe_name=star.swe_name,
+                    longitude=star.longitude,
+                    latitude=star.latitude,
+                    zodiac_sign=star.zodiac_sign.value,
+                    magnitude=star.magnitude,
+                    nature=star.nature,
+                )
+                for star in stars
+            ],
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating fixed stars: {str(e)}")
+
+
+@router.get("/moon-nakshatra", response_model=MoonNakshatraResponse)
+async def get_moon_nakshatra(
+    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
+    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+    timezone: str = Query("UTC", description="Timezone"),
+):
+    """
+    Calculate the Moon's Vedic nakshatra (lunar mansion) with pada.
+
+    Uses Lahiri ayanamsa and sidereal Moon longitude. Location is accepted for
+    API consistency with other ephemeris endpoints; nakshatra depends on time only.
+    """
+    try:
+        from app.calculators.nakshatra_engine import nakshatra_engine
+
+        dt_obj = _parse_query_datetime(date, timezone)
+        result = nakshatra_engine.get_moon_nakshatra(dt_obj)
+
+        return MoonNakshatraResponse(
+            nakshatra_id=result["nakshatra_id"],
+            name=result["name"],
+            name_ru=result["name_ru"],
+            ruler=result["ruler"],
+            symbol=result["symbol"],
+            pada=result["pada"],
+            sidereal_longitude=result["sidereal_longitude"],
+            degree_in_nakshatra=result["degree_in_nakshatra"],
+            ayanamsa=result["ayanamsa"],
+            is_gandanta=result["is_gandanta"],
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating Moon nakshatra: {str(e)}")
+
+
+def _arabic_part_to_response(part) -> ArabicPartResponse:
+    return ArabicPartResponse(
+        name=part.name,
+        longitude=part.longitude,
+        zodiac_sign=part.zodiac_sign.value,
+        formula=part.formula,
+        is_nocturnal=part.is_nocturnal,
+        interpretation_ru=part.interpretation_ru,
+    )
+
+
+@router.get("/arabic-parts", response_model=ArabicPartsResponse)
+async def get_arabic_parts(
+    date: Optional[str] = Query(None, description="ISO format datetime (default: now)"),
+    latitude: float = Query(..., ge=-90, le=90, description="Latitude"),
+    longitude: float = Query(..., ge=-180, le=180, description="Longitude"),
+    timezone: str = Query("UTC", description="Timezone"),
+):
+    """
+    Calculate Arabic parts (Part of Fortune, Spirit, Eros) for a chart.
+
+    Uses ephemeris positions and the 1st-house cusp as ascendant. Day or night
+    is determined from the Sun relative to the ascendant.
+    """
+    try:
+        from app.core.ephemeris.calculations.arabic_parts import calculate_arabic_parts
+
+        dt_obj = _parse_query_datetime(date, timezone)
+        date_time = DateTime(
+            date=dt_obj,
+            timezone=timezone,
+            location=Location(latitude=latitude, longitude=longitude),
+        )
+
+        calculator = get_calculator()
+        positions = await calculator.get_planets_positions(date_time)
+        houses = await calculator.calculate_houses(date_time, HouseSystem.PLACIDUS)
+        ascendant = houses[1].cusp_longitude
+
+        parts = calculate_arabic_parts(
+            ascendant=ascendant,
+            sun=positions.sun.longitude,
+            moon=positions.moon.longitude,
+            venus=positions.venus.longitude,
+            mars=positions.mars.longitude,
+        )
+
+        return ArabicPartsResponse(
+            part_of_fortune=_arabic_part_to_response(parts["part_of_fortune"]),
+            part_of_spirit=_arabic_part_to_response(parts["part_of_spirit"]),
+            part_of_eros=_arabic_part_to_response(parts["part_of_eros"]),
+            is_nocturnal=parts["part_of_fortune"].is_nocturnal,
+        )
+
+    except EphemerisError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calculating Arabic parts: {str(e)}")
 
 
 @router.get("/part-of-fortune", response_model=ArabicPartResponse)

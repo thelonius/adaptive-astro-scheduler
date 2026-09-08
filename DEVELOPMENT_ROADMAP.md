@@ -216,30 +216,28 @@ Week 16: AstroCartography map visualization
 
 ## Backlog / Known Gaps
 
-- [ ] **Transits endpoint missing Chiron/Rahu/Ketu/Lilith** — `astro.py transits` / `day` output only returns 10 classical bodies (Sun…Pluto). Natal chart (`astro.py natal`) already computes Chiron, Rahu, Ketu, Lilith, but the transiting positions for these points aren't exposed anywhere, so transit-to-natal aspect analysis for these points (Chiron return ~50y, nodal return ~18.6y cycle, Lilith return ~8.85y) can't be computed precisely — only approximated from known orbital cycles.
-  - Fix: add Chiron/Rahu/Ketu/Lilith to the `planets`/`transits` response in the ephemeris calculator, same as natal chart already does.
-  - Found: 2026-09-07, while running birthday transit-aspect analysis for the owner (@edubnitsky) via the astro-scheduler CLI skill.
+- [x] **Transits endpoint missing Chiron/Rahu/Ketu/Lilith** — fixed 2026-09-08: `transit-calculator.ts`, `calendar-generator.ts`, Python `transit_engine.py` + `chart_service.py` now pass/include the same `rahu,ketu,lilith,chiron` points as natal.
 
-- [ ] **No Human Design (Bodygraph) support** — CLI only exposes classical Western astrology (`natal`/`transits`/`moon`/`retrogrades`). Human Design needs its own calculation: Bodygraph gates/lines/centers derived from planetary positions at birth AND at the "Design" moment (~88 solar degrees before birth, roughly 88-89 days prior), mapped through the I-Ching 64-gate wheel — not just angles/aspects like the current engine.
-  - Fix: either add a Human Design module (needs the 88°-before-birth ephemeris snapshot + gate/line/center mapping tables) to the ephemeris backend, or clearly scope it out as a separate service.
+- [x] **No Human Design (Bodygraph) support** — `POST /api/v1/chart/human-design` + Node proxy `/api/chart-analysis/human-design` + UI `/human-design` (2026-09-08). Personality + Design (~88° solar arc), gates/lines, type, profile, authority, channels.
   - Found: 2026-09-07, owner (@edubnitsky) asked for a Human Design reading; had to decline since the tool has no such data.
 
-- [ ] **No Nakshatras (Vedic lunar mansions) support** — engine is tropical Western zodiac only (12 signs × 30°). Sidereal zodiac + the 27 nakshatras (13°20' each), their ruling planets, padas, and Moon-nakshatra placement aren't computed anywhere.
-  - Fix: add sidereal/ayanamsa conversion (e.g. Lahiri) to the ephemeris layer, then map Moon (and optionally other planets) longitude to the 27-nakshatra + pada table.
+- [x] **Nakshatras (Vedic lunar mansions) support** — `GET /api/v1/ephemeris/moon-nakshatra` with Lahiri ayanamsa, 27 nakshatras + pada + ruler (2026-09-08).
   - Found: 2026-09-07, owner (@edubnitsky) asked whether nakshatras are supported; confirmed they aren't.
 
-- [ ] **No Jyotish (Vedic astrology) support** — broader than just nakshatras: needs sidereal zodiac (ayanamsa, shared prerequisite with the nakshatra item above), Vimshottari dasha (planetary period) calculations, divisional charts (vargas: D9/Navamsa at minimum, ideally D1/D9/D10), and Vedic-style aspect/yoga rules, which are structurally different from the current Western tropical aspect engine.
+- [x] **Vimshottari Dasha (Jyotish)** — `POST /api/v1/chart/vimshottari-dasha` + Node proxy `/api/chart-analysis/vimshottari-dasha` + UI `/jyotish-dasha` (2026-09-08). Mahadasha + antardasha timeline, current running period, Lahiri sidereal Moon nakshatra.
+- [x] **Navamsa D9 (Jyotish)** — `POST /api/v1/chart/navamsa` + Node proxy `/api/chart-analysis/navamsa` + UI `/navamsa` (2026-09-08). D1+D9 sidereal positions, navamsa number, vargottama flags.
+- [ ] **Jyotish vargas & yogas (remaining)** — D10 Dashamsa, Vedic-style aspect/yoga rules; D9 Navamsa + nakshatras + Vimshottari dasha now in place.
   - Fix: significant scope — likely its own module/service sharing only the raw ephemeris longitudes with the Western engine. Start with sidereal conversion + Vimshottari dasha (most commonly requested), defer vargas/yogas.
   - Found: 2026-09-07, owner (@edubnitsky) asked to add Jyotish support alongside the nakshatra request.
 
 - [ ] **Other missing techniques/systems** — surveyed with the owner (@edubnitsky) on 2026-09-07; grouped by effort:
   - Quick wins (ephemeris already computes what's needed, just missing the specific derived output):
-    - [ ] Synastry / relationship compatibility (compare two natal charts)
-    - [ ] Secondary progressions (each planet moves at its own real speed, vs. solar arc's single shared arc)
-    - [ ] Arabic parts / lots (Part of Fortune etc. — simple formula from Asc/Sun/Moon)
-    - [ ] Draconic chart (rebase zodiac to the North Node instead of 0° Aries)
+    - [x] Synastry / relationship compatibility (compare two natal charts) — `POST /api/v1/chart/synastry` + Node proxy `/api/chart-analysis/synastry` + UI `/synastry` (2026-09-08)
+    - [x] Secondary progressions (each planet moves at its own real speed, vs. solar arc's single shared arc) — `POST /api/v1/chart/progressions` + Node proxy `/api/chart-analysis/progressions` + UI `/progressions` (2026-09-08)
+    - [x] Arabic parts / lots (Part of Fortune etc. — simple formula from Asc/Sun/Moon) — `GET /api/v1/ephemeris/arabic-parts` (2026-09-08)
+    - [x] Draconic chart (rebase zodiac to the North Node instead of 0° Aries) — `POST /api/v1/chart/draconic` + Node proxy `/api/chart-analysis/draconic` + UI `/draconic` (2026-09-08)
   - Needs extra data but not a full separate module:
-    - [ ] Fixed stars (needs a star catalog — Regulus, Spica, etc. — not present)
+    - [x] Fixed stars — `GET /api/v1/ephemeris/fixed-stars` with 12-key catalog via Swiss Ephemeris sefstars.txt (2026-09-08)
     - [ ] Uranian/Hamburg school (hypothetical points: Cupido, Hades, Zeus, Kronos, etc. — not in current ephemeris)
     - [ ] Horary astrology (chart-for-the-moment-of-the-question — `transits` already gives the data, just needs horary-specific interpretation rules)
   - Separate large systems (own engine, essentially unrelated to current Western tropical core):
@@ -249,7 +247,7 @@ Week 16: AstroCartography map visualization
     - [ ] Mayan calendar (Tzolkin)
   - Found: 2026-09-08, owner (@edubnitsky) asked what other systems/techniques exist beyond what's already listed, then asked to backlog the full list.
 
-- [ ] **LLM Writer mandatory for corpus usage (copyright)** — The text corpus (26M symbols) is copyrighted (Глоба, Подводный, Зараев, Сакоян, Вронский et al.). Directly outputting corpus text violates copyright. Before any production use of corpus interpretations, an LLM-based rewriting step is legally required: the model must receive only the retrieved corpus fragments and generate original phrasing, citing sources. Without this, the system cannot be legally deployed.
+- [x] **LLM Writer mandatory for corpus usage (copyright)** — MVP: `POST /api/corpus/rewrite` + `corpus-writer.service.ts` (NVIDIA NIM, LRU cache, `CORPUS_WRITER_ENABLED` flag). Pass-through when disabled; wire into UI surfaces next (2026-09-08).
   - Found: 2026-09-08, owner (@edubnitsky) stated work on corpus is impossible without this due to copyright concerns.
 
 ---
