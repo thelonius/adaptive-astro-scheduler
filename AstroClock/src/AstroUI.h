@@ -49,6 +49,7 @@ class AstroUI {
   bool _useLive = false;
   const uint16_t* _signColors = nullptr;
   bool _moonVoid = false;
+  float _voidBright = 1.0f;
   int _moonSignIndex = -1;
   float _moonPhase = 1.0f;
   bool _moonWaxing = true;
@@ -86,6 +87,15 @@ class AstroUI {
     return (r << 11) | (g << 5) | b;
   }
 
+ private:
+  void blitPlanetGlyph(int gi, int x, int y, uint16_t color) {
+    const uint16_t* g = glyphs::planetGlyphs() + gi * 13;
+    for (int row = 0; row < 13; row++)
+      for (int col = 0; col < 13; col++)
+        if (g[row] & (1 << (12 - col)))
+          _gfx->drawPixel(x - 6 + col, y - 6 + row, color);
+  }
+
  public:
   // Растр 13x13 из glyphs.h. Параметр s остался от прежней версии на примитивах
   // и больше не меняет размер: на тринадцати пикселях глиф либо читается, либо
@@ -112,11 +122,14 @@ class AstroUI {
         _gfx->fillCircle(x, y, 2, color);
         return;
     }
-    const uint16_t* g = glyphs::planetGlyphs() + gi * 13;
-    for (int row = 0; row < 13; row++)
-      for (int col = 0; col < 13; col++)
-        if (g[row] & (1 << (12 - col)))
-          _gfx->drawPixel(x - 6 + col, y - 6 + row, color);
+    blitPlanetGlyph(gi, x, y, color);
+  }
+
+  // Растр по прямому индексу glyphs::PlanetGlyph, в обход выбора по текущей
+  // фазе Луны. Нужен легенде: там оба серпа показываются рядом сразу, а не
+  // только тот, что сейчас на небе.
+  void drawPlanetGlyphByIndex(int gi, int x, int y, uint16_t color) {
+    blitPlanetGlyph(gi, x, y, color);
   }
 
   // Стандартные пиктограммы аспектов вместо ASCII-заглушек в списке транзитов:
@@ -326,12 +339,20 @@ class AstroUI {
   }
 
  public:
+  // Знак вне кольца: легенде нужен образец глифа рядом с подписью
+  void drawSign(int index, int x, int y, uint16_t color) {
+    drawSignGlyph(index, x, y, color);
+  }
+
   explicit AstroUI(lgfx::v1::LovyanGFX* gfx) : _gfx(gfx) {}
 
   // Цель отрисовки меняется на спрайт, когда тот удалось создать
   void setTarget(lgfx::v1::LovyanGFX* gfx) { _gfx = gfx; }
 
   void setMoonVoid(bool isVoid) { _moonVoid = isVoid; }
+  // Фаза дыхания кольца VoC, 0..1. Задаётся перед отрисовкой кадра, чтобы
+  // кольцо в спрайте совпадало по яркости с прямой подрисовкой pulseVoidRing()
+  void setVoidBright(float b) { _voidBright = b; }
   void setMoonSignIndex(int index) { _moonSignIndex = index; }
   void setMoonPhase(float phase) { _moonPhase = phase; }
   void setMoonWaxing(bool waxing) { _moonWaxing = waxing; }
@@ -403,28 +424,33 @@ class AstroUI {
     if (highlight) _gfx->drawCircle(x, y, 8, dim(color, 1, 2));
     drawPlanetGlyph(body, x, y, color, 5);
     if (retro) _gfx->fillCircle(x, y + 8, 1, color);
-    // Луна без курса: статичное кольцо вместо мигания. Мигание перерисовывало
-    // весь кадр дважды в секунду и мешало разглядеть саму карту
-    if (body == ephem::MOON && _moonVoid) {
-      _gfx->drawCircle(x, y, 10, dim(color, 3, 5));
-      _gfx->drawCircle(x, y, 11, dim(color, 1, 5));
-    }
+    // Луна без курса: кольцо рисуется той же фазой дыхания, что и прямая
+    // подрисовка pulseVoidRing(). Раньше в кадре оно было статичным, и при
+    // наложившихся глифах кадр из спрайта уходил на панель пять раз в секунду,
+    // каждый раз сбивая яркость кольца — получалось мигание вместо дыхания
+    if (body == ephem::MOON && _moonVoid) voidRing(_gfx, x, y, color, _voidBright);
   }
 
+ private:
+  // Плавная яркость, а не пять ступеней dim(): на двадцати шагах за период
+  // ступени читались как рывки
+  static void voidRing(lgfx::v1::LovyanGFX* g, int x, int y, uint16_t color,
+                       float bright) {
+    uint16_t c = fade(color, 0.25f + 0.75f * bright);
+    g->drawCircle(x, y, 10, c);
+    g->drawCircle(x, y, 11, fade(c, 0.4f));
+  }
+
+ public:
   // Дыхание кольца безкурсовой Луны. Рисуется прямо в переданную панель, в
   // обход спрайта: кольцо это два десятка пикселей контура, гонять ради него
-  // целый кадр через pushSprite незачем. Раз в минуту полный render()
-  // перерисует спрайт и на секунду вернёт кольцо к базовой яркости — не
-  // страшно, дыхание тут же продолжится с той же геометрией.
+  // целый кадр через pushSprite незачем.
   void pulseVoidRing(lgfx::v1::LovyanGFX* panel, float degree, uint16_t color,
                      float bright) {
     float rad = getAngle(degree);
     int x = layout::CX + layout::R_TRANSIT * cos(rad);
     int y = layout::CY + layout::R_TRANSIT * sin(rad);
-    uint8_t outer = (uint8_t)(1.0f + bright * 4.0f);
-    uint8_t inner = outer > 1 ? outer - 1 : 1;
-    panel->drawCircle(x, y, 10, dim(color, outer, 5));
-    panel->drawCircle(x, y, 11, dim(color, inner, 5));
+    voidRing(panel, x, y, color, bright);
   }
 
   // Натальная планета на внутреннем кольце, приглушённая: она фон, а событие
