@@ -7,7 +7,7 @@ import type {
   HousesApiResponse,
   PlanetaryHoursApiResponse,
 } from '@adaptive-astro/shared/types';
-import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared/constants/chart-points';
+import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared';
 import { IEphemerisCalculator } from '../core/ephemeris/interface';
 import { LunarDayEntity } from '../core/entities/lunar-day';
 import { interpretationService } from './astrology/interpretation.service';

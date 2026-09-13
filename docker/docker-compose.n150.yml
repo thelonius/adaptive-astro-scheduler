@@ -12,9 +12,11 @@
 # Перед первым запуском проверить, что порт из ASTRO_BIND_PORT свободен:
 #   ss -lntp | grep 3000
 #
-# Запуск:
-#   cd ~/apps/astro && docker compose -f docker/docker-compose.n150.yml pull
-#   docker compose -f docker/docker-compose.n150.yml up -d
+# Запуск / обновление:
+#   cd ~/apps/astro && ./scripts/deploy-n150.sh
+#   # или вручную: pull + up -d (см. docker/.env.n150.example)
+#
+# SSH: developer@95.165.10.115:22299, ключ ~/.ssh/id_ed25519_n150_server2_developer
 
 services:
   postgres:

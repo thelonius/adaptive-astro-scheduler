@@ -2,9 +2,29 @@
 
 ## Прод
 
-- Хост: `root@31.130.130.11` (Timeweb, Амстердам), репо в `/root/adaptive-astro-scheduler`, ключ `~/.ssh/cesium_replica_key`
+Два хоста. **OpenClaw и API-инструменты — n150**, веб-морда — Амстердам.
+
+### n150 / Mattahu (API для openclaw) — основной для агента
+
+- **SSH**: `developer@95.165.10.115`, порт **22299**
+- **Ключ**: `~/.ssh/id_ed25519_n150_server2_developer` (Windows: `%USERPROFILE%\.ssh\id_ed25519_n150_server2_developer`)
+- **Чекout**: `~/apps/astro`, compose — [docker/docker-compose.n150.yml](docker/docker-compose.n150.yml)
+- **API**: `http://127.0.0.1:3000` на loopback (openclaw с той же машины). Frontend нет
+- **Деплой**: `./scripts/deploy-n150.sh` или вручную `pull` + `up` по [docker/.env.n150.example](docker/.env.n150.example). CI (`deploy.yml`) сюда **не** ходит
+- **Образы**: `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,ephemeris}:<git-sha>`
+
+```bash
+ssh -i ~/.ssh/id_ed25519_n150_server2_developer -p 22299 developer@95.165.10.115
+cd ~/apps/astro && docker compose -f docker/docker-compose.n150.yml ps
+curl -s http://127.0.0.1:3000/health
+```
+
+### Амстердам (веб + полный стек)
+
+- Хост: `root@31.130.130.11` (Timeweb), репо в `/root/adaptive-astro-scheduler`, ключ `~/.ssh/cesium_replica_key`
 - Стек: `docker/docker-compose.prod.yml` (backend, frontend, ephemeris, postgres, redis)
 - Публичный адрес: `https://astro-31-130-130-11.sslip.io:4443`, health — `/health` (отдельный `location` в [docker/nginx.conf](docker/nginx.conf), иначе путь уходит в SPA-fallback)
+- Деплой: GitHub Actions [deploy.yml](.github/workflows/deploy.yml) (сейчас SSH на этот хост часто недоступен из CI)
 
 Старый хост `user1@176.123.166.252` больше не используется: астро-стек оттуда удалён (2026-07, ни контейнеров, ни volume'ов), на боксе остались чужие сервисы.
 

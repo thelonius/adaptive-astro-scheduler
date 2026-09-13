@@ -8,7 +8,7 @@ import type {
 } from '@adaptive-astro/shared/types/astrology';
 import type { NatalChart } from '../database/models';
 import { IEphemerisCalculator } from '../core/ephemeris';
-import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared/constants/chart-points';
+import { DEFAULT_CHART_POINTS } from '@adaptive-astro/shared';
 import {
   orbAndDirection,
   rankDailyTransits,
