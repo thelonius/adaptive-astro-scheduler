@@ -1,20 +1,26 @@
-# SearXNG на n150 — доступ с другого клиента
+# SearXNG на n150 — доступ с разных клиентов
 
-Краткая шпаргалка. Файл в репо: `docker/searxng/REMOTE_ACCESS.md`
+Сервер: **n150** (`95.165.10.115:22299`, LAN `192.168.1.86`).
 
-## Суть
-
-- Инстанс: **n150** (`developer@95.165.10.115:22299`)
-- На сервере SearXNG слушает **только** `127.0.0.1:8888` (loopback)
-- В интернет и в LAN **не открыт** — так и должно быть (чужой сервер Mattahu)
-- **OpenClaw / Claude на n150** ходят сами, туннель не нужен
-- **Mac / другой ПК** — только через **SSH-туннель**
+Три способа подключения — выбирайте по ситуации.
 
 ---
 
-## Быстрый туннель с Mac
+## Способ 1 — на самом n150 (OpenClaw, Claude на сервере)
 
-Отдельный терминал, пока работаете:
+**URL:** `http://127.0.0.1:8888`  
+**Туннель / пароль:** не нужны
+
+```bash
+curl -s http://127.0.0.1:8888/healthz
+python3 ~/.agents/skills/websearch/search.py search "тест"
+```
+
+---
+
+## Способ 2 — SSH-туннель (из интернета, без открытия портов)
+
+Подходит: Mac, Cursor, Termux на телефоне, любой ПК с SSH-ключом.
 
 ```bash
 ssh -N -L 8888:127.0.0.1:8888 \
@@ -22,24 +28,16 @@ ssh -N -L 8888:127.0.0.1:8888 \
   -p 22299 developer@95.165.10.115
 ```
 
-Или из репо:
+Или: `./scripts/searxng-tunnel-mac.sh`
+
+**Клиент видит:** `http://127.0.0.1:8888`
 
 ```bash
-./scripts/searxng-tunnel-mac.sh
+export SEARXNG_URL=http://127.0.0.1:8888
+python3 skills/websearch/search.py search "запрос" -n 5
 ```
 
-Проверка:
-
-```bash
-curl -s http://127.0.0.1:8888/healthz
-curl -s "http://127.0.0.1:8888/search?q=test&format=json" | head -c 200
-```
-
-Браузер: **http://127.0.0.1:8888**
-
----
-
-## Постоянно: `~/.ssh/config`
+В `~/.ssh/config`:
 
 ```sshconfig
 Host n150
@@ -47,79 +45,113 @@ Host n150
   Port 22299
   User developer
   IdentityFile ~/.ssh/id_ed25519_n150_server2_developer
-  ServerAliveInterval 60
   LocalForward 8888 127.0.0.1:8888
-  LocalForward 18789 127.0.0.1:18789
 ```
-
-`ssh n150` — туннели поднимаются сами. Закрыли SSH — с Mac SearXNG снова недоступен.
 
 ---
 
-## Скилл websearch с Mac
+## Способ 3 — HTTP с паролем (несколько клиентов без SSH)
 
-1. Скопировать с сервера (один раз):
+Подходит: Mac, телефон, Cursor **в домашней сети Mattahu** или через **VPN в 192.168.1.x**.
 
-```bash
-mkdir -p ~/.agents/skills
-scp -r -P 22299 -i ~/.ssh/id_ed25519_n150_server2_developer \
-  developer@95.165.10.115:~/.agents/skills/websearch \
-  ~/.agents/skills/
-```
-
-2. Держать туннель (см. выше).
-
-3. Поиск:
+На сервере один раз:
 
 ```bash
-export SEARXNG_URL=http://127.0.0.1:8888   # уже дефолт в скрипте
-python3 ~/.agents/skills/websearch/search.py search "запрос" -n 5
-python3 ~/.agents/skills/websearch/search.py fetch "https://example.com"
+cd ~/apps/astro/docker/searxng
+# в .env добавить:
+#   SEARXNG_CLIENT_BIND=192.168.1.86:8890
+#   SEARXNG_CLIENT_USER=search
+#   SEARXNG_CLIENT_PASSWORD=ваш_длинный_пароль
+./init-clients.sh
+docker compose -f docker-compose.yml --profile clients up -d
 ```
 
-`search` — через SearXNG (нужен туннель).  
-`fetch` — напрямую в интернет с вашего Mac, не через SearXNG.
+**Клиенты подключаются к:**
 
----
+| Параметр | Значение |
+|----------|----------|
+| URL | `http://192.168.1.86:8890` |
+| Логин | из `SEARXNG_CLIENT_USER` |
+| Пароль | из `SEARXNG_CLIENT_PASSWORD` |
 
-## HTTP API (любой клиент)
+### Mac / Linux / Termux
 
-При открытом туннеле:
+```bash
+export SEARXNG_URL=http://192.168.1.86:8890
+export SEARXNG_USER=search
+export SEARXNG_PASSWORD=ваш_пароль
+
+curl -u "$SEARXNG_USER:$SEARXNG_PASSWORD" http://192.168.1.86:8890/healthz
+python3 skills/websearch/search.py search "тест" -n 3
+```
+
+### Cursor / агенты
+
+В `~/.zshrc` или `.env` проекта:
+
+```bash
+export SEARXNG_URL=http://192.168.1.86:8890
+export SEARXNG_USER=search
+export SEARXNG_PASSWORD=ваш_пароль
+```
+
+Скилл: скопировать `skills/websearch/` из репо или с n150.
+
+### Браузер
+
+`http://192.168.1.86:8890` — запросит логин/пароль.
+
+### HTTP API
 
 ```http
-GET http://127.0.0.1:8888/search?q=запрос&format=json&categories=general
+GET http://192.168.1.86:8890/search?q=запрос&format=json
+Authorization: Basic base64(user:password)
 ```
 
-Параметры: `q`, `format=json`, `categories`, `language`.
+---
+
+## Сравнение
+
+| Способ | Кто | Нужен SSH | Нужен LAN/VPN | Пароль |
+|--------|-----|-----------|---------------|--------|
+| localhost:8888 | OpenClaw на n150 | нет | нет | нет |
+| SSH-туннель → :8888 | Mac, телефон, Cursor | **да** | нет | нет |
+| :8890 Basic Auth | все в LAN/VPN | нет | **да** | **да** |
 
 ---
 
-## Кто куда ходит
+## Termux (Android)
 
-| Клиент | URL | Туннель |
-|--------|-----|---------|
-| OpenClaw на n150 | `http://127.0.0.1:8888` | нет |
-| Claude Code на n150 | тот же + скилл websearch | нет |
-| Mac / Cursor / браузер | `http://127.0.0.1:8888` после SSH | **да** |
+1. SSH-ключ в `~/.ssh/`
+2. **Вариант A:** туннель (способ 2) — работает из любой сети
+3. **Вариант B:** Wi‑Fi Mattahu → способ 3 без туннеля
 
----
-
-## Чего не делать
-
-- Не публиковать `8888` на `0.0.0.0` / в интернет
-- Не открывать порт на роутере без auth — нагрузка и злоупотребления
-
-Если нужен доступ без ручного SSH: `autossh` с тем же LocalForward, или VPN в сеть Mattahu + ssh на n150.
+```bash
+pkg install openssh python
+scp -r -P 22299 -i ~/.ssh/id_ed25519_n150_server2_developer \
+  developer@95.165.10.115:~/apps/astro/skills/websearch ~/.agents/skills/
+```
 
 ---
 
-## На сервере (обслуживание)
+## Безопасность
+
+- **8888** — только loopback, не трогать
+- **8890** — только LAN (`192.168.1.86`), не `0.0.0.0` без необходимости
+- Не открывать порты на роутере в интернет без VPN
+- Пароль клиентов — отдельный, длинный; не коммитить `.env`
+
+Из интернета без VPN: используйте **способ 2** (SSH-туннель).
+
+---
+
+## Обслуживание
 
 ```bash
 cd ~/apps/astro
 ./scripts/deploy-searxng-n150.sh
 docker logs -f openclaw_searxng
-curl -s http://127.0.0.1:8888/healthz
+docker logs -f openclaw_searxng_gateway   # если включён profile clients
 ```
 
-Конфиг: `docker/searxng/`, контейнер `openclaw_searxng`.
+Контейнеры: `openclaw_searxng`, `openclaw_searxng_gateway`.

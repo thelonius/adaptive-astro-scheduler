@@ -1,13 +1,10 @@
 # Приватный SearXNG для openclaw на n150.
 #
-# Слушает 127.0.0.1:8888 и наружу не публикуется: это поисковый бэкенд
-# агента, а не сайт. Публичные инстансы SearXNG почти все режут ?format=json
-# и лимитируют по IP, поэтому свой.
+# 127.0.0.1:8888 — только loopback (OpenClaw, Claude на сервере).
+# :8890 + profile clients — HTTP Basic Auth для Mac/телефона/Cursor в LAN (см. REMOTE_ACCESS.md).
 #
 # Старт:  ./scripts/deploy-searxng-n150.sh
-#         docker compose -f docker/searxng/docker-compose.yml up -d
-# Логи:   docker logs -f openclaw_searxng
-# Проверка: curl -s http://127.0.0.1:8888/healthz
+# Клиенты: ./docker/searxng/init-clients.sh && docker compose -f docker/searxng/docker-compose.yml --profile clients up -d
 
 services:
   searxng:
@@ -30,3 +27,25 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    networks:
+      - searxng_internal
+
+  searxng-gateway:
+    profiles: [clients]
+    image: caddy:2-alpine
+    container_name: openclaw_searxng_gateway
+    restart: unless-stopped
+    ports:
+      - "${SEARXNG_CLIENT_BIND:-127.0.0.1:8890}:8890"
+    volumes:
+      - ./Caddyfile.clients:/etc/caddy/Caddyfile:ro
+    depends_on:
+      searxng:
+        condition: service_healthy
+    mem_limit: 64m
+    networks:
+      - searxng_internal
+
+networks:
+  searxng_internal:
+    driver: bridge

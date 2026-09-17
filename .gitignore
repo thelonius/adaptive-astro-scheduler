@@ -20,6 +20,8 @@ out/
 .env
 docker/sing-box-proxy/.env
 docker/sing-box-proxy/config.json
+docker/searxng/.env
+docker/searxng/Caddyfile.clients
 *.bak
 .env.local
 .env.development.local

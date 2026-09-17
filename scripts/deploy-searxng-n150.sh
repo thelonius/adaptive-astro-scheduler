@@ -27,6 +27,7 @@ set -euo pipefail
 cd ${REMOTE_DIR}
 SEARXNG_DIR="docker/searxng"
 COMPOSE="docker compose -f \$SEARXNG_DIR/docker-compose.yml"
+COMPOSE_CLIENTS="\$COMPOSE --profile clients"
 OLD_DIR="\${HOME}/apps/searxng"
 
 echo "--- git sync ---"
@@ -46,6 +47,22 @@ fi
 echo "--- pull & up ---"
 \$COMPOSE pull
 \$COMPOSE up -d --remove-orphans
+
+if grep -q '^SEARXNG_CLIENT_PASSWORD=.\+' "\$SEARXNG_DIR/.env" 2>/dev/null; then
+  echo "--- clients gateway (Basic Auth) ---"
+  chmod +x "\$SEARXNG_DIR/init-clients.sh"
+  "\$SEARXNG_DIR/init-clients.sh"
+  \$COMPOSE_CLIENTS pull
+  \$COMPOSE_CLIENTS up -d --remove-orphans
+  BIND=\$(grep -m1 '^SEARXNG_CLIENT_BIND=' "\$SEARXNG_DIR/.env" | cut -d= -f2-)
+  echo "Клиентский URL: http://\${BIND%:*}:\${BIND#*:} (логин в .env SEARXNG_CLIENT_USER)"
+else
+  echo "Клиентский шлюз выключен — задайте SEARXNG_CLIENT_PASSWORD в \$SEARXNG_DIR/.env и init-clients.sh"
+fi
+
+echo "--- sync websearch skill ---"
+mkdir -p ~/.agents/skills
+rsync -a --delete skills/websearch/ ~/.agents/skills/websearch/ 2>/dev/null || cp -a skills/websearch ~/.agents/skills/
 
 echo "--- status ---"
 \$COMPOSE ps
