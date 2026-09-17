@@ -18,6 +18,8 @@ out/
 
 # Environment variables
 .env
+docker/sing-box-proxy/.env
+docker/sing-box-proxy/config.json
 *.bak
 .env.local
 .env.development.local

@@ -13,6 +13,7 @@
 - **Деплой**: `./scripts/deploy-n150.sh` или вручную `pull` + `up` по [docker/.env.n150.example](docker/.env.n150.example). CI (`deploy.yml`) сюда **не** ходит
 - **Образы**: `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,ephemeris}:<git-sha>`
 - **SearXNG**: `http://127.0.0.1:8888` на loopback (скилл websearch у openclaw). Конфиг: [docker/searxng/](docker/searxng/), деплой: `./scripts/deploy-searxng-n150.sh`
+- **VLESS-прокси** (Claude / OpenClaw → интернет): локально `http://127.0.0.1:7890`. Конфиг: [docker/sing-box-proxy/](docker/sing-box-proxy/), секрет `VLESS_URI` в `.env`, деплой: `./scripts/deploy-sing-box-n150.sh`. Запуск Claude: `scripts/claude-n150.sh`
 
 ```bash
 ssh -i ~/.ssh/id_ed25519_n150_server2_developer -p 22299 developer@95.165.10.115

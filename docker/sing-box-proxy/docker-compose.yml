@@ -1,0 +1,11 @@
+# Локальный HTTP/SOCKS клиент VLESS → sing-box на n150.
+services:
+  sing-box:
+    image: ghcr.io/sagernet/sing-box:v1.11.11
+    container_name: openclaw_singbox
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.json:/etc/sing-box/config.json:ro
+    command: ["run", "-c", "/etc/sing-box/config.json", "-D", "/var/lib/sing-box"]
+    mem_limit: 128m
