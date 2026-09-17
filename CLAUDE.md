@@ -12,11 +12,14 @@
 - **API**: `http://127.0.0.1:3000` на loopback (openclaw с той же машины). Frontend нет
 - **Деплой**: `./scripts/deploy-n150.sh` или вручную `pull` + `up` по [docker/.env.n150.example](docker/.env.n150.example). CI (`deploy.yml`) сюда **не** ходит
 - **Образы**: `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,ephemeris}:<git-sha>`
+- **SearXNG**: `http://127.0.0.1:8888` на loopback (скилл websearch у openclaw). Конфиг: [docker/searxng/](docker/searxng/), деплой: `./scripts/deploy-searxng-n150.sh`
 
 ```bash
 ssh -i ~/.ssh/id_ed25519_n150_server2_developer -p 22299 developer@95.165.10.115
 cd ~/apps/astro && docker compose -f docker/docker-compose.n150.yml ps
 curl -s http://127.0.0.1:3000/health
+curl -s http://127.0.0.1:8888/healthz
+python3 ~/.agents/skills/websearch/search.py search "тест" -n 3
 ```
 
 ### Амстердам (веб + полный стек)
