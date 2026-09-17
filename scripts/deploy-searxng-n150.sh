@@ -27,7 +27,7 @@ set -euo pipefail
 cd ${REMOTE_DIR}
 SEARXNG_DIR="docker/searxng"
 COMPOSE="docker compose -f \$SEARXNG_DIR/docker-compose.yml"
-OLD_DIR="${OLD_SEARXNG_DIR}"
+OLD_DIR="\${HOME}/apps/searxng"
 
 echo "--- git sync ---"
 git fetch origin main
@@ -49,6 +49,12 @@ echo "--- pull & up ---"
 
 echo "--- status ---"
 \$COMPOSE ps
+for _ in \$(seq 1 30); do
+  if curl -fsS http://127.0.0.1:8888/healthz >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
 curl -sf http://127.0.0.1:8888/healthz
 echo
 python3 ~/.agents/skills/websearch/search.py search "test searxng" -n 2
