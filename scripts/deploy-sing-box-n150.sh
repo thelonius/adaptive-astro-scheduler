@@ -14,6 +14,16 @@ if [[ ! -f "$SSH_KEY" ]]; then
   exit 1
 fi
 
+ssh -i "$SSH_KEY" -p "$SSH_PORT" -o StrictHostKeyChecking=no "${SSH_USER}@${SSH_HOST}" bash -s <<REMOTE
+set -euo pipefail
+cd ${REMOTE_DIR}
+PROXY_DIR="docker/sing-box-proxy"
+COMPOSE="docker compose -f \$PROXY_DIR/docker-compose.yml"
+
+git fetch origin main
+git reset --hard origin/main
+REMOTE
+
 if [[ -f "$LOCAL_ENV" ]] && grep -q '^VLESS_URI=.\+' "$LOCAL_ENV"; then
   echo "Копирую локальный docker/sing-box-proxy/.env на сервер"
   scp -i "$SSH_KEY" -P "$SSH_PORT" -o StrictHostKeyChecking=no \
@@ -25,9 +35,6 @@ set -euo pipefail
 cd ${REMOTE_DIR}
 PROXY_DIR="docker/sing-box-proxy"
 COMPOSE="docker compose -f \$PROXY_DIR/docker-compose.yml"
-
-git fetch origin main
-git reset --hard origin/main
 
 if [[ ! -f "\$PROXY_DIR/.env" ]] || ! grep -q '^VLESS_URI=.\+' "\$PROXY_DIR/.env"; then
   echo "Нет VLESS_URI в \$PROXY_DIR/.env" >&2
