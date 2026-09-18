@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Переавторизация Anthropic для OpenClaw на n150.
+# Переавторизация Anthropic для OpenClaw на n150 (OAuth device code).
 #
-# Device code (код вводится на claude.ai):
 #   ./scripts/openclaw-auth-n150.sh
 #
-# API key без браузера:
-#   openclaw models auth login --provider anthropic --help
+# API key (без OAuth) — отдельный скрипт:
+#   OPENCLAW_PROVIDER=anthropic OPENCLAW_API_KEY=sk-ant-... ./scripts/openclaw-provider-key-n150.sh
+#
+# Другие провайдеры с ключом (rusgpt, nim, openai, …):
+#   ./scripts/openclaw-provider-key-n150.sh <provider> <api-key>
+#   ./scripts/openclaw-status-n150.sh
 
 set -euo pipefail
 
