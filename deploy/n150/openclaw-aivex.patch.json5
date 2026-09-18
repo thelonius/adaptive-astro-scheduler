@@ -1,0 +1,33 @@
+// OpenClaw: провайдер AIvex (OpenAI-compatible).
+// baseUrl: https://api.aivex.work/v1
+// Ключ: scripts/openclaw-aivex-n150.sh
+{
+  models: {
+    providers: {
+      aivex: {
+        baseUrl: "https://api.aivex.work/v1",
+        apiKey: "placeholder",
+        api: "openai-completions",
+        models: [
+          {
+            id: "claude-sonnet-4-5",
+            name: "Claude Sonnet 4.5 (aivex)",
+            reasoning: true,
+            input: ["text", "image"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 200000,
+            maxTokens: 64000,
+            api: "openai-completions",
+          },
+        ],
+      },
+    },
+  },
+  agents: {
+    defaults: {
+      models: {
+        "aivex/claude-sonnet-4-5": {},
+      },
+    },
+  },
+}

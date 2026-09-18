@@ -14,7 +14,7 @@
 - **Образы**: `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,ephemeris}:<git-sha>`
 - **SearXNG**: `http://127.0.0.1:8888` loopback (OpenClaw на n150); клиенты: SSH-туннель `:8888` или LAN `http://192.168.1.86:8890` (Basic Auth). [docker/searxng/REMOTE_ACCESS.md](docker/searxng/REMOTE_ACCESS.md), деплой: `./scripts/deploy-searxng-n150.sh`, туннель: `./scripts/searxng-tunnel-mac.sh`, скилл: [skills/websearch/](skills/websearch/)
 - **VLESS-прокси** (Claude / OpenClaw → интернет): локально `http://127.0.0.1:7890`. Конфиг: [docker/sing-box-proxy/](docker/sing-box-proxy/), секрет `VLESS_URI` в `.env`, деплой: `./scripts/deploy-sing-box-n150.sh`. Запуск Claude: `scripts/claude-n150.sh`
-- **Вход Claude на n150** (без браузера на сервере): с Mac `./scripts/n150-claude-auth-from-mac.sh` — ссылку открыть на Mac/телефоне, подтвердить email. OpenClaw: `scripts/openclaw-auth-n150.sh` (device code). Опционально Chromium: `./scripts/install-browser-n150.sh`
+- **Вход Claude на n150** (без браузера на сервере): с Mac `./scripts/n150-claude-auth-from-mac.sh` — ссылку открыть на Mac/телефоне, подтвердить email. OpenClaw Anthropic OAuth: `scripts/openclaw-auth-n150.sh`. AIvex (ключ): `OPENCLAW_API_KEY=... ./scripts/openclaw-aivex-n150.sh` (`https://api.aivex.work/v1`). Статус OpenClaw: `./scripts/openclaw-status-n150.sh`. Опционально Chromium: `./scripts/install-browser-n150.sh`
 
 ```bash
 ssh -i ~/.ssh/id_ed25519_n150_server2_developer -p 22299 developer@95.165.10.115

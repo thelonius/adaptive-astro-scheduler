@@ -8,6 +8,8 @@
 #
 # Другие провайдеры с ключом (rusgpt, nim, openai, …):
 #   ./scripts/openclaw-provider-key-n150.sh <provider> <api-key>
+# AIvex (OpenAI-compatible, https://api.aivex.work/v1):
+#   OPENCLAW_API_KEY=sk-... ./scripts/openclaw-aivex-n150.sh
 #   ./scripts/openclaw-status-n150.sh
 
 set -euo pipefail
