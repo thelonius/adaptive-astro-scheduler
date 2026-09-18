@@ -4,7 +4,8 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-if curl -fsS -o /dev/null --max-time 3 http://127.0.0.1:7890 2>/dev/null; then
+# HTTP-прокси отвечает 400 на GET без целевого URL — проверяем через -x, как ensure.sh
+if curl -fsS -x http://127.0.0.1:7890 -o /dev/null --max-time 5 https://1.1.1.1 2>/dev/null; then
   # shellcheck source=/dev/null
   source "$DIR/scripts/n150-proxy-env.sh"
 elif [[ -f "$DIR/docker/sing-box-proxy/config.json" ]]; then
