@@ -10,8 +10,8 @@
         api: "openai-completions",
         models: [
           {
-            id: "claude-sonnet-4-5",
-            name: "Claude Sonnet 4.5 (aivex)",
+            id: "claude-sonnet-5",
+            name: "Claude Sonnet 5 (aivex)",
             reasoning: true,
             input: ["text", "image"],
             cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -26,7 +26,7 @@
   agents: {
     defaults: {
       models: {
-        "aivex/claude-sonnet-4-5": {},
+        "aivex/claude-sonnet-5": {},
       },
     },
   },
