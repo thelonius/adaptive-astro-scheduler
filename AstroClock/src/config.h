@@ -58,12 +58,12 @@
 #endif
 
 // --- сеть ------------------------------------------------------------------
-// Приходят из secrets.ini. Если его нет, стек WiFi в образ не попадает вообще:
-// проверка препроцессорная, а не рантаймовая, иначе линкер всё равно втянет
-// lwip и mbedtls на четыреста с лишним килобайт.
+// Стек WiFi линкуется всегда: креды приходят из NVS (BLE WiFi Config) и/или
+// из build-флагов ASTRO_WIFI_SSID. Без SSID ни там ни там WiFi не поднимается,
+// статус BLE остаётся UNSUPPORTED.
 
-#ifdef WIFI_SSID
 #define ASTRO_USE_WIFI 1
+#ifdef WIFI_SSID
 #ifndef WIFI_PASS
 #define WIFI_PASS ""
 #endif

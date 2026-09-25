@@ -20,6 +20,7 @@
 namespace ble {
 
 using WifiCommandFn = void (*)(uint8_t cmd);
+using WifiConfigFn = void (*)(uint8_t opcode, const uint8_t* payload, size_t len);
 using WifiStatusFn = uint8_t (*)();
 using StatusTextFn = void (*)(const char*);
 
@@ -27,9 +28,11 @@ namespace detail {
 
 constexpr const char* SERVICE_UUID = "6b4a6604-c005-4c8e-bd10-66de4f397125";
 constexpr const char* CMD_UUID = "4452159d-6713-4a4a-be64-f8497ae1de73";
+constexpr const char* CONFIG_UUID = "8c3e9a12-4f5b-4d6a-9e7c-1a2b3c4d5e6f";
 constexpr const char* STATUS_UUID = "ba810c70-a319-474d-bb7c-3ed0d6b62537";
 
 inline WifiCommandFn onCommand = nullptr;
+inline WifiConfigFn onConfig = nullptr;
 inline WifiStatusFn wifiStatusByte = nullptr;
 inline StatusTextFn drawStatus = nullptr;
 
@@ -43,6 +46,15 @@ class CommandCallbacks : public NimBLECharacteristicCallbacks {
     const std::string v = chr->getValue();
     if (v.length() != 1) return;
     if (onCommand) onCommand((uint8_t)v[0]);
+  }
+};
+
+class ConfigCallbacks : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic* chr, NimBLEConnInfo& connInfo) override {
+    const std::string v = chr->getValue();
+    if (v.empty() || !onConfig) return;
+    onConfig((uint8_t)v[0], reinterpret_cast<const uint8_t*>(v.data() + 1),
+             v.length() - 1);
   }
 };
 
@@ -60,6 +72,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     if (drawStatus) {
       char buf[16];
       snprintf(buf, sizeof(buf), "BLE %06u", (unsigned)passkey);
+      Serial.printf("BLE passkey: %06u\n", (unsigned)passkey);
       drawStatus(buf);
     }
     return passkey;
@@ -72,9 +85,10 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 
 }  // namespace detail
 
-inline void begin(WifiCommandFn onCommand, WifiStatusFn wifiStatusByte,
-                   StatusTextFn drawStatus) {
+inline void begin(WifiCommandFn onCommand, WifiConfigFn onConfig,
+                   WifiStatusFn wifiStatusByte, StatusTextFn drawStatus) {
   detail::onCommand = onCommand;
+  detail::onConfig = onConfig;
   detail::wifiStatusByte = wifiStatusByte;
   detail::drawStatus = drawStatus;
 
@@ -93,6 +107,12 @@ inline void begin(WifiCommandFn onCommand, WifiStatusFn wifiStatusByte,
                              NIMBLE_PROPERTY::WRITE_AUTHEN);
   cmdChar->setCallbacks(new detail::CommandCallbacks());
 
+  NimBLECharacteristic* configChar = service->createCharacteristic(
+      detail::CONFIG_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR |
+                                NIMBLE_PROPERTY::WRITE_ENC |
+                                NIMBLE_PROPERTY::WRITE_AUTHEN);
+  configChar->setCallbacks(new detail::ConfigCallbacks());
+
   detail::statusChar = service->createCharacteristic(
       detail::STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY |
                                 NIMBLE_PROPERTY::READ_ENC |
@@ -104,6 +124,7 @@ inline void begin(WifiCommandFn onCommand, WifiStatusFn wifiStatusByte,
   service->start();
 
   NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
+  adv->setName("AstroClock");
   adv->addServiceUUID(detail::SERVICE_UUID);
   adv->start();
 }
