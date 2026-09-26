@@ -84,8 +84,8 @@ ICONS = ["rocket_launch", "work", "payments", "favorite", "chat", "home",
          "route", "restaurant", "handshake", "center_focus_strong", "warning",
          "lightbulb", "cleaning_services",
          # Пункты меню часов, идут следом за сферами: толкования, список
-         # транзитов, лунный календарь, легенда
-         "auto_stories", "format_list_bulleted", "dark_mode", "info"]
+         # транзитов, лунный календарь, легенда, тест тача
+         "auto_stories", "format_list_bulleted", "dark_mode", "info", "touch_app"]
 ICON_BASE = 0xE000
 MENU_ICON_FIRST = 18
 # Квадрат иконки: прежние 13 px с масштабом 2 на 240, пересчитанные на 466

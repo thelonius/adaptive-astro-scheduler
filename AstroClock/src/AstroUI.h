@@ -179,6 +179,49 @@ class AstroUI {
     }
   }
 
+ public:
+  // Дуга со сглаживанием и скруглёнными концами, углы в градусах от оси X по
+  // часовой (экранные координаты). Точками по дуге она выходила бусами с
+  // рваным краем: обходятся пиксели рамки дуги, покрытие считается по
+  // расстоянию до окружности, а за концами до точки конца
+  void smoothArc(float cx, float cy, float r, float a0, float a1, float hw, uint16_t color) {
+    const float D2R = 3.14159265f / 180.0f;
+    float ex0 = cx + r * cosf(a0 * D2R), ey0 = cy + r * sinf(a0 * D2R);
+    float ex1 = cx + r * cosf(a1 * D2R), ey1 = cy + r * sinf(a1 * D2R);
+    const float pad = hw + 1.5f;
+    float bx0, bx1, by0, by1;
+    if (a1 - a0 >= 90.0f) {
+      // Длинная дуга: рамкой берётся весь круг, так проще и точнее
+      bx0 = cx - r; bx1 = cx + r; by0 = cy - r; by1 = cy + r;
+    } else {
+      // Короткая: концы и середина, выпуклость дуги короче четверти круга
+      // дальше середины не уходит
+      float mid = (a0 + a1) * 0.5f * D2R;
+      float mx = cx + r * cosf(mid), my = cy + r * sinf(mid);
+      bx0 = fminf(fminf(ex0, ex1), mx); bx1 = fmaxf(fmaxf(ex0, ex1), mx);
+      by0 = fminf(fminf(ey0, ey1), my); by1 = fmaxf(fmaxf(ey0, ey1), my);
+    }
+    for (int y = (int)floorf(by0 - pad); y <= (int)ceilf(by1 + pad); y++)
+      for (int x = (int)floorf(bx0 - pad); x <= (int)ceilf(bx1 + pad); x++) {
+        float dx = x - cx, dy = y - cy;
+        // Угол точки от начала дуги в пределах одного оборота: концы дуги
+        // могут быть заданы и за ±180°, как у бегущего индикатора
+        float rel = fmodf(atan2f(dy, dx) / D2R - a0 + 720.0f, 360.0f);
+        float d;
+        if (rel <= a1 - a0) {
+          d = fabsf(sqrtf(dx * dx + dy * dy) - r);
+        } else {
+          float d0 = hypotf(x - ex0, y - ey0), d1 = hypotf(x - ex1, y - ey1);
+          d = fminf(d0, d1);
+        }
+        float cov = hw + 0.5f - d;
+        if (cov <= 0) continue;
+        if (cov > 1) cov = 1;
+        _gfx->fillRectAlpha(x, y, 1, 1, (uint8_t)(cov * 255), color);
+      }
+  }
+
+ private:
   // Шрифты грузятся один раз на все цели отрисовки: VLWfont держит таблицы
   // метрик в PSRAM, а растры читает прямо из флеша через PointerWrapper
   enum Face : uint8_t {
@@ -544,6 +587,54 @@ class AstroUI {
     }
     flush();
     return lineNo;
+  }
+
+  // Колонка постоянной ширины, по левому краю, с переносом по словам.
+  // Возвращает нижний край последней строки. Для прокручиваемого текста:
+  // абзац, вписанный в круг, при сдвиге по вертикали вылезал бы за обод,
+  // потому что длина каждой его строки подобрана под её высоту на экране
+  int drawColumn(const char* str, int x, int yTop, int width, TextRole role,
+                 uint16_t color) {
+    const int lineH = lineHeight(role);
+#ifdef BOARD_SMOOTH
+    const int asc = faces()[role].font.maxAscent;
+#else
+    const int asc = capHeight(role);
+#endif
+    char line[200], probe[200];
+    int len = 0, y = yTop;
+    auto flush = [&]() {
+      if (len == 0) return;
+      line[len] = 0;
+      textLeft(line, x, y + asc, role, color);
+      y += lineH;
+      len = 0;
+    };
+    const char* p = str;
+    while (*p) {
+      while (*p == ' ') p++;
+      if (!*p) break;
+      const char* w = p;
+      while (*w && *w != ' ') w++;
+      int bytes = (int)(w - p);
+      if (bytes >= (int)sizeof(line) - 2) { p = w; continue; }
+      if (len > 0) {
+        if (len + 1 + bytes >= (int)sizeof(line) - 1) flush();
+        else {
+          memcpy(probe, line, len);
+          probe[len] = ' ';
+          memcpy(probe + len + 1, p, bytes);
+          probe[len + 1 + bytes] = 0;
+          if (textWidth(probe, role) > width) flush();
+        }
+      }
+      if (len > 0) line[len++] = ' ';
+      memcpy(line + len, p, bytes);
+      len += bytes;
+      p = w;
+    }
+    flush();
+    return y;
   }
 
   // Иконка сферы с центром в (cx, cy). size — сторона в координатах 240x240.

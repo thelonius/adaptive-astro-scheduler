@@ -35,6 +35,13 @@ static Preferences prefs;
 
 using layout::px;
 
+#ifdef BOARD_SMOOTH
+// Стек loop() 24 КБ вместо 8. VLW-шрифт кладёт на стек буфер под строку
+// глифа, и номер лунного дня кеглем 112 px съедает на это около 6 КБ: вместе
+// с цепочкой тап, меню, календарь стек переполнялся, и часы перезагружались
+SET_LOOP_TASK_STACK_SIZE(24 * 1024);
+#endif
+
 // Экран «небо» без наталa уступил место толкованиям: карта без аспектов
 // дублировала биwheel, а текст даёт то, чего на кольцах не прочитать.
 // Порядок совпадает с каруселью свайпов: колесо домашнее, легенда справочная
@@ -42,7 +49,7 @@ using layout::px;
 // Меню стоит за пределами карусели: в него попадают с циферблата тапом или
 // кнопкой, а не свайпом, и на C3 с одной кнопкой его нет вовсе
 enum Mode { MODE_BIWHEEL = 0, MODE_TEXT, MODE_LIST, MODE_CAL, MODE_LEGEND, MODE_COUNT,
-            MODE_MENU = MODE_COUNT };
+            MODE_MENU = MODE_COUNT, MODE_TOUCHTEST };
 static int mode = MODE_BIWHEEL;
 
 static transit::NatalChart natal;
@@ -67,6 +74,8 @@ static bool wheelHasOverlap = false;
 static int textIndex = 0;
 static int textScroll = 0;
 static int textLines = 0;
+// Лента плавной прокрутки устарела: сменились транзиты или палитра
+static bool textDocDirty = true;
 
 // Легенда: страница. Клик листает, после последней уходит в следующий режим
 static int legendPage = 0;
@@ -272,6 +281,7 @@ static void recompute() {
   if (textIndex >= hitCount) textIndex = 0;
   textScroll = 0;
   applyPalette(jd);
+  textDocDirty = true;
 }
 
 // --- отрисовка -------------------------------------------------------------
@@ -552,6 +562,160 @@ static constexpr int TEXT_TOP = px(76);
 static constexpr int TEXT_BOTTOM = px(214);
 static int textPageLines() { return ui.linesFit(TXT_BODY, TEXT_TOP, TEXT_BOTTOM); }
 
+// Шапка толкования: транзитное тело, аспект, натальная точка — теми же
+// глифами, что на биwheel, чтобы экран читался тем же языком символов. Под
+// ней орбис с направлением и номер транзита
+static void drawTextHeader(const transit::Hit& h) {
+  Theme th = ui.current();
+  uint16_t ac = aspectColor(h.kind);
+  const int hy = px(30);
+  ui.drawPlanetGlyph(h.transiting, layout::CX - px(46), hy, ac, true);
+  ui.drawAspectGlyph(h.kind, layout::CX, hy, ac, 7);
+  if (h.natalPoint < ephem::BODY_COUNT)
+    ui.drawPlanetGlyph(h.natalPoint, layout::CX + px(46), hy, ac, true);
+  else
+    ui.textMid(h.natalPoint == 10 ? "АСЦ" : "МС", layout::CX + px(46), hy, TXT_HEAD, ac);
+
+  char sub[32];
+  snprintf(sub, sizeof(sub), "%d.%d %s", (int)h.orb, (int)(h.orb * 10) % 10,
+           h.applying ? "сходится" : "расходится");
+  ui.text(sub, layout::CX, px(55), TXT_SMALL, AstroUI::fade(th.text, 0.6f));
+
+  if (hitCount > 1) {
+    char pos[12];
+    snprintf(pos, sizeof(pos), "%d/%d", textIndex + 1, hitCount);
+    ui.text(pos, layout::CX, px(69), TXT_SMALL, AstroUI::fade(th.text, 0.5f));
+  }
+}
+
+#ifdef BOARD_SMOOTH
+// Плавная прокрутка толкования. Всё толкование вместе с шапкой рисуется один
+// раз в высокую ленту в PSRAM, а кадр прокрутки только копирует из неё окно
+// высотой в экран: перерисовка текста на каждом шаге стоила бы десятки
+// миллисекунд, копирование стоит единицы. Палец тянет ленту, после
+// отпускания она едет по инерции и пружинит у краёв.
+namespace scroll {
+// Самое длинное толкование ~850 знаков, это около тридцати строк
+constexpr int DOC_MAX = 1800;
+// Ширина колонки: на такой строке верхний и нижний края текста ещё не
+// упираются в обод, а там, где упираются, текст уже гаснет
+constexpr int COL_W = px(170);
+constexpr int FADE = px(36);
+
+static LGFX_Sprite doc(&tft);
+static bool valid = false;
+static int docH = 0;
+static float pos = 0, vel = 0;  // смещение в пикселях и скорость в px/мс
+static bool dragging = false;
+static int dragY0 = 0;
+static float dragPos0 = 0;
+static int lastY = 0;
+static unsigned long lastT = 0, frameAt = 0;
+static float drawnPos = -1;
+
+static int maxPos() { return docH > board::H ? docH - board::H : 0; }
+
+static bool build() {
+  if (doc.width() == 0) {
+    doc.setPsram(true);
+    doc.setColorDepth(16);
+    if (!doc.createSprite(board::W, DOC_MAX)) return false;
+  }
+  Theme th = ui.current();
+  doc.fillScreen(th.bg);
+  ui.setTarget(&doc);
+  if (textIndex >= hitCount) textIndex = 0;
+  const transit::Hit& h = hits[textIndex];
+  drawTextHeader(h);
+  int bottom = ui.drawColumn(transittext::get(h.transiting, h.kind, h.natalPoint),
+                             layout::CX - COL_W / 2, TEXT_TOP, COL_W, TXT_BODY, th.text);
+  ui.setTarget(target());
+  docH = bottom + px(60);
+  if (docH < board::H) docH = board::H;
+  if (docH > DOC_MAX) docH = DOC_MAX;
+  valid = true;
+  return true;
+}
+
+// Окно ленты в кадр, гашение у краёв и дуга положения справа
+static void compose() {
+  Theme th = ui.current();
+  int ip = (int)lroundf(pos);
+  if (ip < 0 || ip > maxPos()) canvas.fillScreen(th.bg);
+  doc.pushSprite(&canvas, 0, -ip);
+  // Гаснет только тот край, за которым ещё есть текст
+  for (int i = 0; i < FADE; i++) {
+    uint8_t a = (uint8_t)(255 - 255 * i / FADE);
+    if (ip > 2) canvas.fillRectAlpha(0, i, board::W, 1, a, th.bg);
+    if (ip < maxPos() - 2) canvas.fillRectAlpha(0, board::H - 1 - i, board::W, 1, a, th.bg);
+  }
+  int mp = maxPos();
+  if (mp > 0) {
+    // Дуга у правого края, как у полосы прокрутки на Wear OS: ±24° от
+    // горизонтали, бегунок по доле видимого текста
+    const float SPAN = 48.0f, A0 = -24.0f;
+    const float R = layout::CX - px(5);
+    float frac = (float)board::H / docH;
+    float t = pos < 0 ? 0 : pos > mp ? 1 : pos / mp;
+    float th0 = A0 + (SPAN - SPAN * frac) * t, th1 = th0 + SPAN * frac;
+    ui.setTarget(&canvas);
+    ui.smoothArc(layout::CX, layout::CY, R, A0, A0 + SPAN, 1.2f, AstroUI::fade(th.text, 0.2f));
+    ui.smoothArc(layout::CX, layout::CY, R, th0, th1, 2.6f, AstroUI::fade(th.text, 0.75f));
+    ui.setTarget(target());
+  }
+  drawnPos = pos;
+}
+
+static void reset() {
+  pos = vel = 0;
+  dragging = false;
+  valid = false;
+}
+
+static bool active() {
+  return dragging || vel != 0 || pos < 0 || pos > maxPos();
+}
+
+// Шаг анимации: инерция и возврат к краю. Затухание 0.5% скорости на
+// миллисекунду, это около 8% за кадр в 16 мс, как SCROLL_THROW у LVGL
+static void step(unsigned long dt) {
+  if (dragging) return;
+  float mp = (float)maxPos();
+  if (pos < 0 || pos > mp) {
+    float target = pos < 0 ? 0 : mp;
+    vel = 0;
+    float k = dt * 0.015f;
+    if (k > 1) k = 1;
+    pos += (target - pos) * k;
+    if (fabsf(target - pos) < 0.5f) pos = target;
+    return;
+  }
+  if (vel == 0) return;
+  pos += vel * dt;
+  vel *= powf(0.995f, (float)dt);
+  if (fabsf(vel) < 0.02f) vel = 0;
+  // Разогнавшаяся лента проскакивает край чуть-чуть и возвращается
+  if (pos < -px(20)) pos = -px(20);
+  if (pos > mp + px(20)) pos = mp + px(20);
+}
+}  // namespace scroll
+
+static void renderText() {
+  Theme th = ui.current();
+  wheelHasOverlap = false;
+  if (hitCount == 0) {
+    canvas.fillScreen(th.bg);
+    ui.textMid("НЕТ ТРАНЗИТОВ", layout::CX, px(119), TXT_TITLE, th.text);
+    return;
+  }
+  if (textDocDirty) {
+    scroll::valid = false;
+    textDocDirty = false;
+  }
+  if (!scroll::valid && !scroll::build()) return;
+  scroll::compose();
+}
+#else
 // Толкование одного транзита текстом. Транзиты отсортированы по орбису, так
 // что первым идёт самый точный. Прокрутка длинного текста повешена на тот же
 // короткий клик: сначала домотать до конца, потом перейти к следующему
@@ -571,30 +735,7 @@ static void renderText() {
 
   if (textIndex >= hitCount) textIndex = 0;
   const transit::Hit& h = hits[textIndex];
-  uint16_t ac = aspectColor(h.kind);
-
-  // Шапка: транзитное тело, аспект, натальная точка — теми же глифами, что на
-  // биwheel, чтобы экран читался тем же языком символов
-  const int hy = px(30);
-  ui.drawPlanetGlyph(h.transiting, layout::CX - px(46), hy, ac, true);
-  ui.drawAspectGlyph(h.kind, layout::CX, hy, ac, 7);
-  if (h.natalPoint < ephem::BODY_COUNT)
-    ui.drawPlanetGlyph(h.natalPoint, layout::CX + px(46), hy, ac, true);
-  else
-    ui.textMid(h.natalPoint == 10 ? "АСЦ" : "МС", layout::CX + px(46), hy, TXT_HEAD, ac);
-
-  // Орбис и направление, мелко под шапкой
-  char sub[32];
-  snprintf(sub, sizeof(sub), "%d.%d %s", (int)h.orb, (int)(h.orb * 10) % 10,
-           h.applying ? "сходится" : "расходится");
-  ui.text(sub, layout::CX, px(55), TXT_SMALL, AstroUI::fade(th.text, 0.6f));
-
-  // Порядковый номер транзита, если их несколько
-  if (hitCount > 1) {
-    char pos[12];
-    snprintf(pos, sizeof(pos), "%d/%d", textIndex + 1, hitCount);
-    ui.text(pos, layout::CX, px(69), TXT_SMALL, AstroUI::fade(th.text, 0.5f));
-  }
+  drawTextHeader(h);
 
   int total = ui.drawParagraph(transittext::get(h.transiting, h.kind, h.natalPoint),
                                TEXT_TOP, TEXT_BOTTOM, TXT_BODY, th.text, textScroll);
@@ -606,6 +747,7 @@ static void renderText() {
 
   tft.endWrite();
 }
+#endif
 
 // Список самых точных транзитов. Помещается пять строк.
 static void renderList() {
@@ -704,11 +846,11 @@ static const char* SIGN_RU[12] = {"ОВЕН", "ТЕЛЕЦ", "БЛИЗНЕЦЫ", 
                                   "КОЗЕРОГ", "ВОДОЛЕЙ", "РЫБЫ"};
 
 // Момент, за который показывается календарь: сейчас, либо полдень нужного дня
-// при листании вперёд. Полдень, потому что в один календарный день обычно
+// при листании. Полдень, потому что в один календарный день обычно
 // умещаются двое лунных суток, и надо выбрать какие-то одни
 static double calendarJD(struct tm* outTm) {
   time_t now = time(nullptr);
-  if (calOffset > 0) {
+  if (calOffset != 0) {
     struct tm tmv;
     localtime_r(&now, &tmv);
     tmv.tm_mday += calOffset;
@@ -744,12 +886,149 @@ static lunar::Day lunarDayAt(double jd) {
   return day;
 }
 
+#ifdef BOARD_SMOOTH
+// Лунные месяцы считаются в фоне на ядре 0, каждый около секунды: таблица
+// начал всех суток от новолуния до новолуния (lunar::computeMonth). Готовый
+// месяц отдаёт любой свой день мгновенно, поэтому календарь листается в обе
+// стороны без пауз, пока фон держит соседние месяцы посчитанными. Пока
+// нужного месяца нет, на месте номера крутится индикатор.
+namespace moon {
+constexpr int SLOTS = 5;
+static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+static lunar::Month slots[SLOTS];
+static uint32_t used[SLOTS];
+static uint32_t tick = 0;
+static QueueHandle_t queue = nullptr;
+
+static bool find(double jd, lunar::Month* out) {
+  bool ok = false;
+  portENTER_CRITICAL(&mux);
+  for (int i = 0; i < SLOTS; i++)
+    if (lunar::contains(slots[i], jd)) {
+      *out = slots[i];
+      used[i] = ++tick;
+      ok = true;
+      break;
+    }
+  portEXIT_CRITICAL(&mux);
+  return ok;
+}
+
+// В слот, к которому дольше всех не обращались
+static void store(const lunar::Month& m) {
+  portENTER_CRITICAL(&mux);
+  int victim = 0;
+  for (int i = 1; i < SLOTS; i++)
+    if (used[i] < used[victim]) victim = i;
+  slots[victim] = m;
+  used[victim] = ++tick;
+  portEXIT_CRITICAL(&mux);
+}
+
+static void worker(void*) {
+  double jd;
+  for (;;) {
+    if (xQueueReceive(queue, &jd, portMAX_DELAY) != pdTRUE) continue;
+    lunar::Month m;
+    if (find(jd, &m)) continue;
+    unsigned long t0 = millis();
+    // Между поисками восхода ядро отдаётся на тик. Без этого счёт трёх
+    // месяцев подряд (~6 с) не пускал задачу простоя ядра 0, и сторожевой
+    // таймер перезагружал часы
+    m = lunar::computeMonth(jd, HOME_LAT, HOME_LON, [] { vTaskDelay(1); });
+    store(m);
+    Serial.printf("лунный месяц с JD %.2f посчитан за %lu мс\n", m.nm, millis() - t0);
+  }
+}
+
+static void request(double jd) {
+  if (queue) xQueueSend(queue, &jd, 0);
+}
+
+// Текущий месяц и оба соседних, чтобы листание сразу шло в обе стороны
+static void begin(double jd) {
+  queue = xQueueCreate(8, sizeof(double));
+  // Приоритет ниже задачи тача: месяц может подождать, касание нет
+  // 16 КБ: на 8 КБ стек переполнялся (printf с double плюс ряды эфемерид)
+  xTaskCreatePinnedToCore(worker, "moon", 16384, nullptr, 1, nullptr, 0);
+  request(jd);
+  request(jd - 29.6);
+  request(jd + 29.6);
+}
+}  // namespace moon
+
+static bool calWaiting = false;
+#endif
+
+// Лунные сутки для календаря. false, если месяц ещё считается
+static bool calendarDay(double jd, lunar::Day* out) {
+#ifdef BOARD_SMOOTH
+  lunar::Month m;
+  if (!moon::find(jd, &m)) {
+    moon::request(jd);
+    return false;
+  }
+  *out = lunar::dayOf(m, jd);
+  // Соседей подкладываем заранее: до края месяца можно долистать быстрее,
+  // чем посчитается следующий
+  moon::request(m.nmNext + 1.0);
+  moon::request(m.nm - 1.0);
+  return true;
+#else
+  *out = lunarDayAt(jd);
+  return true;
+#endif
+}
+
+#ifdef BOARD_SMOOTH
+// Сколько дней календарь листается в каждую сторону от сегодня
+constexpr int CAL_RANGE = 90;
+static constexpr int SPINNER_Y = px(80);
+static constexpr int SPINNER_R = px(18);
+
+// Индикатор ожидания: дуга, бегущая по кругу. Рисуется в кадр и выводится
+// только своим квадратом, чтобы не гонять весь экран
+static void drawSpinner(bool pushNow) {
+  Theme th = ui.current();
+  const int box = (SPINNER_R * 2 + px(6)) & ~1;
+  const int x0 = (layout::CX - box / 2) & ~1, y0 = (SPINNER_Y - box / 2) & ~1;
+  canvas.fillRect(x0, y0, box, box, th.bg);
+  ui.setTarget(&canvas);
+  float a = (float)((millis() * 3 / 10) % 360);  // полоборота в секунду с небольшим
+  ui.circle(layout::CX, SPINNER_Y, SPINNER_R, AstroUI::fade(th.text, 0.15f), 1.5f);
+  ui.smoothArc(layout::CX, SPINNER_Y, SPINNER_R, a - 180.0f, a - 80.0f, 2.2f, th.accent);
+  ui.setTarget(target());
+  if (!pushNow) return;
+  tft.startWrite();
+  tft.setClipRect(x0, y0, box, box);
+  canvas.pushSprite(0, 0);
+  tft.clearClipRect();
+  tft.endWrite();
+}
+
+// Стрелки у краёв: видно, что дни листаются в обе стороны. У предела
+// диапазона стрелка пропадает
+static void drawCalendarArrows() {
+  Theme th = ui.current();
+  uint16_t c = AstroUI::fade(th.text, 0.45f);
+  const int s = px(5), h = px(8), xl = px(9), xr = board::W - px(9);
+  if (calOffset > -CAL_RANGE) {
+    ui.line(xl + s, layout::CY - h, xl, layout::CY, c, 1.6f);
+    ui.line(xl, layout::CY, xl + s, layout::CY + h, c, 1.6f);
+  }
+  if (calOffset < CAL_RANGE) {
+    ui.line(xr - s, layout::CY - h, xr, layout::CY, c, 1.6f);
+    ui.line(xr, layout::CY, xr - s, layout::CY + h, c, 1.6f);
+  }
+}
+#endif
+
 static void renderCalendar() {
   struct tm tmv;
   double jd = calendarJD(&tmv);
 
-  lunar::Day day = lunarDayAt(jd);
-  const lunardays::DayInfo& info = lunardays::days()[day.number - 1];
+  lunar::Day day;
+  bool ready = calendarDay(jd, &day);
 
   Theme th = ui.current();
   lgfx::v1::LovyanGFX* g = target();
@@ -760,13 +1039,28 @@ static void renderCalendar() {
   // 32, не 24: "ЛУНА - СКОРПИОН"/"БЛИЗНЕЦЫ" в UTF-8 — 28 байт с null, было
   // обрезание snprintf посреди двухбайтовой буквы
   char line[32];
-  if (calOffset > 0)
-    snprintf(line, sizeof(line), "%s %02d.%02d +%d", lunardays::weekday(tmv.tm_wday),
+  if (calOffset != 0)
+    snprintf(line, sizeof(line), "%s %02d.%02d %+d", lunardays::weekday(tmv.tm_wday),
              tmv.tm_mday, tmv.tm_mon + 1, calOffset);
   else
     snprintf(line, sizeof(line), "%s %02d.%02d", lunardays::weekday(tmv.tm_wday),
              tmv.tm_mday, tmv.tm_mon + 1);
   ui.text(line, layout::CX, px(44), TXT_TITLE, th.text);
+
+#ifdef BOARD_SMOOTH
+  drawCalendarArrows();
+  calWaiting = !ready;
+  if (!ready) {
+    drawSpinner(false);
+    ui.text("считаю лунный месяц", layout::CX, px(130), TXT_SMALL,
+            AstroUI::fade(th.text, 0.6f));
+    tft.endWrite();
+    return;
+  }
+#else
+  (void)ready;
+#endif
+  const lunardays::DayInfo& info = lunardays::days()[day.number - 1];
 
   // Номер лунного дня крупно. Тон дня задаёт цвет: осторожные дни красноватые,
   // лёгкие в цвете акцента темы
@@ -813,8 +1107,7 @@ static void renderCalendar() {
 
 #ifdef BOARD_HAS_TOUCH
 // Меню разделов. Пункты строками с иконкой слева, как в списке приложений
-// у часов: круглый экран вмещает четыре строки по центру, не прижимая крайние
-// к ободу
+// у часов: пять строк по центру круга, крайние не прижаты к ободу
 struct MenuItem {
   int mode;
   const char* title;
@@ -824,10 +1117,11 @@ static const MenuItem MENU[] = {
     {MODE_LIST, "Транзиты"},
     {MODE_CAL, "Лунный день"},
     {MODE_LEGEND, "Легенда"},
+    {MODE_TOUCHTEST, "Тест тача"},
 };
 static constexpr int MENU_COUNT = sizeof(MENU) / sizeof(MENU[0]);
-static constexpr int MENU_TOP = px(66);
-static constexpr int MENU_STEP = px(36);
+static constexpr int MENU_TOP = px(58);
+static constexpr int MENU_STEP = px(33);
 
 static int menuItemAt(int y) {
   int i = (y - MENU_TOP + MENU_STEP / 2) / MENU_STEP;
@@ -852,6 +1146,107 @@ static void renderMenu() {
   }
   tft.endWrite();
 }
+
+// Экран отладки тача. След пальца рисуется, пока палец лежит, после
+// отпускания крупно выводится распознанный жест и цифры: смещение, время,
+// сколько точек дошло от чипа. Жесты здесь ничего не переключают, выход
+// только кнопкой, поэтому проверить можно любой
+namespace ttest {
+constexpr int MAX_POINTS = 256;
+static int16_t xs[MAX_POINTS], ys[MAX_POINTS];
+static int count = 0;
+static bool down = false;
+static bool dirty = false;
+static unsigned long frameAt = 0;
+static uint32_t readsAtDown = 0;
+static char result[40] = "коснись экрана";
+static char detail[64] = "";
+static char detail2[64] = "";
+
+static bool gotGesture = false;
+
+static void append(int x, int y) {
+  if (count > 0 && xs[count - 1] == x && ys[count - 1] == y) return;
+  if (count < MAX_POINTS) {
+    xs[count] = x;
+    ys[count] = y;
+    count++;
+  }
+}
+
+// Событие из задачи тача. Свайп и долгое касание выдаются, пока палец ещё
+// лежит, поэтому результат появляется посреди следа, а цифры по всему
+// касанию дописываются при отпускании
+static void feed(const periph::touch::Msg& m, const char* name) {
+  using periph::touch::Kind;
+  switch (m.kind) {
+    case periph::touch::DOWN:
+      down = true;
+      gotGesture = false;
+      count = 0;
+      readsAtDown = periph::touch::reads;
+      result[0] = detail[0] = detail2[0] = 0;
+      append(m.x, m.y);
+      break;
+    case periph::touch::MOVE:
+      append(m.x, m.y);
+      break;
+    case periph::touch::GESTURE:
+      gotGesture = true;
+      snprintf(result, sizeof(result), "%s, %lu мс", name, (unsigned long)m.heldMs);
+      break;
+    case periph::touch::UP: {
+      down = false;
+      append(m.x, m.y);
+      if (!gotGesture) snprintf(result, sizeof(result), "не распознан");
+      uint32_t reads = periph::touch::reads - readsAtDown;
+      snprintf(detail, sizeof(detail), "dx %d  dy %d  %lu мс", m.x - m.x0, m.y - m.y0,
+               (unsigned long)m.heldMs);
+      snprintf(detail2, sizeof(detail2), "точек %d, чтений %lu, раз в %lu мс", count,
+               (unsigned long)reads, reads > 1 ? (unsigned long)m.heldMs / (reads - 1) : 0UL);
+      break;
+    }
+  }
+  dirty = true;
+}
+}  // namespace ttest
+
+static void renderTouchTest() {
+  Theme th = ui.current();
+  lgfx::v1::LovyanGFX* g = target();
+  wheelHasOverlap = false;
+  tft.startWrite();
+  g->fillScreen(th.bg);
+  uint16_t faint = AstroUI::fade(th.text, 0.25f);
+  ui.line(layout::CX - px(8), layout::CY, layout::CX + px(8), layout::CY, faint);
+  ui.line(layout::CX, layout::CY - px(8), layout::CX, layout::CY + px(8), faint);
+
+  if (ttest::count > 0) {
+    // Круг порога свайпа вокруг точки касания: палец, не вышедший за него,
+    // даёт тап или долгое касание
+    ui.circle(ttest::xs[0], ttest::ys[0], px(30), faint);
+    uint16_t c = ttest::down ? th.accent : AstroUI::fade(th.accent, 0.6f);
+    for (int i = 1; i < ttest::count; i++)
+      ui.line(ttest::xs[i - 1], ttest::ys[i - 1], ttest::xs[i], ttest::ys[i], c, 2.0f);
+    // Каждая точка от чипа отдельной точкой: по густоте видно, где были
+    // провалы в опросе
+    for (int i = 0; i < ttest::count; i++) ui.dot(ttest::xs[i], ttest::ys[i], px(1), th.text);
+    ui.dot(ttest::xs[ttest::count - 1], ttest::ys[ttest::count - 1], px(5), c);
+  }
+
+  if (ttest::result[0])
+    ui.text(ttest::result, layout::CX, px(52), TXT_TITLE, th.text);
+  if (ttest::detail[0]) {
+    ui.text(ttest::detail, layout::CX, px(178), TXT_BODY, AstroUI::fade(th.text, 0.8f));
+    ui.text(ttest::detail2, layout::CX, px(194), TXT_SMALL, AstroUI::fade(th.text, 0.6f));
+  }
+  ui.text("выход: кнопка", layout::CX, px(222), TXT_SMALL, AstroUI::fade(th.text, 0.4f));
+  tft.endWrite();
+}
+#endif
+
+#ifdef BOARD_HAS_TOUCH
+static bool pressShown;
 #endif
 
 static void render() {
@@ -869,10 +1264,15 @@ static void render() {
     case MODE_CAL: renderCalendar(); break;
 #ifdef BOARD_HAS_TOUCH
     case MODE_MENU: renderMenu(); break;
+    case MODE_TOUCHTEST: renderTouchTest(); break;
 #endif
     default: renderBiwheel(); break;
   }
   if (useCanvas) canvas.pushSprite(0, 0);
+#ifdef BOARD_HAS_TOUCH
+  // Полный кадр затёр кружок под пальцем
+  pressShown = false;
+#endif
   paintStatusOverlay();
 }
 
@@ -937,6 +1337,12 @@ void setup() {
   if (useCanvas) ui.setTarget(&canvas);
 
   Serial.begin(115200);
+  // Запись в USB-порт не ждёт. По умолчанию HWCDC ждёт до 100 мс на каждую
+  // запись, когда буфер полон, а он полон всегда, если порт на компьютере
+  // открыт, но никто его не читает. Тогда каждая строка лога стоила задаче,
+  // которая её пишет, десятую долю секунды, и тач с прокруткой тормозили.
+  // Лучше потерять строку лога, чем касание
+  Serial.setTxTimeoutMs(0);
   // USB CDC поднимается не мгновенно, без паузы стартовый вывод теряется
   delay(2500);
   Serial.printf("наибольший блок кучи до спрайта %u, спрайт %s\n", blockBefore,
@@ -953,7 +1359,9 @@ void setup() {
   periph::begin();
 #endif
 #ifdef BOARD_HAS_TOUCH
-  periph::touch::begin();
+  // Пороги жеста: касание, ушедшее дальше 12 px в координатах 240x240, уже
+  // не тап, свайп засчитывается с 40
+  periph::touch::begin(px(12), px(40));
 #endif
   AstroUI::begin();
 
@@ -1015,7 +1423,11 @@ void setup() {
 
   // Сегодняшние лунные сутки считаются заранее: полный расчёт стоит почти
   // секунду, и без этого первый вход в календарь заметно подвисал
+#ifdef BOARD_SMOOTH
+  moon::begin(calendarJD(nullptr));
+#else
   lunarDayAt(calendarJD(nullptr));
+#endif
 
   t0 = millis();
   render();
@@ -1027,6 +1439,9 @@ void setup() {
 // --- навигация -------------------------------------------------------------
 
 static void showMode(int m) {
+#ifdef BOARD_SMOOTH
+  if (m == MODE_TEXT) scroll::reset();
+#endif
   mode = m;
   legendPage = 0;
   calOffset = 0;
@@ -1042,6 +1457,9 @@ static void showMode(int m) {
 // поэтому не пятнадцать секунд, как у Wear OS по умолчанию
 static constexpr unsigned long HOME_TIMEOUT_MS = 90000UL;
 static unsigned long lastInputAt = 0;
+// Палец на экране: пока он лежит, loop() крутится без паузы, чтобы не терять
+// точки
+static bool touchDown = false;
 
 // Страница толкования вперёд или назад. Дойдя до края текста, листание
 // переходит к соседнему транзиту, по кругу
@@ -1068,7 +1486,9 @@ static void textPage(int dir) {
 // Прокрутка внутри экрана: палец вверх показывает то, что ниже или дальше
 static void scrollScreen(int dir) {
   switch (mode) {
+#ifndef BOARD_SMOOTH
     case MODE_TEXT: textPage(dir); break;
+#endif
     case MODE_CAL: {
       static constexpr int CAL_MAX = 30;
       int next = calOffset + dir;
@@ -1107,7 +1527,18 @@ static void tapScreen(int x, int y) {
       }
       break;
     }
-    case MODE_TEXT: textPage(+1); break;
+    case MODE_TEXT:
+#ifdef BOARD_SMOOTH
+      // Текст листается пальцем, тап ведёт к следующему транзиту
+      if (hitCount > 0) {
+        textIndex = (textIndex + 1) % hitCount;
+        scroll::reset();
+        render();
+      }
+#else
+      textPage(+1);
+#endif
+      break;
     case MODE_LIST: {
       int row = (y - px(78) + px(11)) / px(22);
       int shown = hitCount < 5 ? hitCount : 5;
@@ -1124,22 +1555,23 @@ static const char* gestureName(gesture::Event e) {
   return N[e];
 }
 
-static void onGesture(gesture::Event e, const gesture::Tracker& t) {
+#ifdef BOARD_SMOOTH
+static bool calendarGesture(gesture::Event e, int x);
+#endif
+
+static void onGesture(const periph::touch::Msg& m) {
   unsigned long t0 = millis();
-  struct Log {
-    gesture::Event e;
-    const gesture::Tracker& t;
-    unsigned long t0;
-    // Время реакции: от отпускания пальца до выведенного кадра. Касание
-    // до отпускания сюда не входит, жест без него не распознать
-    ~Log() {
-      Serial.printf("[%lu] тач: %s (%d,%d)->(%d,%d), кадр за %lu мс\n", t0, gestureName(e), t.x0,
-                    t.y0, t.x, t.y, millis() - t0);
-    }
-  } log{e, t, t0};
+  gesture::Event e = m.gesture;
+#ifdef BOARD_SMOOTH
+  if (mode == MODE_CAL && calendarGesture(e, m.x0)) {
+    Serial.printf("[%lu] тач: %s в календаре, ждал %lu мс, кадр %lu мс\n", (unsigned long)m.ms,
+                  gestureName(e), t0 - m.ms, millis() - t0);
+    return;
+  }
+#endif
   switch (e) {
     case gesture::LONG: recompute(); render(); break;
-    // Карусель без зацикливания, как у часов: с колеса вправо идти некуда
+    // Карусель без зацикливания, как у часов: с колеса вправо идти некуда.
     // Из меню свайп вправо ведёт назад на циферблат, влево некуда
     case gesture::SWIPE_LEFT: if (mode + 1 < MODE_COUNT) showMode(mode + 1); break;
     case gesture::SWIPE_RIGHT:
@@ -1148,9 +1580,227 @@ static void onGesture(gesture::Event e, const gesture::Tracker& t) {
       break;
     case gesture::SWIPE_UP: scrollScreen(+1); break;
     case gesture::SWIPE_DOWN: scrollScreen(-1); break;
-    case gesture::TAP: tapScreen(t.x0, t.y0); break;
+    case gesture::TAP: tapScreen(m.x0, m.y0); break;
     default: break;
   }
+  // Задержка от события в задаче тача до выведенного кадра: сколько событие
+  // ждало в очереди, пока loop() дорисовывал прошлый кадр, плюс новый кадр
+  Serial.printf("[%lu] тач: %s (%d,%d)->(%d,%d) на %lu мс касания, ждал %lu мс, кадр %lu мс\n",
+                (unsigned long)m.ms, gestureName(e), m.x0, m.y0, m.x, m.y,
+                (unsigned long)m.heldMs, t0 - m.ms, millis() - t0);
+}
+
+#ifdef BOARD_SMOOTH
+// Смена дня в календаре сдвигом: старый кадр уезжает, новый въезжает с той
+// стороны, куда листают. Оба кадра уже готовы в PSRAM, анимация только
+// выводит их со смещением прямо в панель, по экрану за шаг
+static LGFX_Sprite prevFrame(&tft);
+
+static bool savePrevFrame() {
+  if (!useCanvas) return false;
+  if (prevFrame.width() == 0) {
+    prevFrame.setPsram(true);
+    prevFrame.setColorDepth(16);
+    if (!prevFrame.createSprite(board::W, board::H)) return false;
+  }
+  memcpy(prevFrame.getBuffer(), canvas.getBuffer(), (size_t)board::W * board::H * 2);
+  return true;
+}
+
+// dir > 0: новое приходит справа
+static void slideIn(int dir) {
+  const int STEPS = 12;
+  tft.startWrite();
+  for (int k = 1; k <= STEPS; k++) {
+    float t = (float)k / STEPS;
+    float e = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);  // ease-out
+    // Чётный сдвиг: CO5300 пишет столбцы парами
+    int o = ((int)(e * board::W)) & ~1;
+    if (k == STEPS) o = board::W;
+    if (dir > 0) {
+      prevFrame.pushSprite(-o, 0);
+      canvas.pushSprite(board::W - o, 0);
+    } else {
+      prevFrame.pushSprite(o, 0);
+      canvas.pushSprite(o - board::W, 0);
+    }
+  }
+  tft.endWrite();
+  pressShown = false;
+}
+
+static void showCalendarDay(int offset, int dir) {
+  if (offset < -CAL_RANGE || offset > CAL_RANGE) return;
+  bool slide = savePrevFrame();
+  calOffset = offset;
+  renderCalendar();
+  if (slide) {
+    slideIn(dir);
+  } else {
+    tft.startWrite();
+    canvas.pushSprite(0, 0);
+    tft.endWrite();
+  }
+}
+
+// Жесты календаря. Дни листаются в обе стороны свайпами и тапом по краю со
+// стрелкой, тап в середине возвращает на сегодня. Свайпы вбок здесь заняты
+// днями и разделы не переключают, выход кнопкой. true, если жест разобран
+static bool calendarGesture(gesture::Event e, int x) {
+  switch (e) {
+    case gesture::SWIPE_LEFT:
+    case gesture::SWIPE_UP: showCalendarDay(calOffset + 1, +1); return true;
+    case gesture::SWIPE_RIGHT:
+    case gesture::SWIPE_DOWN: showCalendarDay(calOffset - 1, -1); return true;
+    case gesture::TAP:
+      if (x < px(45)) showCalendarDay(calOffset - 1, -1);
+      else if (x > board::W - px(45)) showCalendarDay(calOffset + 1, +1);
+      else if (calOffset != 0) showCalendarDay(0, calOffset > 0 ? -1 : +1);
+      return true;
+    default: return false;
+  }
+}
+
+// Пока месяц считается, крутится индикатор; как только готов, день
+// рисуется на месте без сдвига
+static bool calendarWaitTick() {
+  if (mode != MODE_CAL || !calWaiting) return false;
+  static unsigned long at = 0;
+  unsigned long now = millis();
+  if (now - at < 33) return true;
+  at = now;
+  struct tm tmv;
+  lunar::Month m;
+  if (moon::find(calendarJD(&tmv), &m)) {
+    render();
+    return false;
+  }
+  drawSpinner(true);
+  return true;
+}
+#endif
+
+// Отклик под пальцем: кружок в точке касания появляется, как только палец
+// лёг, ещё до того, как ясно, какой это жест. Рисуется в маленький спрайт
+// поверх сохранённого куска кадра и выводится только этот кусок
+static LGFX_Sprite pressPatch(&tft);
+
+static int pressX0 = 0, pressY0 = 0;
+static constexpr int PRESS_BOX = (px(16) * 2 + 2) & ~1;
+
+static void pushPressPatch(int x, int y, bool withMark) {
+  if (!useCanvas) return;
+  if (pressPatch.width() == 0) {
+    pressPatch.setPsram(true);
+    pressPatch.setColorDepth(16);
+    if (!pressPatch.createSprite(PRESS_BOX, PRESS_BOX)) return;
+  }
+  if (withMark) {
+    // Чётные координаты окна: CO5300 пишет столбцы парами
+    pressX0 = constrain(x - PRESS_BOX / 2, 0, board::W - PRESS_BOX) & ~1;
+    pressY0 = constrain(y - PRESS_BOX / 2, 0, board::H - PRESS_BOX) & ~1;
+  }
+  canvas.pushSprite(&pressPatch, -pressX0, -pressY0);
+  if (withMark) {
+    Theme th = ui.current();
+    ui.setTarget(&pressPatch);
+    ui.dot(x - pressX0, y - pressY0, px(12), AstroUI::fade(th.accent, 0.3f));
+    ui.circle(x - pressX0, y - pressY0, px(12), th.accent, 1.5f);
+    ui.setTarget(target());
+  }
+  tft.startWrite();
+  pressPatch.pushSprite(pressX0, pressY0);
+  tft.endWrite();
+  pressShown = withMark;
+}
+
+static void showPress(int x, int y) { pushPressPatch(x, y, true); }
+static void hidePress() {
+  if (pressShown) pushPressPatch(0, 0, false);
+}
+#endif
+
+#ifdef BOARD_SMOOTH
+// Палец в толкованиях. Вертикальное движение дальше порога тапа берёт ленту
+// и тянет её за собой, за краем с сопротивлением. Свайпы вверх и вниз здесь
+// не листают страницы, их работу делает сама лента; вбок по-прежнему
+// переключают разделы. Возвращает true, если событие съедено прокруткой
+static bool textScrollInput(const periph::touch::Msg& m) {
+  using namespace periph::touch;
+  switch (m.kind) {
+    case DOWN:
+      // Касание ловит разогнавшуюся ленту, как на телефоне
+      scroll::vel = 0;
+      return true;
+    case MOVE: {
+      int dy = m.y - m.y0, dx = m.x - m.x0;
+      if (!scroll::dragging) {
+        if (abs(dy) < px(12) || abs(dy) < abs(dx)) return true;
+        scroll::dragging = true;
+        scroll::dragY0 = m.y;
+        scroll::dragPos0 = scroll::pos;
+        scroll::lastY = m.y;
+        scroll::lastT = m.ms;
+        return true;
+      }
+      float raw = scroll::dragPos0 - (m.y - scroll::dragY0);
+      float mp = (float)scroll::maxPos();
+      if (raw < 0) raw *= 0.4f;
+      if (raw > mp) raw = mp + (raw - mp) * 0.4f;
+      scroll::pos = raw;
+      if (m.ms > scroll::lastT) {
+        float v = -(float)(m.y - scroll::lastY) / (float)(m.ms - scroll::lastT);
+        scroll::vel = 0.6f * v + 0.4f * scroll::vel;
+      }
+      scroll::lastY = m.y;
+      scroll::lastT = m.ms;
+      return true;
+    }
+    case UP:
+      if (!scroll::dragging) return false;
+      scroll::dragging = false;
+      // Палец замер перед отпусканием: ленту не бросаем
+      if (m.ms - scroll::lastT > 60) scroll::vel = 0;
+      if (scroll::vel > 4) scroll::vel = 4;
+      if (scroll::vel < -4) scroll::vel = -4;
+      return true;
+    case GESTURE:
+      if (scroll::dragging) return true;
+      return m.gesture == gesture::SWIPE_UP || m.gesture == gesture::SWIPE_DOWN;
+  }
+  return false;
+}
+
+// Кадр прокрутки: не чаще 60 раз в секунду и только когда лента сдвинулась
+static bool textScrollTick() {
+  if (mode != MODE_TEXT || !scroll::valid) return false;
+  unsigned long now = millis();
+  unsigned long dt = now - scroll::frameAt;
+  if (dt < 16) return scroll::active();
+  scroll::frameAt = now;
+  if (dt > 50) dt = 50;
+  scroll::step(dt);
+  static unsigned long worst = 0;
+  static int frames = 0;
+  if (fabsf(scroll::pos - scroll::drawnPos) >= 0.5f) {
+    unsigned long t0 = millis();
+    scroll::compose();
+    tft.startWrite();
+    canvas.pushSprite(0, 0);
+    tft.endWrite();
+    pressShown = false;
+    unsigned long spent = millis() - t0;
+    if (spent > worst) worst = spent;
+    frames++;
+  }
+  bool going = scroll::active();
+  // Итог прокрутки в лог: сколько кадров и самый долгий из них
+  if (!going && frames > 0) {
+    Serial.printf("прокрутка: %d кадров, самый долгий %lu мс\n", frames, worst);
+    frames = 0;
+    worst = 0;
+  }
+  return going;
 }
 #endif
 
@@ -1184,12 +1834,28 @@ static void handleInput() {
     }
   }
 
-  static gesture::Tracker tracker;
-  tracker.swipeMin = px(30);
-  periph::touch::Point p = periph::touch::read();
-  if (p.down) lastInputAt = millis();
-  gesture::Event e = tracker.update(p.down, p.x, p.y, millis());
-  if (e != gesture::NONE) onGesture(e, tracker);
+  periph::touch::Msg m;
+  while (periph::touch::poll(&m)) {
+    lastInputAt = millis();
+    if (m.kind == periph::touch::DOWN) touchDown = true;
+    if (m.kind == periph::touch::UP) touchDown = false;
+    if (mode == MODE_TOUCHTEST) {
+      ttest::feed(m, gestureName(m.gesture));
+      continue;
+    }
+#ifdef BOARD_SMOOTH
+    if (mode == MODE_TEXT && textScrollInput(m)) continue;
+#endif
+    switch (m.kind) {
+      case periph::touch::DOWN: showPress(m.x, m.y); break;
+      case periph::touch::UP: hidePress(); break;
+      case periph::touch::GESTURE:
+        hidePress();
+        onGesture(m);
+        break;
+      default: break;
+    }
+  }
 
   if (mode != MODE_BIWHEEL && millis() - lastInputAt > HOME_TIMEOUT_MS) showMode(MODE_BIWHEEL);
 #else
@@ -1310,7 +1976,13 @@ void loop() {
   // он выглядел плавно, кадр обновляется примерно пять раз в секунду. Только
   // при живых перекрытиях — иначе часы гоняли бы спрайт впустую
   static unsigned long lastSwap = 0;
-  if (wheelHasOverlap && wheelOnScreen && now - lastSwap > 200UL) {
+  // Пока палец на экране и сразу после, анимацию не гоняем: кадр колеса
+  // занимает ядро на 150 мс, и событие жеста ждало бы его конца
+  bool touchBusy = false;
+#ifdef BOARD_HAS_TOUCH
+  touchBusy = touchDown || now - lastInputAt < 400UL;
+#endif
+  if (wheelHasOverlap && wheelOnScreen && !touchBusy && now - lastSwap > 200UL) {
     render();
     lastSwap = now;
   }
@@ -1323,5 +1995,20 @@ void loop() {
     lastPulse = now;
   }
 
+#ifdef BOARD_SMOOTH
+  // Пока лента едет или крутится индикатор, loop() без паузы
+  if (textScrollTick()) return;
+  if (calendarWaitTick()) return;
+#endif
+#ifdef BOARD_HAS_TOUCH
+  // Экран теста тача обновляется по мере прихода точек, не чаще 30 раз в
+  // секунду: кадр на AMOLED выходит за ~25 мс
+  if (mode == MODE_TOUCHTEST && ttest::dirty && now - ttest::frameAt >= 33UL) {
+    ttest::dirty = false;
+    ttest::frameAt = now;
+    render();
+  }
+  if (touchDown) return;
+#endif
   delay(20);
 }

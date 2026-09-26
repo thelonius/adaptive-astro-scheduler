@@ -3,6 +3,7 @@
 // Драйверы LilyGO (Arduino_DriveBus) ради двух регистров тянуть незачем.
 
 #include "board.h"
+#include "gesture.h"
 
 #if defined(BOARD_HAS_TOUCH) || defined(BOARD_HAS_RTC)
 #include <Wire.h>
@@ -38,97 +39,132 @@ inline bool writeRegs(uint8_t addr, uint8_t reg, const uint8_t* buf, size_t n) {
 }
 
 // --- FT3168 ---------------------------------------------------------------
-// Тач отдаёт координаты первой точки, жест распознаётся в gesture.h.
+// Тач читается в своей задаче FreeRTOS на ядре 0, а loop() работает на ядре 1.
+// Раньше касание опрашивалось между кадрами, а кадр колеса рисуется до
+// 150 мс: от короткого тапа или быстрого свайпа доходила одна-две точки, и
+// жест распознавался с опозданием или неверно. Так же устроены драйверы
+// FT3168 у SiFli и esp_lvgl_port: прерывание только будит задачу, та читает
+// регистры, считает жест и кладёт события в очередь.
 //
-// Шина трогается только когда чип сам сообщил о касании через INT или палец
-// уже лежит: между касаниями FT3168 не отвечает, и опрос вслепую сыпал бы
-// ошибками в лог. INT ловится прерыванием, а не опросом уровня. Чип дёргает
-// линию коротким импульсом, а loop() бывает занят отрисовкой по 150 мс, и
-// опрос уровня пропускал импульсы: касание доходило с задержкой в полторы
-// секунды, пока не совпадёт очередной
+// Регистры по драйверам Trezor и LilyGO: 0xA4=1 даёт импульс INT на каждый
+// отчёт (~60 Гц), 0x86=0 отключает уход в мониторинг, где чип не считает
+// координаты и замечает первое касание с опозданием, 0xA5=0 активный режим.
+//
+// На той же линии GPIO9 сидит INT часов PCF8563. Будильник и таймер RTC
+// прошивка не включает, но касание всё равно подтверждается чтением числа
+// точек, а не одним фронтом.
 namespace touch {
 constexpr uint8_t ADDR = 0x38;
 
+enum Kind : uint8_t { DOWN, MOVE, UP, GESTURE };
+
+struct Msg {
+  Kind kind;
+  gesture::Event gesture;
+  int16_t x, y;    // текущая точка
+  int16_t x0, y0;  // где палец лёг
+  uint32_t ms;     // момент события
+  uint32_t heldMs; // сколько палец лежал к этому моменту
+};
+
+// Сколько раз регистры касания удалось прочитать: экрану теста тача по нему
+// видно, как часто точки реально доходят до прошивки
+static volatile uint32_t reads = 0;
+static QueueHandle_t queue = nullptr;
+static TaskHandle_t task = nullptr;
+
 // static, а не inline: inline-функция в IRAM не линкуется на Xtensa
 // (literal placed after use). Заголовок подключается один раз, из main.cpp
-static volatile bool irq = false;
-static void IRAM_ATTR onInt() { irq = true; }
+static void IRAM_ATTR onInt() {
+  BaseType_t woken = pdFALSE;
+  if (task) vTaskNotifyGiveFromISR(task, &woken);
+  portYIELD_FROM_ISR(woken);
+}
 
-inline void begin() {
+// Настройка пишется при первом ответе чипа: до первого касания он спит и
+// запись ушла бы в пустоту
+static bool configure() {
+  const uint8_t trigger = 1, off = 0;
+  return writeRegs(ADDR, 0xA4, &trigger, 1) && writeRegs(ADDR, 0x86, &off, 1) &&
+         writeRegs(ADDR, 0xA5, &off, 1);
+}
+
+// Сколько INT может молчать, пока палец считается лежащим. Если отчёт об
+// отпускании потерялся, касание закрывается по тишине на линии
+constexpr unsigned long RELEASE_MS = 80;
+
+static void send(Kind k, gesture::Event e, const gesture::Tracker& t, unsigned long now) {
+  Msg m = {k, e, (int16_t)t.x, (int16_t)t.y, (int16_t)t.x0, (int16_t)t.y0,
+           (uint32_t)now, (uint32_t)(now - t.t0)};
+  // Очередь переполнена, только если loop() долго не забирал события;
+  // лишнюю точку следа не жалко, жест дороже
+  if (xQueueSend(queue, &m, 0) != pdTRUE && k == GESTURE) {
+    Msg drop;
+    xQueueReceive(queue, &drop, 0);
+    xQueueSend(queue, &m, 0);
+  }
+}
+
+static int slopPx, swipePx;
+
+static void run(void*) {
+  gesture::Tracker tr;
+  tr.slop = slopPx;
+  tr.swipeMin = swipePx;
+  bool configured = false;
+  unsigned long activeAt = 0;
+  for (;;) {
+    // Пока палец лежит, просыпаемся и по таймауту: так ловится отпускание,
+    // чей импульс не пришёл
+    uint32_t got = ulTaskNotifyTake(pdTRUE, tr.down ? pdMS_TO_TICKS(20) : portMAX_DELAY);
+    unsigned long now = millis();
+    if (got) activeAt = now;
+    if (!got && digitalRead(board::TP_INT) == HIGH) {
+      if (tr.down && now - activeAt > RELEASE_MS) {
+        gesture::Event e = tr.update(false, tr.x, tr.y, now);
+        send(UP, gesture::NONE, tr, now);
+        if (e != gesture::NONE) send(GESTURE, e, tr, now);
+      }
+      continue;
+    }
+    // 0x02 число касаний в младшем полубайте, дальше X и Y первой точки по
+    // 12 бит. Старшие биты XH несут событие точки: 01 это «палец поднят»,
+    // и координаты в этом отчёте ещё верные
+    uint8_t r[5];
+    if (!readRegs(ADDR, 0x02, r, 5)) continue;
+    if (!configured) configured = configure();
+    reads++;
+    uint8_t n = r[0] & 0x0F;
+    uint8_t event = r[1] >> 6;
+    int x = ((r[1] & 0x0F) << 8) | r[2];
+    int y = ((r[3] & 0x0F) << 8) | r[4];
+    bool pressed = n > 0 && n < 3 && event != 1;
+#ifdef TOUCH_DEBUG
+    Serial.printf("[%lu] рег n=%u ev=%u id=%u x=%d y=%d%s\n", now, n, event, r[3] >> 4, x, y,
+                  got ? "" : " (таймаут)");
+#endif
+    bool wasDown = tr.down;
+    if (!pressed && !wasDown) continue;
+    gesture::Event e = tr.update(pressed, x, y, now);
+    send(!wasDown ? DOWN : pressed ? MOVE : UP, gesture::NONE, tr, now);
+    if (e != gesture::NONE) send(GESTURE, e, tr, now);
+  }
+}
+
+// Пороги жестов в пикселях экрана. Задаются снаружи: раскладку знает main.cpp
+
+inline void begin(int slop, int swipeMin) {
+  slopPx = slop;
+  swipePx = swipeMin;
+  queue = xQueueCreate(64, sizeof(Msg));
   pinMode(board::TP_INT, INPUT_PULLUP);
+  // Приоритет выше loop(): точка должна быть прочитана, даже когда ядро 1
+  // занято кадром, а ядро 0 делит время с WiFi и BLE
+  xTaskCreatePinnedToCore(run, "touch", 4096, nullptr, 3, &task, 0);
   attachInterrupt(digitalPinToInterrupt(board::TP_INT), onInt, FALLING);
 }
 
-// Автопереход в режим мониторинга (0x86) выключается, как только чип впервые
-// ответил: до этого он спит, и запись ушла бы в пустоту. В мониторинге он
-// сканирует редко и первое касание замечает с опозданием, а экономить ему
-// нечего, часы стоят на зарядке
-inline void keepAwake() {
-  static bool done = false;
-  if (done) return;
-  // 0x86 = 0 выключает автопереход в мониторинг, 0xA5 = 0 держит активный
-  // режим питания
-  uint8_t off = 0;
-  done = writeRegs(ADDR, 0x86, &off, 1) && writeRegs(ADDR, 0xA5, &off, 1);
-#ifdef TOUCH_DEBUG
-  uint8_t r86 = 0xFF, r87 = 0xFF, rA5 = 0xFF;
-  readRegs(ADDR, 0x86, &r86, 1);
-  readRegs(ADDR, 0x87, &r87, 1);
-  readRegs(ADDR, 0xA5, &rA5, 1);
-  Serial.printf("тач: запись %s, 0x86=%u 0x87=%u 0xA5=%u\n", done ? "ок" : "НЕ ПРОШЛА",
-                r86, r87, rA5);
-#endif
-}
-
-struct Point {
-  bool down;
-  int x, y;
-};
-
-// Сколько INT может молчать, пока палец считается лежащим. Касание чип
-// обновляет импульсами каждые 10-20 мс, а после отпускания ещё около двух
-// секунд отдаёт последнюю точку как живую, пока не уснёт. По числу касаний
-// отпускание поэтому замечалось с той же задержкой, и свайп срабатывал
-// через пару секунд после того, как палец уже ушёл
-constexpr unsigned long RELEASE_MS = 80;
-
-inline Point read() {
-  static Point last = {false, 0, 0};
-  static unsigned long activeAt = 0;
-  // Импульс мог прийти, пока loop() рисовал кадр: флаг прерывания его
-  // помнит. Низкий уровень означает режим, где INT держится всё касание
-  bool active = irq || digitalRead(board::TP_INT) == LOW;
-  irq = false;
-  unsigned long now = millis();
-  if (active) activeAt = now;
-  if (!last.down && !active) return last;
-  if (last.down && !active) {
-    if (now - activeAt > RELEASE_MS) last.down = false;
-    return last;
-  }
-  // 0x02 число касаний в младшем полубайте, дальше X и Y первой точки по
-  // 12 бит, старшие биты X несут событие точки: 01 это «палец поднят»
-  uint8_t r[5];
-  if (!readRegs(ADDR, 0x02, r, 5)) {
-    last.down = false;
-    return last;
-  }
-  keepAwake();
-  uint8_t n = r[0] & 0x0F;
-  uint8_t event = r[1] >> 6;
-  last.down = n > 0 && n < 3 && event != 1;
-  // Координаты берутся и из события отпускания: пока loop() рисует кадр,
-  // промежуточные точки пропадают, и без последней свайп читался как тап
-  if (last.down || event == 1) {
-    last.x = ((r[1] & 0x0F) << 8) | r[2];
-    last.y = ((r[3] & 0x0F) << 8) | r[4];
-  }
-#ifdef TOUCH_DEBUG
-  Serial.printf("[%lu] тач-рег n=%u ev=%u x=%d y=%d\n", now, n, event,
-                ((r[1] & 0x0F) << 8) | r[2], ((r[3] & 0x0F) << 8) | r[4]);
-#endif
-  return last;
-}
+inline bool poll(Msg* m) { return queue && xQueueReceive(queue, m, 0) == pdTRUE; }
 }  // namespace touch
 
 // --- PCF8563 --------------------------------------------------------------
