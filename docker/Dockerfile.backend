@@ -34,7 +34,7 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Install Swiss Ephemeris data files (if using Sweph)
 RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/* && \
@@ -54,6 +54,9 @@ COPY --from=builder --chown=astroapp:nodejs /app/backend/package.json ./backend/
 COPY --from=builder --chown=astroapp:nodejs /app/shared/package.json ./shared/
 COPY --from=builder --chown=astroapp:nodejs /app/shared/dist ./shared/dist
 
+COPY --chown=astroapp:nodejs docker/entrypoint-backend.sh /entrypoint-backend.sh
+RUN chmod +x /entrypoint-backend.sh
+
 # Create writable directories: bot sessions (data/) and v2 trace JSONL (var/traces/).
 # TraceStore defaults to process.cwd()/var/traces, and cwd here is /app.
 RUN mkdir -p /app/data /app/var/traces && chown -R astroapp:nodejs /app/data /app/var
@@ -62,6 +65,8 @@ USER astroapp
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
+ENV RUN_DB_MIGRATIONS=true
 
+ENTRYPOINT ["/entrypoint-backend.sh"]
 CMD ["node", "backend/dist/index.js"]

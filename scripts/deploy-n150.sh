@@ -52,7 +52,7 @@ echo "--- pull & up ---"
 \$COMPOSE up -d --remove-orphans
 
 echo "--- migrate ---"
-\$COMPOSE exec -T backend npm run migrate 2>/dev/null || true
+\$COMPOSE exec -T backend sh -c 'cd /app/backend && node dist/database/migrate.js'
 
 echo "--- status ---"
 \$COMPOSE ps

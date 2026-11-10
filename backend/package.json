@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc && npm run build:assets",
-    "build:assets": "mkdir -p dist/optimal-timing/v2 && cp -r src/optimal-timing/v2/prompts dist/optimal-timing/v2/prompts",
+    "build:assets": "mkdir -p dist/optimal-timing/v2 && cp -r src/optimal-timing/v2/prompts dist/optimal-timing/v2/prompts && rm -rf dist/database/migrations && cp -r src/database/migrations dist/database/",
     "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:setup": "tsx src/test-setup.ts",
     "lint": "eslint src --ext .ts",
-    "migrate": "tsx scripts/migrate.ts",
+    "migrate": "node dist/database/migrate.js",
+    "migrate:dev": "tsx scripts/migrate.ts",
     "eval": "tsx src/optimal-timing/v2/eval/run.ts"
   },
   "dependencies": {
