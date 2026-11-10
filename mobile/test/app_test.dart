@@ -6,6 +6,7 @@
 library;
 
 import 'package:astro_clock/app.dart';
+import 'package:astro_clock/data/api/astro_api.dart';
 import 'package:astro_clock/data/interpretation/cache_store.dart';
 import 'package:astro_clock/data/interpretation/local_rule_source.dart';
 import 'package:astro_clock/data/interpretation/models.dart';
@@ -51,8 +52,14 @@ class _MemoryCache extends LocalInterpretationStore {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<(Settings, SkyController, CompositeInterpretationSource, DeviceController)>
-      build() async {
+  Future<
+      (
+        Settings,
+        SkyController,
+        CompositeInterpretationSource,
+        DeviceController,
+        AstroApi,
+      )> build() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final Settings settings = Settings();
     await settings.load();
@@ -61,16 +68,24 @@ void main() {
       sources: <InterpretationSource>[LocalRuleInterpretationSource()],
       offlineOnly: true,
     );
-    // Не сопряжено (pairedDeviceId == null) — reconnectToSaved() в main()
-    // и без того не трогает BLE, если ничего запоминать. Здесь то же самое:
-    // конструктор ничего не открывает, тест не касается платформенных каналов
-    return (settings, SkyController(settings), source, DeviceController(settings));
+    final AstroApi api = AstroApi(baseUrl: Uri.parse('http://127.0.0.1:9'));
+    return (
+      settings,
+      SkyController(settings),
+      source,
+      DeviceController(settings),
+      api,
+    );
   }
 
   testWidgets('карта рисуется на дефолтных натальных данных', (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
-            DeviceController device) =
-        await build();
+    final (
+      Settings settings,
+      SkyController sky,
+      CompositeInterpretationSource src,
+      DeviceController device,
+      AstroApi api,
+    ) = await build();
 
     await tester.pumpWidget(AstroClockApp(
       settings: settings,
@@ -78,6 +93,7 @@ void main() {
       interpretations: src,
       cache: _MemoryCache(),
       device: device,
+      api: api,
     ));
     await tester.pump();
 
@@ -90,7 +106,6 @@ void main() {
     expect(painter.sky.lon.length, 10);
     expect(painter.mode, WheelMode.biwheel);
 
-    // Асцендент прибит к левому краю: угол 180° при любой долготе
     expect(find.text('биwheel'), findsOneWidget);
     expect(find.text('небо'), findsOneWidget);
     sky.dispose();
@@ -98,9 +113,13 @@ void main() {
 
   testWidgets('вкладка транзитов открывается и показывает список',
       (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
-            DeviceController device) =
-        await build();
+    final (
+      Settings settings,
+      SkyController sky,
+      CompositeInterpretationSource src,
+      DeviceController device,
+      AstroApi api,
+    ) = await build();
 
     await tester.pumpWidget(AstroClockApp(
       settings: settings,
@@ -108,11 +127,13 @@ void main() {
       interpretations: src,
       cache: _MemoryCache(),
       device: device,
+      api: api,
     ));
     await tester.pump();
 
     await tester.tap(find.text('Транзиты'));
-    await tester.pumpAndSettle();
+    // WheelScreen крутит Ticker бесконечно — pumpAndSettle не сходится.
+    await tester.pump(const Duration(seconds: 1));
 
     final int n = sky.sky!.hits.length;
     if (n > 0) {
@@ -124,9 +145,13 @@ void main() {
   });
 
   testWidgets('толкование по правилу открывается без сети', (tester) async {
-    final (Settings settings, SkyController sky, CompositeInterpretationSource src,
-            DeviceController device) =
-        await build();
+    final (
+      Settings settings,
+      SkyController sky,
+      CompositeInterpretationSource src,
+      DeviceController device,
+      AstroApi api,
+    ) = await build();
 
     await tester.pumpWidget(AstroClockApp(
       settings: settings,
@@ -134,16 +159,42 @@ void main() {
       interpretations: src,
       cache: _MemoryCache(),
       device: device,
+      api: api,
     ));
     await tester.pump();
 
     await tester.tap(find.text('День'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
-    // Планетарный час считается локально и появляется сразу, лунные сутки
-    // досчитываются в изоляте
     expect(find.text('ПЛАНЕТАРНЫЙ ЧАС'), findsOneWidget);
     expect(find.text('ЛУНА'), findsOneWidget);
+    sky.dispose();
+  });
+
+  testWidgets('вкладка подбора открывается', (tester) async {
+    final (
+      Settings settings,
+      SkyController sky,
+      CompositeInterpretationSource src,
+      DeviceController device,
+      AstroApi api,
+    ) = await build();
+
+    await tester.pumpWidget(AstroClockApp(
+      settings: settings,
+      sky: sky,
+      interpretations: src,
+      cache: _MemoryCache(),
+      device: device,
+      api: api,
+    ));
+    await tester.pump();
+
+    await tester.tap(find.text('Подбор'));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Подбор дня'), findsOneWidget);
+    expect(find.text('Что хочешь сделать?'), findsOneWidget);
     sky.dispose();
   });
 }

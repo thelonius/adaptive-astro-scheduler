@@ -5,6 +5,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../app.dart';
 import '../../core/ephemeris/ephemeris.dart';
@@ -25,9 +26,25 @@ class WheelScreen extends StatefulWidget {
   State<WheelScreen> createState() => _WheelScreenState();
 }
 
-class _WheelScreenState extends State<WheelScreen> {
+class _WheelScreenState extends State<WheelScreen>
+    with SingleTickerProviderStateMixin {
   WheelMode _mode = WheelMode.biwheel;
   Hit? _selected;
+  late final Ticker _wheelTicker;
+
+  @override
+  void initState() {
+    super.initState();
+    _wheelTicker = createTicker((_) {
+      if (mounted) setState(() {});
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _wheelTicker.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +87,8 @@ class _WheelScreenState extends State<WheelScreen> {
                               theme: theme,
                               mode: _mode,
                               selected: _selected,
+                              animationMs:
+                                  DateTime.now().millisecondsSinceEpoch,
                             ),
                           ),
                         ),
@@ -106,7 +125,7 @@ class _WheelScreenState extends State<WheelScreen> {
       radius: side / 2,
       ascendant: sky.ascendant,
     );
-    final double grab = (side / 240) * 22;
+    final double grab = (side / 240) * 13 * 1.2;
     final Offset p = d.localPosition;
 
     for (int b = 0; b < bodyCount; b++) {

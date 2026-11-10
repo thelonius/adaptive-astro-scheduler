@@ -1,4 +1,4 @@
-/// Оболочка приложения: четыре вкладки и тема, которая едет за небом.
+/// Оболочка приложения: пять вкладок и тема, которая едет за небом.
 ///
 /// Цвета берутся из живой палитры (порт packages/astro-palette): hue фона и
 /// текста от управителя дня, hue акцента от управителя планетарного часа.
@@ -8,10 +8,12 @@ library;
 import 'package:flutter/material.dart';
 
 import 'core/ephemeris/palette.dart';
+import 'data/api/astro_api.dart';
 import 'data/interpretation/cache_store.dart';
 import 'data/interpretation/source.dart';
 import 'data/settings.dart';
 import 'features/day/day_screen.dart';
+import 'features/planner/planner_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/transits/transit_list_screen.dart';
 import 'features/wheel/wheel_screen.dart';
@@ -19,13 +21,14 @@ import 'features/wheel/wheel_theme.dart';
 import 'state/device_controller.dart';
 import 'state/sky_controller.dart';
 
-/// Доступ к сервисам без внешних пакетов состояния: их тут пять.
+/// Доступ к сервисам без внешних пакетов состояния.
 class AppScope extends InheritedWidget {
   final Settings settings;
   final SkyController sky;
   final InterpretationSource interpretations;
   final LocalInterpretationStore cache;
   final DeviceController device;
+  final AstroApi api;
 
   const AppScope({
     super.key,
@@ -34,6 +37,7 @@ class AppScope extends InheritedWidget {
     required this.interpretations,
     required this.cache,
     required this.device,
+    required this.api,
     required super.child,
   });
 
@@ -49,7 +53,8 @@ class AppScope extends InheritedWidget {
       settings != old.settings ||
       sky != old.sky ||
       interpretations != old.interpretations ||
-      device != old.device;
+      device != old.device ||
+      api != old.api;
 }
 
 class AstroClockApp extends StatelessWidget {
@@ -58,6 +63,7 @@ class AstroClockApp extends StatelessWidget {
   final InterpretationSource interpretations;
   final LocalInterpretationStore cache;
   final DeviceController device;
+  final AstroApi api;
 
   const AstroClockApp({
     super.key,
@@ -66,6 +72,7 @@ class AstroClockApp extends StatelessWidget {
     required this.interpretations,
     required this.cache,
     required this.device,
+    required this.api,
   });
 
   @override
@@ -76,6 +83,7 @@ class AstroClockApp extends StatelessWidget {
       interpretations: interpretations,
       cache: cache,
       device: device,
+      api: api,
       child: AnimatedBuilder(
         animation: Listenable.merge(<Listenable>[sky, settings]),
         builder: (BuildContext context, _) {
@@ -154,10 +162,10 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
-
   static const List<Widget> _screens = <Widget>[
     WheelScreen(),
     DayScreen(),
+    PlannerScreen(),
     TransitListScreen(),
     SettingsScreen(),
   ];
@@ -174,6 +182,8 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.brightness_1_outlined), label: 'Карта'),
           NavigationDestination(
               icon: Icon(Icons.wb_twilight_outlined), label: 'День'),
+          NavigationDestination(
+              icon: Icon(Icons.event_available_outlined), label: 'Подбор'),
           NavigationDestination(
               icon: Icon(Icons.timeline_outlined), label: 'Транзиты'),
           NavigationDestination(

@@ -90,6 +90,7 @@ class Settings extends ChangeNotifier {
   int _theme = 0;
   String? _pairedDeviceId;
   String? _pairedDeviceName;
+  String? _lastWifiSsid;
 
   /// Прод стоит за Caddy соседнего стека, порт 4443 — не опечатка.
   static const String defaultApiBase = 'https://astro-31-130-130-11.sslip.io:4443';
@@ -108,6 +109,9 @@ class Settings extends ChangeNotifier {
   String? get pairedDeviceId => _pairedDeviceId;
   String? get pairedDeviceName => _pairedDeviceName;
 
+  /// Последний SSID для часов — пароль не храним.
+  String? get lastWifiSsid => _lastWifiSsid;
+
   Uri get apiUri => Uri.parse(_apiBase);
 
   static const String _kNatal = 'natal';
@@ -117,6 +121,7 @@ class Settings extends ChangeNotifier {
   static const String _kTheme = 'theme';
   static const String _kDeviceId = 'pairedDeviceId';
   static const String _kDeviceName = 'pairedDeviceName';
+  static const String _kLastWifiSsid = 'lastWifiSsid';
 
   Future<void> load() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -145,6 +150,7 @@ class Settings extends ChangeNotifier {
     _theme = prefs.getInt(_kTheme) ?? 0;
     _pairedDeviceId = prefs.getString(_kDeviceId);
     _pairedDeviceName = prefs.getString(_kDeviceName);
+    _lastWifiSsid = prefs.getString(_kLastWifiSsid);
     notifyListeners();
   }
 
@@ -191,6 +197,18 @@ class Settings extends ChangeNotifier {
     notifyListeners();
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kTheme, value);
+  }
+
+  Future<void> setLastWifiSsid(String? ssid) async {
+    final String? trimmed = ssid?.trim();
+    _lastWifiSsid = trimmed?.isEmpty == true ? null : trimmed;
+    notifyListeners();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (_lastWifiSsid == null) {
+      await prefs.remove(_kLastWifiSsid);
+    } else {
+      await prefs.setString(_kLastWifiSsid, _lastWifiSsid!);
+    }
   }
 
   /// id/name null разом — «забыть устройство».

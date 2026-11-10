@@ -9,6 +9,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'planner_models.dart';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -26,11 +27,13 @@ class AstroApi {
   /// или http://localhost:3001 (iOS-симулятор).
   final Uri baseUrl;
   final Duration timeout;
+  final Duration plannerTimeout;
   final http.Client _client;
 
   AstroApi({
     required this.baseUrl,
     this.timeout = const Duration(seconds: 20),
+    this.plannerTimeout = const Duration(seconds: 120),
     http.Client? client,
   }) : _client = client ?? http.Client();
 
@@ -49,7 +52,11 @@ class AstroApi {
     }
   }
 
-  Future<Map<String, dynamic>> _post(String path, Object body) async {
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Object body, {
+    Duration? timeout,
+  }) async {
     try {
       final http.Response r = await _client
           .post(
@@ -57,7 +64,7 @@ class AstroApi {
             headers: const <String, String>{'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )
-          .timeout(timeout);
+          .timeout(timeout ?? this.timeout);
       return _decode(r);
     } on SocketException catch (e) {
       throw ApiException('сеть недоступна: ${e.message}');
@@ -66,7 +73,27 @@ class AstroApi {
 
   Map<String, dynamic> _decode(http.Response r) {
     if (r.statusCode >= 400) {
-      throw ApiException(r.body.isEmpty ? r.reasonPhrase ?? '' : r.body, r.statusCode);
+      try {
+        final dynamic decoded = jsonDecode(utf8.decode(r.bodyBytes));
+        if (decoded is Map<String, dynamic>) {
+          final String? message = decoded['message'] as String?;
+          final String? error = decoded['error'] as String?;
+          if (message != null && message.isNotEmpty) {
+            throw ApiException(message, r.statusCode);
+          }
+          if (error != null && error.isNotEmpty) {
+            throw ApiException(error, r.statusCode);
+          }
+        }
+      } on ApiException {
+        rethrow;
+      } catch (_) {
+        // Не JSON — падаем в общий обработчик ниже.
+      }
+      throw ApiException(
+        r.body.isEmpty ? r.reasonPhrase ?? 'ошибка HTTP' : r.body,
+        r.statusCode,
+      );
     }
     final dynamic decoded = jsonDecode(utf8.decode(r.bodyBytes));
     if (decoded is! Map<String, dynamic>) {
@@ -74,6 +101,7 @@ class AstroApi {
     }
     return decoded;
   }
+
 
   Future<bool> health() async {
     try {
@@ -158,6 +186,40 @@ class AstroApi {
   /// POST /api/optimal-timing/v2/find-with-intent. Свободный текст запроса
   /// превращается в рецепт, рецепт скорится по дням, дни получают нарративы.
   /// Единственный путь в приложении, которому действительно нужна модель.
+  Future<PlannerSearchResult> searchWithIntent({
+    required String intent,
+    required DateTime start,
+    required DateTime end,
+    required double lat,
+    required double lon,
+    String timezone = 'Europe/Moscow',
+    int topN = 10,
+    String language = 'ru',
+    String? natalChartId,
+  }) async {
+    final Map<String, dynamic> j = await _post(
+      '/api/optimal-timing/v2/find-with-intent',
+      <String, Object?>{
+        'intent': intent,
+        'start_date': _isoDate(start),
+        'end_date': _isoDate(end),
+        'location': <String, Object>{
+          'latitude': lat,
+          'longitude': lon,
+          'timezone': timezone,
+        },
+        'top_n': topN,
+        'language': language,
+        'natal_chart_id': ?natalChartId,
+      },
+      timeout: plannerTimeout,
+    );
+    return PlannerSearchResult.fromIntentJson(j);
+  }
+
+  /// POST /api/optimal-timing/v2/find-with-intent. Оставлен для обратной
+  /// совместимости; UI использует [searchWithIntent].
+  @Deprecated('Use searchWithIntent')
   Future<Map<String, dynamic>> findWithIntent({
     required String intent,
     required DateTime start,
@@ -173,19 +235,54 @@ class AstroApi {
         'top_n': topN,
         'language': language,
         'natal_chart_id': ?natalChartId,
-      });
+      }, timeout: plannerTimeout);
 
-  /// GET /api/optimal-timing/v2/recipes — пять канонических рецептов,
-  /// которые считаются без модели вообще.
-  Future<List<String>> recipes() async {
-    final Map<String, dynamic> j = await _get('/api/optimal-timing/v2/recipes');
-    final dynamic list = j['recipes'] ?? j['data'] ?? j['ids'];
-    if (list is List) return list.map((dynamic e) => '$e').toList();
-    return const <String>[];
+  /// GET /api/optimal-timing/v2/recipes — пять канонических рецептов.
+  Future<List<CanonicalRecipeMeta>> listRecipes() async {
+    final Map<String, dynamic> j =
+        await _get('/api/optimal-timing/v2/recipes');
+    return (j['recipes'] as List<dynamic>? ?? const <dynamic>[])
+        .map((dynamic e) =>
+            CanonicalRecipeMeta.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  /// POST /api/optimal-timing/v2/find-with-fixed-recipe — тот же движок
-  /// скоринга без языковой модели.
+  /// Устаревший вариант [listRecipes], возвращавший только id.
+  @Deprecated('Use listRecipes')
+  Future<List<String>> recipes() async {
+    final List<CanonicalRecipeMeta> rows = await listRecipes();
+    return rows.map((CanonicalRecipeMeta r) => r.id).toList();
+  }
+
+  Future<PlannerSearchResult> searchWithFixedRecipe({
+    required String recipeId,
+    required DateTime start,
+    required DateTime end,
+    required double lat,
+    required double lon,
+    String timezone = 'Europe/Moscow',
+    int topN = 10,
+  }) async {
+    final Map<String, dynamic> j = await _post(
+      '/api/optimal-timing/v2/find-with-fixed-recipe',
+      <String, Object>{
+        'recipe_id': recipeId,
+        'start_date': _isoDate(start),
+        'end_date': _isoDate(end),
+        'location': <String, Object>{
+          'latitude': lat,
+          'longitude': lon,
+          'timezone': timezone,
+        },
+        'top_n': topN,
+      },
+      timeout: plannerTimeout,
+    );
+    return PlannerSearchResult.fromFixedRecipeJson(j);
+  }
+
+  /// POST /api/optimal-timing/v2/find-with-fixed-recipe — сырой JSON.
+  @Deprecated('Use searchWithFixedRecipe')
   Future<Map<String, dynamic>> findWithFixedRecipe({
     required String recipeId,
     required DateTime start,
@@ -194,13 +291,13 @@ class AstroApi {
     required double lon,
     int topN = 10,
   }) =>
-      _post('/api/optimal-timing/v2/find-with-fixed-recipe', <String, Object?>{
+      _post('/api/optimal-timing/v2/find-with-fixed-recipe', <String, Object>{
         'recipe_id': recipeId,
         'start_date': _isoDate(start),
         'end_date': _isoDate(end),
         'location': <String, double>{'latitude': lat, 'longitude': lon},
         'top_n': topN,
-      });
+      }, timeout: plannerTimeout);
 
   static String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'

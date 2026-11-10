@@ -5,6 +5,8 @@
 /// только ждёт результата, рисовать код самому не нужно.
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -40,8 +42,8 @@ class _PairingBody extends StatefulWidget {
 }
 
 class _PairingBodyState extends State<_PairingBody> {
-  bool _connecting = false;
   String? _error;
+  String? _status;
 
   @override
   void initState() {
@@ -58,39 +60,60 @@ class _PairingBodyState extends State<_PairingBody> {
   }
 
   void _onChange() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (widget.controller.isPaired && widget.controller.isConnected) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      if (widget.controller.lastError != null) {
+        _error = widget.controller.lastError;
+      }
+    });
   }
 
   Future<void> _startScan() async {
-    final Map<Permission, PermissionStatus> statuses = await <Permission>[
+    final List<Permission> perms = <Permission>[
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
-    ].request();
-    if (statuses.values.any((PermissionStatus s) => !s.isGranted)) {
+    ];
+    // Android 6–11 без геолокации BLE-скан возвращает пустой список.
+    if (Platform.isAndroid) {
+      perms.add(Permission.locationWhenInUse);
+    }
+    final Map<Permission, PermissionStatus> statuses = await perms.request();
+    if (!statuses[Permission.bluetoothScan]!.isGranted ||
+        !statuses[Permission.bluetoothConnect]!.isGranted) {
       setState(() =>
           _error = 'Нужен доступ к Bluetooth, чтобы найти часы');
       return;
     }
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _status = null;
+    });
     await widget.controller.startScan();
   }
 
   Future<void> _connect(ScanResult r) async {
     setState(() {
-      _connecting = true;
       _error = null;
+      _status = 'Подключение… Сверьте код на часах и в системном диалоге '
+          'Android, затем подтвердите на обоих устройствах.';
     });
     try {
       await widget.controller.connect(r);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && widget.controller.isPaired) {
+        Navigator.of(context).pop();
+      }
     } catch (_) {
       if (mounted) {
-        setState(() => _error =
+        setState(() => _error = widget.controller.lastError ??
             'Не удалось подключиться. Сверьте код на часах и телефоне '
-            'и попробуйте снова');
+                'и попробуйте снова');
       }
     } finally {
-      if (mounted) setState(() => _connecting = false);
+      if (mounted) setState(() => _status = null);
     }
   }
 
@@ -98,6 +121,8 @@ class _PairingBodyState extends State<_PairingBody> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final List<ScanResult> results = widget.controller.scanResults;
+    final bool busy =
+        widget.controller.isConnecting || widget.controller.isScanning;
 
     return ListView(
       controller: widget.scrollController,
@@ -112,13 +137,18 @@ class _PairingBodyState extends State<_PairingBody> {
           style: theme.textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
+        if (_status != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(_status!, style: theme.textTheme.bodyMedium),
+          ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(_error!,
                 style: TextStyle(color: theme.colorScheme.error)),
           ),
-        if (_connecting)
+        if (widget.controller.isConnecting)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(child: CircularProgressIndicator()),
@@ -136,11 +166,12 @@ class _PairingBodyState extends State<_PairingBody> {
               title: const Text('AstroClock'),
               subtitle: Text(r.device.remoteId.str),
               trailing: const Icon(Icons.bluetooth_outlined),
+              enabled: !widget.controller.isConnecting,
               onTap: () => _connect(r),
             ),
         const SizedBox(height: 8),
         TextButton(
-          onPressed: widget.controller.isScanning ? null : _startScan,
+          onPressed: busy ? null : _startScan,
           child: const Text('Искать снова'),
         ),
       ],
