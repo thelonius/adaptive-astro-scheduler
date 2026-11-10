@@ -74,6 +74,8 @@ static bool wheelHasOverlap = false;
 static int textIndex = 0;
 static int textScroll = 0;
 static int textLines = 0;
+// Экран погашен кнопкой: панель спит, кадры не выводятся, расчёты идут
+static bool screenOff = false;
 // Лента плавной прокрутки устарела: сменились транзиты или палитра
 static bool textDocDirty = true;
 
@@ -1250,6 +1252,7 @@ static bool pressShown;
 #endif
 
 static void render() {
+  if (screenOff) return;
   double jd = currentJD();
   // Асцендент бежит примерно на градус в четыре минуты, поэтому обновляется
   // на каждой перерисовке, а не только в пятиминутном пересчёте
@@ -1279,6 +1282,7 @@ static void render() {
 // Кольцо VoC дышит раз в 2.4 с. Ради двух окружностей гонять весь кадр
 // незачем, поэтому обновляется только клочок экрана под кольцом.
 static void pulseVoidRing() {
+  if (screenOff) return;
 #ifdef BOARD_SMOOTH
   if (!voidBgValid) return;
   voidBg.pushSprite(&voidPatch, 0, 0);
@@ -1453,10 +1457,26 @@ static void showMode(int m) {
 }
 
 #ifdef BOARD_HAS_TOUCH
-// Сколько экран может стоять не на циферблате без касаний. Толкование длинное,
-// поэтому не пятнадцать секунд, как у Wear OS по умолчанию
-static constexpr unsigned long HOME_TIMEOUT_MS = 90000UL;
+// Момент последнего касания или нажатия: анимация колеса ждёт после него,
+// чтобы кадр не задерживал отклик
 static unsigned long lastInputAt = 0;
+
+// Экран гасится и зажигается кнопкой, без таймаута: на сложной карте
+// таймаут гасил бы экран посреди разглядывания. Панель уходит в сон
+// (0x10), погашенный пиксель AMOLED не светится и не выгорает
+static void setScreen(bool on) {
+  if (on == !screenOff) return;
+  screenOff = !on;
+  if (on) {
+    tft.wakeup();
+    tft.setBrightness(board::BRIGHTNESS);
+    render();
+  } else {
+    tft.setBrightness(0);
+    tft.sleep();
+  }
+  Serial.printf("экран %s\n", on ? "включён" : "погашен");
+}
 // Палец на экране: пока он лежит, loop() крутится без паузы, чтобы не терять
 // точки
 static bool touchDown = false;
@@ -1822,20 +1842,40 @@ static void handleInput() {
   lastBtn = btn;
 
 #ifdef BOARD_HAS_TOUCH
+  // Кнопка сбоку: короткое нажатие гасит и зажигает экран, двойное ведёт на
+  // колесо, долгое пересчитывает карту. Гашение ждёт 350 мс, не придёт ли
+  // второе нажатие; включение срабатывает сразу, ведь двойное нажатие экран
+  // тоже включает
+  static unsigned long pendingPressAt = 0;
+  static bool pending = false, offWhenDue = false;
   if (released && held > 30) {
     lastInputAt = millis();
     if (held > 800) {
+      pending = false;
+      setScreen(true);
       recompute();
       render();
-    } else if (mode != MODE_BIWHEEL) {
-      showMode(MODE_BIWHEEL);
+    } else if (pending) {
+      pending = false;
+      setScreen(true);
+      if (mode != MODE_BIWHEEL) showMode(MODE_BIWHEEL);
     } else {
-      showMode(MODE_MENU);
+      pending = true;
+      pendingPressAt = millis();
+      offWhenDue = !screenOff;
+      if (screenOff) setScreen(true);
     }
+  }
+  if (pending && millis() - pendingPressAt >= 350UL) {
+    pending = false;
+    if (offWhenDue) setScreen(false);
   }
 
   periph::touch::Msg m;
   while (periph::touch::poll(&m)) {
+    // Погашенный экран касания не будят: часы лежат на столе или в руке,
+    // случайное касание не должно их зажигать. Будит кнопка
+    if (screenOff) continue;
     lastInputAt = millis();
     if (m.kind == periph::touch::DOWN) touchDown = true;
     if (m.kind == periph::touch::UP) touchDown = false;
@@ -1856,8 +1896,6 @@ static void handleInput() {
       default: break;
     }
   }
-
-  if (mode != MODE_BIWHEEL && millis() - lastInputAt > HOME_TIMEOUT_MS) showMode(MODE_BIWHEEL);
 #else
   // В календаре короткий клик ждёт 400 мс: не пришёл ли второй. Двойной
   // листает день вперёд, одиночный выходит из режима. В остальных режимах
@@ -1997,6 +2035,10 @@ void loop() {
 
 #ifdef BOARD_SMOOTH
   // Пока лента едет или крутится индикатор, loop() без паузы
+  if (screenOff) {
+    delay(20);
+    return;
+  }
   if (textScrollTick()) return;
   if (calendarWaitTick()) return;
 #endif
