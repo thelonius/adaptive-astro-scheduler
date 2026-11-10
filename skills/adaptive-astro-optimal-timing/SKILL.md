@@ -1,8 +1,8 @@
 ---
 name: adaptive-astro-optimal-timing
-description: "Pick the best calendar days for real-world intentions using lunar timing, transit scoring, and optional LLM-built rules. Use when the user asks when to sign a contract, launch a project, travel, negotiate, marry, or schedule any important task. Requires the buyer's own Adaptive Astro Scheduler API (self-hosted Docker or your deployment) — configure ASTRO_API_URL before first use."
+description: "Pick the best calendar days for real-world intentions using a bundled Docker stack: Skyfield ephemeris service + Node optimal-timing v2 planner (lunar data, transit scoring, canonical or LLM recipes). Use when the user asks when to sign, launch, travel, negotiate, or schedule important work. First run scripts/stack-up.sh on the buyer's machine (Docker); then call scripts/plan_best_days.py against http://127.0.0.1:3000."
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Eduard Dubnitsky"
   license: "MIT"
   homepage: "https://github.com/thelonius/adaptive-astro-scheduler"
@@ -10,90 +10,70 @@ metadata:
 
 # Adaptive Astro Optimal Timing
 
-Agent skill for **Adaptive Astro Scheduler** — combines lunar calendar data, classical timing rules, ephemeris-backed scoring, and (optionally) LLM-generated recipes from a free-text intention.
+This skill ships the **real product**: **ephemeris API + backend planner**, not a script that assumes a mystery server.
 
-**You must run the API yourself** (or point at an instance you control). This skill is a client: scripts + instructions. It does not include hosted servers or interpretation corpus hosting.
+| Layer | In the zip |
+|-------|------------|
+| Ephemeris (Python) | `stack/docker-compose.yml` → `ghcr.io/.../ephemeris` |
+| Planner backend (Node) | same compose → `ghcr.io/.../backend` |
+| Agent CLI | `scripts/plan_best_days.py`, `scripts/task_planner.py` |
+| Boot | `scripts/stack-up.sh` / `stack-down.sh` |
 
-## When to use
+Images are built from [adaptive-astro-scheduler](https://github.com/thelonius/adaptive-astro-scheduler). The agent **starts the stack**, then **queries the API**. See `reference/architecture.md`.
 
-- User wants **which day** to do something: sign, launch, meet, travel, argue, heal, publish.
-- User gives a **natural-language intention** in any language.
-- User prefers **fast deterministic** timing (canonical recipes) without LLM cost.
+## Prerequisites
 
-Do **not** use for full natal chart drawing, synastry, or paid human readings — use chart tools elsewhere.
+- **Docker** (Docker Compose v2)
+- **python3** (stdlib only in scripts)
+- **~2 GB RAM** free for four containers
+- Optional: **NVIDIA_API_KEY** in `stack/.env` for free-text `intent` mode (recipe mode works without LLM)
 
-## Setup (once per machine)
-
-1. Clone and start the stack (backend + ephemeris + postgres on your machine or VPS):
-
-   ```bash
-   git clone https://github.com/thelonius/adaptive-astro-scheduler.git
-   cd adaptive-astro-scheduler
-   # copy docker/.env.n150.example or use docker compose for local dev — see reference/self-host.md
-   docker compose -f docker/docker-compose.n150.yml up -d   # minimal API stack
-   ```
-
-2. Point the skill at the API (default loopback):
-
-   ```bash
-   export ASTRO_API_URL=http://127.0.0.1:3000
-   export ASTRO_LAT=55.7558
-   export ASTRO_LON=37.6173
-   export ASTRO_TZ=Europe/Moscow
-   ```
-
-3. Verify:
-
-   ```bash
-   python3 scripts/plan_best_days.py health
-   ```
-
-4. Optional: load the ZET interpretation corpus into Postgres (not shipped in the image). See `reference/self-host.md` in this zip.
-
-## Commands (agent workflow)
-
-Use **only** the bundled scripts — do not read the whole monorepo unless debugging.
+## Setup (every new machine)
 
 ```bash
-SKILL_ROOT=<directory where this SKILL.md lives>
-PY=python3
+SKILL_ROOT=<directory of this SKILL.md>
 
-# Health + list built-in timing recipes
-$PY $SKILL_ROOT/scripts/plan_best_days.py health
-$PY $SKILL_ROOT/scripts/plan_best_days.py recipes
+$SKILL_ROOT/scripts/stack-up.sh
+export ASTRO_API_URL=http://127.0.0.1:3000
+export ASTRO_LAT=55.7558
+export ASTRO_LON=37.6173
+export ASTRO_TZ=Europe/Moscow
 
-# Free-text intention (uses LLM on the API if configured; NVIDIA key in server .env)
-$PY $SKILL_ROOT/scripts/plan_best_days.py intent \
-  "sign a rental lease" --from 2026-11-01 --to 2026-11-30 --top 5
-
-# Fixed canonical recipe (no LLM, faster): mercury_matters, business_launch, …
-$PY $SKILL_ROOT/scripts/plan_best_days.py recipe mercury_matters \
-  --from 2026-11-01 --to 2026-11-30 --top 5 --prompt "sign contract"
-
-# Persist tasks + schedule + outcome journal (optional)
-$PY $SKILL_ROOT/scripts/task_planner.py add "Lease signing" --astro --intent "sign lease" --days 21
-$PY $SKILL_ROOT/scripts/task_planner.py schedule "lease" --date 2026-11-12
-$PY $SKILL_ROOT/scripts/task_planner.py outcome "lease" --rating 4 --comment "smooth"
+python3 $SKILL_ROOT/scripts/plan_best_days.py health
+python3 $SKILL_ROOT/scripts/plan_best_days.py recipes
 ```
 
-## How to answer the user
+`stack-up.sh` creates `stack/.env` with a random Postgres password on first run and pulls public ghcr images.
 
-1. Run `health`. If it fails, walk through `reference/self-host.md` — do not invent scores.
-2. Choose **recipe** when the intent matches a known bucket (contracts → `mercury_matters`, launches → `business_launch`). Otherwise **intent**.
-3. Present top slots: date, score, short narrative if returned, moon phase / lunar day when present.
-4. Say clearly that timing is rule-based + ephemeris, not medical/legal advice.
+## Planning workflow
 
-## API surface (reference)
+```bash
+PY=python3
 
-| Endpoint | Role |
-|----------|------|
-| `GET /health` | API up |
-| `GET /api/optimal-timing/v2/recipes` | Canonical recipe ids |
-| `POST /api/optimal-timing/v2/find-with-intent` | LLM recipe + scoring |
-| `POST /api/optimal-timing/v2/find-with-fixed-recipe` | Deterministic scoring |
+# Deterministic (no LLM): contracts → mercury_matters
+$PY $SKILL_ROOT/scripts/plan_best_days.py recipe mercury_matters \
+  --from 2026-11-01 --to 2026-11-30 --top 5 --prompt "sign lease"
 
-Full payload shapes: `reference/api.md`.
+# Free-text intention (LLM on the backend if NVIDIA_API_KEY is set in stack/.env)
+$PY $SKILL_ROOT/scripts/plan_best_days.py intent \
+  "sign a rental lease" --from 2026-11-01 --to 2026-11-30 --top 5
+```
 
-## Marketplace / listing note (creator)
+Optional task journal: `scripts/task_planner.py` (same API).
 
-List as **free** unless you bundle a working API. Per Agensi guidance, a paid skill must deliver what the listing promises without forcing a separate paid service the buyer cannot run. A free skill + self-host instructions is the honest model.
+## Agent rules
+
+1. If `health` fails → run `stack-up.sh` or `docker compose` logs; **never invent scores**.
+2. Prefer **recipe** when intent maps to a canonical id (`mercury_matters`, `business_launch`, …).
+3. Present dates, scores, moon sign/phase from API `windows`; disclaim not legal/medical advice.
+4. **Corpus** interpretation texts are **not** in this skill zip; timing v2 does not need them. Full repo has optional corpus load.
+
+## Teardown
+
+```bash
+$SKILL_ROOT/scripts/stack-down.sh
+```
+
+## Marketplace note
+
+Listing promises **local Docker stack + agent scripts**. That matches Agensi’s requirement that the zip delivers what it describes (not a paid pointer to a hosted API you do not include). Optional paid tier later = support/pinning, not remote SaaS unless you run it.

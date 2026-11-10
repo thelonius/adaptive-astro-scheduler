@@ -1,0 +1,83 @@
+# Minimal Adaptive Astro Scheduler stack bundled with the Agensi skill.
+# Ephemeris (Python/Skyfield) + backend (Node v2 planner) + Postgres + Redis.
+# Corpus texts are optional; optimal-timing v2 works without them.
+
+name: astro-timing-skill
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in stack/.env}
+      POSTGRES_DB: adaptive_astro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  ephemeris:
+    image: ${EPHEMERIS_IMAGE:?set EPHEMERIS_IMAGE in stack/.env}
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      API_RELOAD: "false"
+      API_V1_PREFIX: /api/v1
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ephemeris_cache:/tmp/skyfield-cache
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  backend:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE in stack/.env}
+    ports:
+      - "127.0.0.1:${ASTRO_BIND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/adaptive_astro
+      REDIS_URL: redis://redis:6379
+      EPHEMERIS_MODE: api
+      EPHEMERIS_API_URL: http://ephemeris:8000
+      TELEGRAM_BOT_TOKEN: ""
+      CORS_ORIGIN: http://localhost:3000
+      RUN_DB_MIGRATIONS: "true"
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_BASE_URL: ${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ephemeris:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  ephemeris_cache:

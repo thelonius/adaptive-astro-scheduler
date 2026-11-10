@@ -11,7 +11,7 @@ mkdir -p "$OUT"
 rm -f "$ZIP"
 (
   cd "$SRC"
-  zip -r "$ZIP" SKILL.md scripts reference -x '**/__pycache__/*' -x '**/*.pyc'
+  zip -r "$ZIP" SKILL.md scripts stack reference -x '**/__pycache__/*' -x '**/*.pyc' -x 'stack/.env'
 )
 echo "Wrote $ZIP"
 unzip -l "$ZIP"
