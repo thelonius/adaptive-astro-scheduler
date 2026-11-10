@@ -1,5 +1,11 @@
 # Бэклог
 
+## Agensi (Joeri Brons, 2025-10)
+
+- [x] Пакет skill для маркетплейса: `skills/adaptive-astro-optimal-timing/`, zip: `./scripts/package-agensi-skill.sh`
+- [ ] Бесплатный листинг на agensi.io/sell (self-host API — честно по письму Joeri)
+- [ ] Демо-видео 30–60 с: агент вызывает `plan_best_days.py intent …`
+
 Короткие записи о том, что решено сделать и почему. Подробные планы задач лежат
 в [superpowers/plans/](superpowers/plans/), здесь только список и причина.
 
