@@ -63,71 +63,50 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
+  # Прод только n150: API + Postgres (корпус в volume). Веб-морда не деплоится.
   deploy:
-    name: Deploy to production
+    name: Deploy to n150
     needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
     steps:
-      - name: Pull images and restart the stack
+      - name: Pull images and restart API stack on n150
         uses: appleboy/ssh-action@v1
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           IMAGE_TAG: ${{ github.sha }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USER: ${{ github.actor }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          REMOTE_DIR: ${{ secrets.N150_REMOTE_DIR }}
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_PREFIX,IMAGE_TAG,GHCR_TOKEN,GHCR_USER,TELEGRAM_BOT_TOKEN,POSTGRES_PASSWORD,NVIDIA_API_KEY
+          host: ${{ secrets.N150_SSH_HOST }}
+          port: ${{ secrets.N150_SSH_PORT }}
+          username: ${{ secrets.N150_SSH_USER }}
+          key: ${{ secrets.N150_SSH_PRIVATE_KEY }}
+          envs: IMAGE_PREFIX,IMAGE_TAG,REMOTE_DIR
           script: |
-            set -e
-            cd ${{ secrets.SSH_DEPLOY_PATH }}
-            COMPOSE="docker compose -f docker/docker-compose.prod.yml"
+            set -euo pipefail
+            cd "${REMOTE_DIR}"
+            COMPOSE="docker compose -p astro -f docker/docker-compose.n150.yml"
 
-            # Компоуз и init.sql берутся из репозитория, код — из образов.
-            echo "--- Syncing repo to origin/main ---"
+            echo "--- git sync ---"
             git fetch origin main
             git reset --hard origin/main
-            git clean -fd
 
-            echo "--- Writing .env ---"
-            umask 077
-            cat > .env <<EOF
-            BACKEND_IMAGE=${IMAGE_PREFIX}/backend:${IMAGE_TAG}
-            FRONTEND_IMAGE=${IMAGE_PREFIX}/frontend:${IMAGE_TAG}
-            EPHEMERIS_IMAGE=${IMAGE_PREFIX}/ephemeris:${IMAGE_TAG}
-            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            NVIDIA_API_KEY=${NVIDIA_API_KEY}
-            EOF
-            umask 022
+            echo "--- .env image tags ---"
+            for f in .env docker/.env; do
+              sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${IMAGE_PREFIX}/backend:${IMAGE_TAG}|" "$f"
+              sed -i "s|^EPHEMERIS_IMAGE=.*|EPHEMERIS_IMAGE=${IMAGE_PREFIX}/ephemeris:${IMAGE_TAG}|" "$f"
+            done
 
-            # GITHUB_TOKEN живёт минуты и даёт read:packages на пакеты этого
-            # репозитория — долгоживущий PAT на сервере не нужен.
-            echo "--- ghcr login ---"
-            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
-
-            echo "--- Pulling images ---"
+            echo "--- pull & up ---"
             $COMPOSE pull
-
-            echo "--- Starting ---"
             $COMPOSE up -d --remove-orphans
 
-            echo "--- Running migrations ---"
+            echo "--- migrate (идемпотентно; корпус в volume, не трогаем) ---"
             $COMPOSE exec -T backend sh -c 'cd /app/backend && node dist/database/migrate.js'
 
-            docker logout ghcr.io
-
-            # Соседние стеки трогать нельзя, поэтому только висячие слои
-            # астро-образов, без -a.
-            echo "--- Pruning dangling layers ---"
-            docker image prune -f
-
+            curl -sf http://127.0.0.1:3000/health
+            curl -sf http://127.0.0.1:3000/api/corpus/stats | head -c 120
+            echo
             $COMPOSE ps

@@ -2,45 +2,34 @@
 
 ## Прод
 
-Два хоста. **OpenClaw и API-инструменты — n150**, веб-морда — Амстердам.
+**Единственный прод — n150 (Mattahu).** OpenClaw, API, Postgres с **корпусом текстов**, ephemeris. Публичная веб-морда **отключена** (устарела); `frontend` в CI собирается «на будущее», на n150 не поднимается.
 
-### n150 / Mattahu (API для openclaw) — основной для агента
+### n150 / Mattahu
 
 - **SSH**: `developer@95.165.10.115`, порт **22299**
 - **Ключ**: `~/.ssh/id_ed25519_n150_server2_developer` (Windows: `%USERPROFILE%\.ssh\id_ed25519_n150_server2_developer`)
 - **Чекout**: `~/apps/astro`, compose — [docker/docker-compose.n150.yml](docker/docker-compose.n150.yml)
 - **API**: `http://127.0.0.1:3000` на loopback (openclaw с той же машины). Frontend нет
-- **Деплой**: `./scripts/deploy-n150.sh` или вручную `pull` + `up` по [docker/.env.n150.example](docker/.env.n150.example). CI (`deploy.yml`) сюда **не** ходит
+- **Корпус**: таблица `corpus_interpretations` в Postgres (`~35k+` записей из `zet/corpus.jsonl`). API: `/api/corpus/*`. Данные живут в docker-volume `postgres_data`; в образ бэкенда не входят. Пустая БД: миграции (entrypoint) → `python3 -m scripts.ml.load_corpus` с Mac через SSH-туннель к Postgres (см. выше в сессии) или скрипт на будущее. Локальный источник: `zet/corpus.jsonl` в репо, не в git (пересбор из `zet/Txt4.rar`)
+- **Деплой**: `./scripts/deploy-n150.sh` или CI [deploy.yml](.github/workflows/deploy.yml) → n150 после build
 - **Образы**: `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,ephemeris}:<git-sha>`
 - **SearXNG**: `http://127.0.0.1:8888` loopback (OpenClaw на n150); клиенты: SSH-туннель `:8888` или LAN `http://192.168.1.86:8890` (Basic Auth). [docker/searxng/REMOTE_ACCESS.md](docker/searxng/REMOTE_ACCESS.md), деплой: `./scripts/deploy-searxng-n150.sh`, туннель: `./scripts/searxng-tunnel-mac.sh`, скилл: [skills/websearch/](skills/websearch/)
 - **VLESS-прокси** (Claude / OpenClaw → интернет): локально `http://127.0.0.1:7890`. Конфиг: [docker/sing-box-proxy/](docker/sing-box-proxy/), секрет `VLESS_URI` в `.env`, деплой: `./scripts/deploy-sing-box-n150.sh`. Запуск Claude: `scripts/claude-n150.sh`
 - **Вход Claude на n150** (без браузера на сервере): с Mac `./scripts/n150-claude-auth-from-mac.sh` — ссылку открыть на Mac/телефоне, подтвердить email. OpenClaw Anthropic OAuth: `scripts/openclaw-auth-n150.sh`. AIvex (ключ): `OPENCLAW_API_KEY=... ./scripts/openclaw-aivex-n150.sh` (`https://api.aivex.work/v1`). Статус OpenClaw: `./scripts/openclaw-status-n150.sh`. Опционально Chromium: `./scripts/install-browser-n150.sh`
+- **Oh My Pi (omp)**: установка `./scripts/install-omp-n150.sh`, запуск с Mac `./scripts/omp-n150.sh`, на сервере `./scripts/omp-server.sh`. Auth: `./scripts/omp-auth-n150.sh`. Рядом с OpenClaw, тот же sing-box :7890.
 
 ```bash
 ssh -i ~/.ssh/id_ed25519_n150_server2_developer -p 22299 developer@95.165.10.115
 cd ~/apps/astro && docker compose -f docker/docker-compose.n150.yml ps
 curl -s http://127.0.0.1:3000/health
+curl -s http://127.0.0.1:3000/api/corpus/stats
 curl -s http://127.0.0.1:8888/healthz
 python3 ~/.agents/skills/websearch/search.py search "тест" -n 3
 ```
 
-### Амстердам (веб + полный стек)
+### Архив: Амстердам и старый VPS
 
-- Хост: `root@31.130.130.11` (Timeweb), репо в `/root/adaptive-astro-scheduler`, ключ `~/.ssh/cesium_replica_key`
-- Стек: `docker/docker-compose.prod.yml` (backend, frontend, ephemeris, postgres, redis)
-- Публичный адрес: `https://astro-31-130-130-11.sslip.io:4443`, health — `/health` (отдельный `location` в [docker/nginx.conf](docker/nginx.conf), иначе путь уходит в SPA-fallback)
-- Деплой: GitHub Actions [deploy.yml](.github/workflows/deploy.yml) (сейчас SSH на этот хост часто недоступен из CI)
-
-Старый хост `user1@176.123.166.252` больше не используется: астро-стек оттуда удалён (2026-07, ни контейнеров, ни volume'ов), на боксе остались чужие сервисы.
-
-### Сервер общий
-
-На `31.130.130.11` кроме астро живут ssd-radar, gpx-tracker, 3x-ui, shadowbox (Outline VPN), prometheus, zabbix-agent и pm2 с cesium-route-renderer. Отсюда все ограничения:
-
-- **Порты**: заняты 80 и 4443 (ssd_radar_caddy), 443 (gpx-tracker-caddy), 8443 и 2053 (3x-ui), 3000/3002/3003/25880 (pm2). Астро не публикует наружу ничего
-- **Память**: 2 ГБ на весь бокс. У каждого сервиса в prod-compose стоит `mem_limit`, суммарно ~912 МБ. Менять их вверх — только вместе с swap
-- **TLS**: астро проксируется через `ssd_radar_caddy` (site-блок в `~/ssd/deploy/Caddyfile`), а не своим Caddy: ACME HTTP-01 требует порт 80, которым тот владеет. Связь через внешнюю docker-сеть `astro_edge`
-- `docker image prune` **только без `-a`**: `-a` снесёт слои соседних стеков
+Веб-стек (`docker-compose.prod.yml`, `31.130.130.11`, sslip.io:4443) и `176.123.166.252` **не прод**. Астро там не держим, пока морда снова не понадобится. Описание портов/лимитов Timeweb — в git-истории `CLAUDE.md` и `docker/docker-compose.prod.yml`.
 
 ### SSH-доступ — read-only
 
@@ -50,9 +39,9 @@ python3 ~/.agents/skills/websearch/search.py search "тест" -n 3
 
 ### Деплой
 
-- **Правильно**: GitHub Actions (deploy.yml). Образы собираются в CI и пушатся в `ghcr.io/thelonius/adaptive-astro-scheduler/{backend,frontend,ephemeris}`, сервер только делает `pull`. Собирать на сервере нельзя: двух ядер и ~900 МБ свободной памяти на vite не хватает
-- `VITE_API_URL` запекается в бандл на этапе сборки, поэтому публичный адрес задаётся переменной репозитория `ASTRO_PUBLIC_URL`, а не в рантайме
-- **Не использовать**: `deploy-full.sh` — он rsync'ит локальное рабочее дерево (включая незакоммиченное) и поощряет тот же anti-pattern, что и правки на сервере. Считать deprecated
+- **Прод**: push в `main` → CI build образов в ghcr → `deploy.yml` на **n150** (`./scripts/deploy-n150.sh` с Mac — то же). Backend стартует с миграциями (entrypoint)
+- **Корпус после нового тома Postgres**: `./scripts/load-corpus-n150.sh` (или `scripts/ml/load_corpus.py`); деплой образов корпус не заливает
+- **Не использовать**: `deploy-full.sh` — deprecated
 
 ### Секреты
 
