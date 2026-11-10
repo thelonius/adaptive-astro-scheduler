@@ -1,79 +1,119 @@
 ---
 name: adaptive-astro-optimal-timing
-description: "Pick the best calendar days for real-world intentions using a bundled Docker stack: Skyfield ephemeris service + Node optimal-timing v2 planner (lunar data, transit scoring, canonical or LLM recipes). Use when the user asks when to sign, launch, travel, negotiate, or schedule important work. First run scripts/stack-up.sh on the buyer's machine (Docker); then call scripts/plan_best_days.py against http://127.0.0.1:3000."
+description: "Hybrid astrological day picker for real tasks: Docker stack (ephemeris + optimal-timing v2) OR existing local API. WHEN: when to sign, launch, travel, negotiate, schedule important work; best days in a date range; astro slots for a todo. WHEN NOT: natal chart drawing, medical/legal advice, horoscope fluff without calculation — never guess dates. Agent runs scripts only; LLM explains API output."
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   author: "Eduard Dubnitsky"
   license: "MIT"
   homepage: "https://github.com/thelonius/adaptive-astro-scheduler"
 ---
 
-# Adaptive Astro Optimal Timing
+# Adaptive Astro — hybrid optimal timing
 
-This skill ships the **real product**: **ephemeris API + backend planner**, not a script that assumes a mystery server.
+**Гибрид:** язык и объяснения — **агент (LLM)**; небо, правила, баллы — **локальный API** (ephemeris + v2). Без успешного `health` даты **не придумывать**.
 
-| Layer | In the zip |
-|-------|------------|
-| Ephemeris (Python) | `stack/docker-compose.yml` → `ghcr.io/.../ephemeris` |
-| Planner backend (Node) | same compose → `ghcr.io/.../backend` |
-| Agent CLI | `scripts/plan_best_days.py`, `scripts/task_planner.py` |
-| Boot | `scripts/stack-up.sh` / `stack-down.sh` |
+| В zip | Роль |
+|-------|------|
+| `stack/docker-compose.yml` | Postgres, Redis, ephemeris, backend (ghcr images) |
+| `scripts/stack-up.sh` / `stack-down.sh` | Подъём стека на машине покупателя |
+| `scripts/plan_best_days.py` | Планирование: `health`, `recipes`, `recipe`, `intent` |
+| `scripts/task_planner.py` | Задачи: add → schedule → outcome (+ `request_id` trace) |
 
-Images are built from [adaptive-astro-scheduler](https://github.com/thelonius/adaptive-astro-scheduler). The agent **starts the stack**, then **queries the API**. See `reference/architecture.md`.
+Детали архитектуры: `reference/architecture.md`. Режимы n150 vs новая машина: `reference/modes.md`.
 
 ## Prerequisites
 
-- **Docker** (Docker Compose v2)
-- **python3** (stdlib only in scripts)
-- **~2 GB RAM** free for four containers
-- Optional: **NVIDIA_API_KEY** in `stack/.env` for free-text `intent` mode (recipe mode works without LLM)
+- **python3** (stdlib в скриптах)
+- **Docker Compose v2** — только если API ещё нет (Mode B)
+- **~2 GB RAM** — для четырёх контейнеров
+- Опционально: **`NVIDIA_API_KEY`** в `stack/.env` — режим `intent` на backend
 
-## Setup (every new machine)
+## Phase 0 — Environment
 
 ```bash
 SKILL_ROOT=<directory of this SKILL.md>
-
-$SKILL_ROOT/scripts/stack-up.sh
-export ASTRO_API_URL=http://127.0.0.1:3000
-export ASTRO_LAT=55.7558
-export ASTRO_LON=37.6173
-export ASTRO_TZ=Europe/Moscow
-
-python3 $SKILL_ROOT/scripts/plan_best_days.py health
-python3 $SKILL_ROOT/scripts/plan_best_days.py recipes
+export ASTRO_LAT=${ASTRO_LAT:-55.7558}
+export ASTRO_LON=${ASTRO_LON:-37.6173}
+export ASTRO_TZ=${ASTRO_TZ:-Europe/Moscow}
+export ASTRO_API_URL=${ASTRO_API_URL:-http://127.0.0.1:3000}
 ```
 
-`stack-up.sh` creates `stack/.env` with a random Postgres password on first run and pulls public ghcr images.
+## Phase 1 — Bootstrap
 
-## Planning workflow
+1. `python3 $SKILL_ROOT/scripts/plan_best_days.py health`
+2. Если **healthy** → Phase 2 (Docker **не** трогать — типичный n150 / уже поднятый VPS).
+3. Если недоступен → `bash $SKILL_ROOT/scripts/stack-up.sh`, снова `health`.
+4. При ошибке — смотреть логи compose; **не** отвечать датами из модели.
+
+```bash
+python3 $SKILL_ROOT/scripts/plan_best_days.py recipes   # canonical ids
+```
+
+## Phase 2 — Plan (обязательно для «когда лучше»)
+
+Выбор режима (см. `reference/modes.md`):
 
 ```bash
 PY=python3
 
-# Deterministic (no LLM): contracts → mercury_matters
+# Детерминированно, без LLM на сервере (по умолчанию)
 $PY $SKILL_ROOT/scripts/plan_best_days.py recipe mercury_matters \
   --from 2026-11-01 --to 2026-11-30 --top 5 --prompt "sign lease"
 
-# Free-text intention (LLM on the backend if NVIDIA_API_KEY is set in stack/.env)
+# Свободный текст — только если backend реально поддерживает intent (NVIDIA_API_KEY)
 $PY $SKILL_ROOT/scripts/plan_best_days.py intent \
   "sign a rental lease" --from 2026-11-01 --to 2026-11-30 --top 5
 ```
 
-Optional task journal: `scripts/task_planner.py` (same API).
+Агент после вывода скрипта:
 
-## Agent rules
+- Даёт **3–5 дат** из `windows`, score, луну, краткий summary API.
+- Упоминает дисквалификации, если есть в ответе/summary.
+- Дисклеймер: не юридическая/медицинская консультация.
 
-1. If `health` fails → run `stack-up.sh` or `docker compose` logs; **never invent scores**.
-2. Prefer **recipe** when intent maps to a canonical id (`mercury_matters`, `business_launch`, …).
-3. Present dates, scores, moon sign/phase from API `windows`; disclaim not legal/medical advice.
-4. **Corpus** interpretation texts are **not** in this skill zip; timing v2 does not need them. Full repo has optional corpus load.
+## Phase 3 — Remember (опционально, как бот на n150)
 
-## Teardown
+По желанию пользователя — завести дело и привязать слоты:
+
+```bash
+$PY $SKILL_ROOT/scripts/task_planner.py add "Подписать договор" --astro \
+  --recipe mercury_matters --from 2026-11-01 --to 2026-11-30
+
+$PY $SKILL_ROOT/scripts/task_planner.py schedule "договор" --date 2026-11-18
+$PY $SKILL_ROOT/scripts/task_planner.py outcome "договор" --rating 4 --comment "гладко"
+$PY $SKILL_ROOT/scripts/task_planner.py list
+$PY $SKILL_ROOT/scripts/task_planner.py recap
+```
+
+Файлы: `$ASTRO_AGENT_WORKSPACE/memory/astro_todos.json` (default `~/.agent/adaptive-astro-workspace`; на OpenClaw задай `OPENCLAW_WORKSPACE`).
+
+## Phase 4 — Agent rules (hybrid)
+
+1. **Скрипт → JSON → ответ.** Цифры и даты только из API/CLI.
+2. **Recipe first:** договор/аренда → `mercury_matters`; неясно без NVIDIA → спросить и `recipes`, не `intent`.
+3. **Локация:** нет города — использовать env или спросить; перед планом зафиксировать lat/lon/tz.
+4. **Корпус** (`/api/corpus/*`) в zip **не** входит; v2 тайминг без него работает.
+5. **Teardown:** `stack-down.sh` только по запросу пользователя (не на shared prod API).
+
+## Teardown (local Docker only)
 
 ```bash
 $SKILL_ROOT/scripts/stack-down.sh
 ```
 
-## Marketplace note
+## Smoke / regression (maintainers)
 
-Listing promises **local Docker stack + agent scripts**. That matches Agensi’s requirement that the zip delivers what it describes (not a paid pointer to a hosted API you do not include). Optional paid tier later = support/pinning, not remote SaaS unless you run it.
+Из корня репозитория:
+
+```bash
+./scripts/test-agensi-skill.sh
+# полный stack на Mac:
+./scripts/test-agensi-skill.sh --boot
+# прод n150 через tunnel:
+ssh -f -N -L 3999:127.0.0.1:3000 -p 22299 -i ... developer@95.165.10.115
+ASTRO_API_URL=http://127.0.0.1:3999 ./scripts/test-agensi-skill.sh
+```
+
+## Marketplace
+
+Zip = compose + образы + CLI. Не обещать hosted SaaS. Opt-in telemetry — отдельно, off by default.

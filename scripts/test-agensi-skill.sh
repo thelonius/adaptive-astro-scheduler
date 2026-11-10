@@ -49,6 +49,16 @@ out="$($PY "$SKILL/scripts/plan_best_days.py" recipe mercury_matters --from "$FR
 echo "$out" | grep -qE 'score=' || fail "no scored windows in output"
 echo "$out" | head -12
 
+say "hybrid task_planner (temp workspace)"
+TMP_WS="$(mktemp -d)"
+export ASTRO_AGENT_WORKSPACE="$TMP_WS"
+$PY "$SKILL/scripts/task_planner.py" add "smoke test lease" --astro \
+  --recipe mercury_matters --from "$FROM" --to "$TO" --top 3 >/dev/null \
+  || fail "task_planner add --astro"
+$PY "$SKILL/scripts/task_planner.py" list | grep -q "smoke test" \
+  || fail "task_planner list"
+rm -rf "$TMP_WS"
+
 if [[ -n "${TEST_AGENSI_INTENT:-}" ]]; then
   say "intent mode (needs NVIDIA_API_KEY on server)"
   $PY "$SKILL/scripts/plan_best_days.py" intent "schedule a short business call" \
