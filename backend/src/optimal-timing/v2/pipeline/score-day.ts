@@ -117,16 +117,26 @@ function summarize(ctx: DayContext): DayEphemerisSummary {
         .filter((p) => p.isRetrograde)
         .map((p) => p.planet);
 
-    const notable = ctx.aspects
-        .filter((a) => a.orbDeg <= 4) // tight aspects only for debug brevity
-        .slice(0, 6)
-        .map((a) => ({
-            from: a.from,
-            to: a.to,
-            type: a.type,
-            orb_deg: a.orbDeg,
-            applying: a.applying ?? false,
-        }));
+    const planets = Object.values(ctx.planets).map((p) => ({
+        planet: p.planet,
+        sign: p.sign,
+        degree_in_sign: Number((((p.longitude % 30) + 30) % 30).toFixed(2)),
+        longitude: Number(p.longitude.toFixed(3)),
+        speed: Number(p.speed.toFixed(4)),
+        retrograde: p.isRetrograde,
+    }));
+
+    const aspects = ctx.aspects.map((a) => ({
+        from: a.from,
+        to: a.to,
+        type: a.type,
+        orb_deg: Number(a.orbDeg.toFixed(2)),
+        applying: a.applying ?? false,
+    }));
+
+    const notable = aspects
+        .filter((a) => a.orb_deg <= 4) // tight aspects only, for debug UI brevity
+        .slice(0, 6);
 
     return {
         moon: {
@@ -134,9 +144,13 @@ function summarize(ctx: DayContext): DayEphemerisSummary {
             phase: ctx.moon.phase,
             illumination: Number(ctx.moon.illumination.toFixed(3)),
             void_of_course: ctx.moon.voidOfCourse,
+            longitude: Number(ctx.moon.longitude.toFixed(3)),
+            waxing: ctx.moon.isWaxing,
         },
         sun_sign: ctx.planets.Sun.sign,
         retrograde_planets: retrogradePlanets,
+        planets,
+        aspects,
         notable_aspects: notable,
     };
 }

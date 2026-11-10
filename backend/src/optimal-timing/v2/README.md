@@ -139,6 +139,24 @@ useful):
 
 Steps 1–5 are this commit. Steps 6+ are future commits.
 
+## Grounding and verification
+
+Narratives are checked against the day's ephemeris before they leave the
+stage. `llm/verify-narrative.ts` pulls the astrological claims out of the
+generated text (planet in sign, retrograde, aspect between a pair, moon
+phase, void of course, lunar day) and confronts each one with
+`ephemeris_snapshot`, which is why that snapshot carries the full planet
+and aspect lists rather than a compact debug subset.
+
+A claim that contradicts the data, or that the data says nothing about,
+goes back to the model with the real numbers attached. If a second round
+does not fix it, the offending (date, vibe) cell is replaced by a
+deterministic fact sentence and the bundle is not cached. Either way the
+outcome lands in `trace.stage_render_narratives.verification`.
+
+The snapshot is computed for noon UTC, so intraday sign changes are still
+unmodelled: see [docs/superpowers/plans/2026-09-20-llm-narrative-grounding.md](../../../../docs/superpowers/plans/2026-09-20-llm-narrative-grounding.md).
+
 ## Versioning
 
 Every artifact that affects output gets an explicit version string

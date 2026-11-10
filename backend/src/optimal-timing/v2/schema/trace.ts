@@ -50,6 +50,29 @@ export interface LLMStage<T> {
 export interface StageRenderNarratives extends LLMStage<NarrativeBundle> {
     /** Echo of the natal chart id used to ground narratives, or null. */
     natal_chart_id: string | null;
+    /**
+     * Result of checking every astrological claim in the generated text
+     * against the day's ephemeris facts. Undefined on traces written
+     * before verification existed.
+     */
+    verification?: NarrativeVerificationSummary;
+}
+
+/** Aggregate of the fact-check pass over one narrative bundle. */
+export interface NarrativeVerificationSummary {
+    /** Total claims extracted from the generated text. */
+    claims: number;
+    /** Claims that contradict the day's facts. */
+    contradicted: number;
+    /** Claims the facts say nothing about (invented planets, lunar days, ...). */
+    unsupported: number;
+    /** LLM attempts spent, including repair rounds. */
+    attempts: number;
+    /**
+     * (date, vibe_id) cells whose text was replaced by a deterministic
+     * fact sentence because the model kept contradicting the ephemeris.
+     */
+    fell_back: Array<{ date: string; vibe_id: string; violations: string[] }>;
 }
 
 // ─── Per-stage records ───────────────────────────────────────────────────────
@@ -80,12 +103,51 @@ export interface PredicateFiring {
     match_details: Record<string, unknown>;
 }
 
+export interface PlanetPositionSummary {
+    planet: string;
+    sign: string;
+    /** 0-30°, position inside the sign. */
+    degree_in_sign: number;
+    /** 0-360°, ecliptic longitude. */
+    longitude: number;
+    /** °/day; negative means retrograde. */
+    speed: number;
+    retrograde: boolean;
+}
+
+export interface AspectSummary {
+    from: string;
+    to: string;
+    type: string;
+    orb_deg: number;
+    applying: boolean;
+}
+
+/**
+ * One day's ephemeris as the LLM and the verifier see it.
+ *
+ * This is the grounding contract: a narrative may only name placements
+ * that appear here. Anything trimmed from this snapshot is something the
+ * model has to invent, so keep it complete rather than compact — the
+ * predicate firings next to it in the trace are far heavier anyway.
+ */
 export interface DayEphemerisSummary {
-    /** Compact snapshot for replay/debug. Full chart not stored. */
-    moon: { sign: string; phase: string; illumination: number; void_of_course: boolean };
+    moon: {
+        sign: string;
+        phase: string;
+        illumination: number;
+        void_of_course: boolean;
+        longitude: number;
+        waxing: boolean;
+    };
     sun_sign: string;
     retrograde_planets: string[];
-    notable_aspects: Array<{ from: string; to: string; type: string; orb_deg: number; applying: boolean }>;
+    /** Every planet the engine computed for this day. */
+    planets: PlanetPositionSummary[];
+    /** Every aspect the engine computed for this day. */
+    aspects: AspectSummary[];
+    /** Tight subset (orb ≤ 4°, up to 6) kept for debug UI readability. */
+    notable_aspects: AspectSummary[];
 }
 
 export interface ScoredDay {

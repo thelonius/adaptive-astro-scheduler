@@ -283,7 +283,16 @@ export class OptimalTimingV2Controller {
                     output: { narratives: narrativeResult.narratives },
                     cache_hit: narrativeResult.llm.cached,
                     natal_chart_id: typeof natal_chart_id === 'string' ? natal_chart_id : null,
+                    verification: narrativeResult.verification,
                 };
+                if (narrativeResult.verification.fell_back.length > 0) {
+                    console.warn(
+                        '[v2] narratives fell back to fact sentences for',
+                        narrativeResult.verification.fell_back
+                            .map((c) => `${c.date}/${c.vibe_id}`)
+                            .join(', '),
+                    );
+                }
                 // Roll narratives cost/latency into the trace totals.
                 result.trace.total_cost_usd = Number(
                     (result.trace.total_cost_usd + narrativeResult.llm.cost_usd).toFixed(6),

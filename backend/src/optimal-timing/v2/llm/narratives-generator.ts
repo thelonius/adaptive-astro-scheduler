@@ -14,11 +14,22 @@ import path from 'node:path';
 import { tryParseNarrativeBundle } from '../schema/narratives';
 import type { NarrativeBundle } from '../schema/narratives';
 import type { Recipe } from '../schema/dsl';
-import type { ScoredDay } from '../schema/trace';
+import type { ScoredDay, DayEphemerisSummary, NarrativeVerificationSummary } from '../schema/trace';
+import {
+    verifyText,
+    violationsOf,
+    describeViolation,
+    composeFactSentence,
+    factsFingerprint,
+} from './verify-narrative';
+import type { VerifiedClaim } from './verify-narrative';
 
 const NIM_BASE_URL = process.env.NVIDIA_BASE_URL ?? 'https://integrate.api.nvidia.com/v1';
 const NIM_MODEL = process.env.NVIDIA_MODEL ?? 'nvidia/llama-3.3-nemotron-super-49b-v1.5';
-const PROMPT_VERSION = 'narratives.v1';
+const PROMPT_VERSION = 'narratives.v2';
+
+/** JSON repair + at least one fact-repair round. */
+const MAX_ATTEMPTS = 3;
 
 // ─── API key resolution (shared pattern with recipe-generator) ────────────────
 let _cachedApiKey: string | null = null;
@@ -44,7 +55,7 @@ function getApiKey(): string {
 }
 
 // ─── Prompt loading ───────────────────────────────────────────────────────────
-const PROMPT_PATH = path.join(__dirname, '..', 'prompts', 'narratives.v1.md');
+const PROMPT_PATH = path.join(__dirname, '..', 'prompts', 'narratives.v2.md');
 let _systemPromptCache: string | null = null;
 function getSystemPrompt(): string {
     if (_systemPromptCache) return _systemPromptCache;
@@ -78,6 +89,8 @@ export interface RenderNarrativesInput {
 }
 
 export interface RenderNarrativesResult extends NarrativeBundle {
+    /** Fact-check outcome for the returned bundle. */
+    verification: NarrativeVerificationSummary;
     llm: {
         model: string;
         prompt_version: string;
@@ -103,7 +116,14 @@ function cacheKeyFor(input: RenderNarrativesInput): string {
     const dates = input.windows.map((w) => w.date).sort().join(',');
     const natalId = input.natal_chart?.id ?? '';
     const vibeIds = input.recipe.vibes.map((v) => v.id).sort().join(',');
-    return `${lang}|${intent}|${dates}|${natalId}|${vibeIds}`;
+    // Facts, not just dates: the same intent over the same days is a
+    // different reading in another location, and a different reading after
+    // the ephemeris adapter changes.
+    const facts = input.windows
+        .map((w) => `${w.date}:${factsFingerprint(w.ephemeris_snapshot)}`)
+        .sort()
+        .join(',');
+    return `${lang}|${intent}|${dates}|${natalId}|${vibeIds}|${facts}`;
 }
 
 function cacheGet(key: string): RenderNarrativesResult | undefined {
@@ -182,7 +202,12 @@ export async function renderNarratives(
     let attempts = 0;
     let lastRaw = '';
     let lastError: string | null = null;
-    const MAX_ATTEMPTS = 2;
+    let lastBundle: NarrativeBundle | null = null;
+    let lastVerification: VerificationPass | null = null;
+    const factsByDate = new Map<string, DayEphemerisSummary>(
+        input.windows.map((w) => [w.date, w.ephemeris_snapshot]),
+    );
+    const language: 'ru' | 'en' = input.language === 'en' ? 'en' : 'ru';
 
     while (attempts < MAX_ATTEMPTS) {
         attempts++;
@@ -233,8 +258,38 @@ export async function renderNarratives(
 
         const bundle = tryParseNarrativeBundle(parsedJson);
         if (bundle) {
+            const pass = verifyBundle(bundle, factsByDate);
+            lastBundle = bundle;
+            lastVerification = pass;
+
+            // Wrong facts are worth another round: the model has the data in
+            // its context, it just did not use it.
+            if (pass.violations.length > 0 && attempts < MAX_ATTEMPTS) {
+                lastError = `${pass.violations.length} statements contradict the day facts`;
+                messages.push({ role: 'assistant', content: raw });
+                messages.push({ role: 'user', content: repairMessage(pass) });
+                continue;
+            }
+
+            const narratives = pass.violations.length > 0
+                ? applyFallback(bundle, pass, factsByDate, language)
+                : bundle.narratives;
+
             const result: RenderNarrativesResult = {
-                narratives: bundle.narratives,
+                narratives,
+                verification: {
+                    claims: pass.claims,
+                    contradicted: pass.contradicted,
+                    unsupported: pass.unsupported,
+                    attempts,
+                    fell_back: pass.violations.length > 0
+                        ? pass.violations.map((v) => ({
+                            date: v.date,
+                            vibe_id: v.vibeId,
+                            violations: v.claims.map(describeViolation),
+                        }))
+                        : [],
+                },
                 llm: {
                     model: NIM_MODEL,
                     prompt_version: PROMPT_VERSION,
@@ -247,7 +302,9 @@ export async function renderNarratives(
                 attempts,
                 raw_response: raw,
             };
-            cachePut(cacheKey, result);
+            // A degraded bundle should not outlive the request: a later
+            // identical call deserves a fresh shot at a real narrative.
+            if (result.verification.fell_back.length === 0) cachePut(cacheKey, result);
             return result;
         }
 
@@ -261,9 +318,110 @@ export async function renderNarratives(
         });
     }
 
+    // A bundle that is structurally fine but keeps misreading the sky is
+    // still usable: the offending cells get replaced by fact sentences.
+    if (lastBundle && lastVerification) {
+        return {
+            narratives: applyFallback(lastBundle, lastVerification, factsByDate, language),
+            verification: {
+                claims: lastVerification.claims,
+                contradicted: lastVerification.contradicted,
+                unsupported: lastVerification.unsupported,
+                attempts,
+                fell_back: lastVerification.violations.map((v) => ({
+                    date: v.date,
+                    vibe_id: v.vibeId,
+                    violations: v.claims.map(describeViolation),
+                })),
+            },
+            llm: {
+                model: NIM_MODEL,
+                prompt_version: PROMPT_VERSION,
+                latency_ms: Date.now() - startedAt,
+                cost_usd: 0,
+                cached: false,
+                input_tokens: 0,
+                output_tokens: 0,
+            },
+            attempts,
+            raw_response: lastRaw,
+        };
+    }
+
     throw new Error(
         `renderNarratives failed after ${attempts} attempts: ${lastError}. Raw: ${lastRaw.slice(0, 300)}`,
     );
+}
+
+// ─── Verification plumbing ───────────────────────────────────────────────────
+
+interface CellViolation {
+    date: string;
+    vibeId: string;
+    claims: VerifiedClaim[];
+}
+
+interface VerificationPass {
+    claims: number;
+    contradicted: number;
+    unsupported: number;
+    violations: CellViolation[];
+}
+
+function verifyBundle(
+    bundle: NarrativeBundle,
+    factsByDate: Map<string, DayEphemerisSummary>,
+): VerificationPass {
+    let claims = 0;
+    let contradicted = 0;
+    let unsupported = 0;
+    const violations: CellViolation[] = [];
+
+    for (const [date, byVibe] of Object.entries(bundle.narratives)) {
+        const facts = factsByDate.get(date);
+        if (!facts) continue; // a date the engine never scored; nothing to check against
+        for (const [vibeId, text] of Object.entries(byVibe)) {
+            const verified = verifyText(text, facts);
+            claims += verified.length;
+            const bad = violationsOf(verified);
+            contradicted += bad.filter((c) => c.verdict === 'contradicted').length;
+            unsupported += bad.filter((c) => c.verdict === 'unsupported').length;
+            if (bad.length > 0) violations.push({ date, vibeId, claims: bad });
+        }
+    }
+
+    return { claims, contradicted, unsupported, violations };
+}
+
+function repairMessage(pass: VerificationPass): string {
+    const lines = pass.violations.flatMap((v) =>
+        v.claims.map((c) => `- ${v.date} / ${v.vibeId}: ${describeViolation(c)}`),
+    );
+    return [
+        'Some statements in your narratives contradict the ephemeris data you were given.',
+        'Fix only these cells, keep every other narrative exactly as it was, and reply with the full JSON object again:',
+        ...lines,
+        '',
+        'Rules: name only placements that appear in that day\'s `ephemeris_snapshot` (planets, their signs, retrograde flags, aspects, moon phase, void-of-course).',
+        'Do not mention lunar day numbers. If a vibe has nothing to lean on, say so plainly instead of inventing a placement.',
+    ].join('\n');
+}
+
+function applyFallback(
+    bundle: NarrativeBundle,
+    pass: VerificationPass,
+    factsByDate: Map<string, DayEphemerisSummary>,
+    language: 'ru' | 'en',
+): NarrativeBundle['narratives'] {
+    const narratives: NarrativeBundle['narratives'] = JSON.parse(JSON.stringify(bundle.narratives));
+    for (const violation of pass.violations) {
+        const facts = factsByDate.get(violation.date);
+        if (!facts) continue;
+        const byVibe = narratives[violation.date];
+        if (!byVibe) continue;
+        byVibe[violation.vibeId] = composeFactSentence(facts, language);
+    }
+    return narratives;
 }
 
 export const __testing__ = {

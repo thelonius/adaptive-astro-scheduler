@@ -56,9 +56,9 @@ describe('NarrativeBundle schema', () => {
 import * as fsP from 'fs';
 import * as pathP from 'path';
 
-describe('narratives.v1.md prompt', () => {
+describe('narratives.v2.md prompt', () => {
   const promptPath = pathP.join(
-    __dirname, '..', 'src', 'optimal-timing', 'v2', 'prompts', 'narratives.v1.md',
+    __dirname, '..', 'src', 'optimal-timing', 'v2', 'prompts', 'narratives.v2.md',
   );
 
   it('exists', () => {
@@ -76,5 +76,12 @@ describe('narratives.v1.md prompt', () => {
     expect(text.toLowerCase()).toMatch(/json|valid json/);
     // Shows the {date: {vibe_id: text}} shape
     expect(text).toMatch(/\d{4}-\d{2}-\d{2}|YYYY-MM-DD/);
+  });
+
+  it('states the grounding rules the verifier enforces', () => {
+    const text = fsP.readFileSync(promptPath, 'utf8').toLowerCase();
+    expect(text).toContain('retrograde: true');
+    expect(text).toContain('lunar day');
+    expect(text).toContain('void of course');
   });
 });

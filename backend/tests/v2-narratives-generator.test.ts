@@ -21,10 +21,28 @@ const mockDay = (date: string): ScoredDay => ({
   rank: 1,
   predicates_fired: [],
   ephemeris_snapshot: {
-    moon: { sign: 'Cancer', phase: 'waxing_crescent', illumination: 0.1, void_of_course: false },
+    moon: {
+      sign: 'Cancer',
+      phase: 'waxing_crescent',
+      illumination: 0.1,
+      void_of_course: false,
+      longitude: 102.4,
+      waxing: true,
+    },
     sun_sign: 'Taurus',
     retrograde_planets: [],
-    notable_aspects: [],
+    planets: [
+      { planet: 'Sun', sign: 'Taurus', degree_in_sign: 28.6, longitude: 58.6, speed: 0.96, retrograde: false },
+      { planet: 'Moon', sign: 'Cancer', degree_in_sign: 12.4, longitude: 102.4, speed: 12.8, retrograde: false },
+      { planet: 'Mercury', sign: 'Taurus', degree_in_sign: 4.1, longitude: 34.1, speed: 1.24, retrograde: false },
+      { planet: 'Mars', sign: 'Pisces', degree_in_sign: 9.2, longitude: 339.2, speed: 0.71, retrograde: false },
+    ],
+    aspects: [
+      { from: 'Moon', to: 'Mars', type: 'trine', orb_deg: 2.1, applying: true },
+    ],
+    notable_aspects: [
+      { from: 'Moon', to: 'Mars', type: 'trine', orb_deg: 2.1, applying: true },
+    ],
   },
 });
 
@@ -277,5 +295,85 @@ describe('renderNarratives L2 cache', () => {
     await renderNarratives({ ...base, bypassCache: true } as any);
 
     expect(calls).toBe(2);
+  });
+});
+
+describe('renderNarratives fact verification', () => {
+  const vibes = [{ id: 'calm', label: 'спокойствие' }];
+
+  const respond = (narratives: Record<string, Record<string, string>>) => ({
+    ok: true,
+    json: async () => ({
+      choices: [{ message: { content: JSON.stringify({ narratives }) } }],
+    }),
+  });
+
+  it('sends the contradicted cell back to the model and keeps the repaired text', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(respond({ '2026-05-19': { calm: 'Меркурий ретроградный, тормози.' } }))
+      .mockResolvedValueOnce(respond({ '2026-05-19': { calm: 'Луна в Раке, тормози спокойно.' } }));
+    (global as any).fetch = fetchMock;
+
+    const result = await renderNarratives({
+      intent: 'отдых',
+      recipe: mockRecipe(vibes),
+      windows: [mockDay('2026-05-19')],
+      language: 'ru',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.narratives['2026-05-19'].calm).toContain('Луна в Раке');
+    expect(result.verification.contradicted).toBe(0);
+    expect(result.verification.fell_back).toEqual([]);
+
+    // The repair round must name the real motion, not just say "wrong".
+    const repairBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    const repairText = repairBody.messages[repairBody.messages.length - 1].content;
+    expect(repairText).toContain('Mercury is direct');
+  });
+
+  it('replaces a cell with a fact sentence when the model keeps misreading the sky', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(respond({ '2026-05-19': { calm: 'Луна во Льве, Сатурн ретрограден.' } }));
+    (global as any).fetch = fetchMock;
+
+    const result = await renderNarratives({
+      intent: 'отдых',
+      recipe: mockRecipe(vibes),
+      windows: [mockDay('2026-05-19')],
+      language: 'ru',
+    });
+
+    expect(result.narratives['2026-05-19'].calm).toContain('Луна в Раке');
+    expect(result.verification.contradicted).toBeGreaterThan(0);
+    expect(result.verification.fell_back).toHaveLength(1);
+    expect(result.verification.fell_back[0]).toMatchObject({ date: '2026-05-19', vibe_id: 'calm' });
+  });
+
+  it('does not serve a cached narrative to a day whose ephemeris differs', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(respond({ '2026-05-19': { calm: 'Луна в Раке, тихо.' } }));
+    (global as any).fetch = fetchMock;
+
+    const input = {
+      intent: 'отдых',
+      recipe: mockRecipe(vibes),
+      windows: [mockDay('2026-05-19')],
+      language: 'ru' as const,
+    };
+    await renderNarratives(input);
+    await renderNarratives(input);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const elsewhere = mockDay('2026-05-19');
+    elsewhere.ephemeris_snapshot = {
+      ...elsewhere.ephemeris_snapshot,
+      moon: { ...elsewhere.ephemeris_snapshot.moon, longitude: 118.9 },
+    };
+    await renderNarratives({ ...input, windows: [elsewhere] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
