@@ -94,6 +94,9 @@ venv/
 # Docker
 docker-compose.override.yml
 
+# Ephemeris kernels (local downloads, not for git)
+*.bsp
+
 # Misc
 .turbo
 backend/var/
