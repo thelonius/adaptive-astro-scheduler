@@ -34,6 +34,8 @@ python3 $ASTRO_SCRIPT schedule "договор" --date 2026-10-12
 python3 $ASTRO_SCRIPT outcome "договор" --rating 4 --comment "гладко"
 python3 $ASTRO_SCRIPT list
 python3 $ASTRO_SCRIPT recap
+python3 $ASTRO_SCRIPT context   # JSON для агента (SQLite)
+python3 $ASTRO_SCRIPT history   # журнал планов
 ```
 
 ## API
@@ -45,7 +47,8 @@ python3 $ASTRO_SCRIPT recap
 
 ## Хранение
 
-- `~/.openclaw/workspace/memory/astro_todos.json`
-- `~/.openclaw/workspace/memory/astro_todos.md`
+- `~/.openclaw/workspace/memory/astro_planner.db` (основное)
+- `~/.openclaw/workspace/memory/astro_todos.md` (сводка для человека)
+- legacy JSON мигрируется в SQLite один раз → `astro_todos.json.migrated.bak`
 
 Рекап хранит `request_id` trace планировщика для будущей аналитики.

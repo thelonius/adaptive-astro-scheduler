@@ -2,7 +2,7 @@
 name: adaptive-astro-optimal-timing
 description: "Hybrid astrological day picker for real tasks: Docker stack (ephemeris + optimal-timing v2) OR existing local API. WHEN: when to sign, launch, travel, negotiate, schedule important work; best days in a date range; astro slots for a todo. WHEN NOT: natal chart drawing, medical/legal advice, horoscope fluff without calculation — never guess dates. Agent runs scripts only; LLM explains API output."
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   author: "Eduard Dubnitsky"
   license: "MIT"
   homepage: "https://github.com/thelonius/adaptive-astro-scheduler"
@@ -83,9 +83,14 @@ $PY $SKILL_ROOT/scripts/task_planner.py schedule "договор" --date 2026-11
 $PY $SKILL_ROOT/scripts/task_planner.py outcome "договор" --rating 4 --comment "гладко"
 $PY $SKILL_ROOT/scripts/task_planner.py list
 $PY $SKILL_ROOT/scripts/task_planner.py recap
+$PY $SKILL_ROOT/scripts/task_planner.py context   # JSON перед новым планом
+$PY $SKILL_ROOT/scripts/task_planner.py history --json
 ```
 
-Файлы: `$ASTRO_AGENT_WORKSPACE/memory/astro_todos.json` (default `~/.agent/adaptive-astro-workspace`; на OpenClaw задай `OPENCLAW_WORKSPACE`).
+Хранение: `memory/astro_planner.db` (SQLite) + `astro_todos.md`; legacy JSON мигрируется автоматически.
+Перед **Phase 2** агент **должен** выполнить `context` и не дублировать уже `scheduled` дела без причины.
+
+Workspace: `ASTRO_AGENT_WORKSPACE` или `OPENCLAW_WORKSPACE` → `.../memory/`.
 
 ## Phase 4 — Agent rules (hybrid)
 

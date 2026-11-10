@@ -26,7 +26,7 @@ say() { printf '==> %s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
 say "compile skill scripts"
-$PY -m py_compile "$SKILL/scripts/plan_best_days.py" "$SKILL/scripts/task_planner.py"
+$PY -m py_compile "$SKILL/scripts/plan_best_days.py" "$SKILL/scripts/task_planner.py" "$SKILL/scripts/astro_memory.py"
 
 if [[ "$BOOT" -eq 1 ]]; then
   say "start bundled stack"
@@ -57,6 +57,9 @@ $PY "$SKILL/scripts/task_planner.py" add "smoke test lease" --astro \
   || fail "task_planner add --astro"
 $PY "$SKILL/scripts/task_planner.py" list | grep -q "smoke test" \
   || fail "task_planner list"
+$PY "$SKILL/scripts/task_planner.py" context | $PY -c "import json,sys; d=json.load(sys.stdin); assert d.get('store')=='sqlite', d" \
+  || fail "task_planner context"
+test -f "$TMP_WS/memory/astro_planner.db" || fail "sqlite db missing"
 rm -rf "$TMP_WS"
 
 if [[ -n "${TEST_AGENSI_INTENT:-}" ]]; then

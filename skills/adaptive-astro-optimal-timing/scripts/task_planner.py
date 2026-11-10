@@ -11,6 +11,8 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from urllib import error, request
 
+from astro_memory import AstroStore
+
 DEFAULT_API = os.environ.get("ASTRO_API_URL", "http://127.0.0.1:3000").rstrip("/")
 WORKSPACE = os.path.expanduser(
     os.environ.get(
@@ -19,8 +21,16 @@ WORKSPACE = os.path.expanduser(
     )
 )
 MEMORY_DIR = os.path.join(WORKSPACE, "memory")
-JSON_PATH = os.path.join(MEMORY_DIR, "astro_todos.json")
 MD_PATH = os.path.join(MEMORY_DIR, "astro_todos.md")
+
+_store: AstroStore | None = None
+
+
+def get_store() -> AstroStore:
+    global _store
+    if _store is None:
+        _store = AstroStore(MEMORY_DIR)
+    return _store
 
 DEFAULT_LOCATION = {
     "latitude": float(os.environ.get("ASTRO_LAT", "55.7558")),
@@ -43,19 +53,11 @@ def die(msg: str, code: int = 1) -> None:
 
 
 def load_store() -> dict[str, Any]:
-    if not os.path.exists(JSON_PATH):
-        return {"todos": [], "version": 1}
-    try:
-        with open(JSON_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError) as e:
-        die(f"не удалось прочитать {JSON_PATH}: {e}")
+    return get_store().load_store_dict()
 
 
 def save_store(data: dict[str, Any]) -> None:
-    os.makedirs(MEMORY_DIR, exist_ok=True)
-    with open(JSON_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    get_store().save_store_dict(data)
     generate_markdown(data)
 
 
@@ -255,6 +257,18 @@ def cmd_add(args: argparse.Namespace) -> None:
         }
     )
     save_store(store)
+    if astro_block:
+        get_store().log_event(
+            "plan_created",
+            task_id=todo_id,
+            request_id=astro_block.get("request_id"),
+            detail={
+                "intent": astro_block.get("intent"),
+                "recipe_id": astro_block.get("recipe_id"),
+                "period": astro_block.get("period"),
+                "top_slots": (astro_block.get("slots") or [])[:3],
+            },
+        )
     print(f"Добавлено: [{todo_id}] {args.title}")
 
 
@@ -303,6 +317,12 @@ def cmd_slots(args: argparse.Namespace) -> None:
         "slots": slots,
     }
     save_store(store)
+    get_store().log_event(
+        "slots_refreshed",
+        task_id=task["id"],
+        request_id=api.get("request_id"),
+        detail={"intent": intent, "slots_count": len(slots)},
+    )
     print_slots(slots, api.get("summary"))
 
 
@@ -329,6 +349,12 @@ def cmd_schedule(args: argparse.Namespace) -> None:
     task["astro"]["scheduled_score"] = chosen_score
     task["status"] = "scheduled"
     save_store(store)
+    get_store().log_event(
+        "scheduled",
+        task_id=task["id"],
+        request_id=astro.get("request_id"),
+        detail={"date": chosen_date, "score": chosen_score},
+    )
     score_txt = f" (score {chosen_score})" if chosen_score is not None else ""
     print(f"Запланировано: {task['title']} → {chosen_date}{score_txt}")
 
@@ -368,9 +394,33 @@ def cmd_outcome(args: argparse.Namespace) -> None:
         task["status"] = "completed"
         task["completed_at"] = date.today().isoformat()
     save_store(store)
+    get_store().log_event(
+        "outcome",
+        task_id=task["id"],
+        request_id=task.get("astro", {}).get("request_id"),
+        detail={"rating": args.rating, "comment": args.comment, "scheduled_date": task.get("astro", {}).get("scheduled_date")},
+    )
     print(f"Рекап сохранён: {task['title']} — {args.rating}/5")
     if args.comment:
         print(f"  {args.comment}")
+
+
+def cmd_context(args: argparse.Namespace) -> None:
+    ctx = get_store().agent_context(limit=args.limit)
+    print(json.dumps(ctx, ensure_ascii=False, indent=2))
+
+
+def cmd_history(args: argparse.Namespace) -> None:
+    rows = get_store().history(limit=args.limit)
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+    if not rows:
+        print("История пуста.")
+        return
+    for r in rows:
+        title = (r.get("title") or "?")[:40]
+        print(f"{r['at']} | {r['event']:16} | [{r.get('task_id')}] {title}")
 
 
 def cmd_list(args: argparse.Namespace) -> None:
@@ -470,6 +520,15 @@ def build_parser() -> argparse.ArgumentParser:
     recap = sub.add_parser("recap", help="История рекапов")
     recap.add_argument("--limit", type=int, default=20)
     recap.set_defaults(func=cmd_recap)
+
+    ctx = sub.add_parser("context", help="JSON для агента: активные дела и рекапы")
+    ctx.add_argument("--limit", type=int, default=12)
+    ctx.set_defaults(func=cmd_context)
+
+    hist = sub.add_parser("history", help="Журнал plan_log")
+    hist.add_argument("--limit", type=int, default=30)
+    hist.add_argument("--json", action="store_true", help="Полный JSON")
+    hist.set_defaults(func=cmd_history)
 
     return p
 
