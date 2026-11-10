@@ -17,8 +17,23 @@ from html.parser import HTMLParser
 
 SEARX = os.environ.get("SEARXNG_URL", "http://127.0.0.1:8888").rstrip("/")
 TIMEOUT = int(os.environ.get("SEARXNG_TIMEOUT", "30"))
-COMPOSE = os.path.expanduser("~/assistant/searxng/docker-compose.yml")
-ENSURE = os.path.expanduser("~/assistant/searxng/ensure.sh")
+
+
+def _searxng_paths():
+    for root in (
+        os.path.expanduser("~/apps/astro/docker/searxng"),
+        os.path.expanduser("~/assistant/searxng"),
+    ):
+        ensure = os.path.join(root, "ensure.sh")
+        if os.path.isfile(ensure):
+            return os.path.join(root, "docker-compose.yml"), ensure
+    return (
+        os.path.expanduser("~/assistant/searxng/docker-compose.yml"),
+        os.path.expanduser("~/assistant/searxng/ensure.sh"),
+    )
+
+
+COMPOSE, ENSURE = _searxng_paths()
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"

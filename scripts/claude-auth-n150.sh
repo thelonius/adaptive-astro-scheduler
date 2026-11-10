@@ -27,4 +27,14 @@ echo "Сейчас появится ссылка — откройте её на 
 echo
 
 unset DISPLAY BROWSER 2>/dev/null || true
+
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if curl -fsS -x http://127.0.0.1:7890 -o /dev/null --max-time 8 https://1.1.1.1 2>/dev/null; then
+  # shellcheck source=/dev/null
+  source "$DIR/scripts/n150-proxy-env.sh"
+  echo "Прокси: HTTP_PROXY=$HTTP_PROXY"
+else
+  echo "WARN: sing-box не отвечает — login пойдёт напрямую с IP сервера" >&2
+fi
+
 exec claude auth login --email "$EMAIL"

@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from urllib.parse import parse_qs, unquote, urlparse
 
-LISTEN_HOST = "127.0.0.1"
+# 0.0.0.0 — чтобы Docker-контейнеры (svland api и др.) ходили через host-gateway.
+# С хоста openclaw по-прежнему использует http://127.0.0.1:7890.
+# Порт 7890 не открыт в UFW — снаружи LAN/WAN не виден.
+LISTEN_HOST = os.environ.get("LISTEN_HOST", "0.0.0.0")
 HTTP_PORT = 7890
 SOCKS_PORT = 7891
 

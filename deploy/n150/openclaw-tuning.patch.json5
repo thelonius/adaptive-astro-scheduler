@@ -1,0 +1,69 @@
+// OpenClaw tuning для n150 (Mattahu / misgirbot).
+// Применение: ./scripts/openclaw-tune-n150.sh
+//
+// Цели: меньше tool-циклов, раньше compaction, короче таймауты, детект петель.
+
+{
+  agents: {
+    defaults: {
+      // Было 1200 (20 мин) — бот мог крутить 10+ мин без ответа
+      timeoutSeconds: 300,
+
+      // Быстрее ответы через AIvex (меньше «thinking»)
+      thinkingDefault: "low",
+
+      compaction: {
+        enabled: true,
+        mode: "safeguard",
+        thinkingLevel: "minimal",
+        // Раньше сжимать контекст (дефолт 20000)
+        keepRecentTokens: 12000,
+        // После tool-result проверять давление контекста и compact+retry
+        midTurnPrecheck: { enabled: true },
+        timeoutSeconds: 120,
+      },
+
+      contextPruning: {
+        mode: "cache-ttl",
+        ttl: "30m",
+        hardClear: { enabled: true, placeholder: "[cleared]" },
+      },
+
+      contextLimits: {
+        postCompactionMaxChars: 4000,
+        memoryGetMaxChars: 8000,
+      },
+
+      // AGENTS.md + MEMORY — не раздувать стартовый промпт
+      bootstrapMaxChars: 12000,
+      bootstrapTotalMaxChars: 28000,
+
+      startupContext: {
+        enabled: true,
+        dailyMemoryDays: 1,
+        maxFileChars: 800,
+        maxTotalChars: 1500,
+      },
+    },
+  },
+
+  tools: {
+    // Критично: детект read/grep/web_fetch петель (дефолт false)
+    loopDetection: {
+      enabled: true,
+    },
+
+    web: {
+      search: {
+        enabled: true,
+        provider: "searxng",
+        maxResults: 8,
+        timeoutSeconds: 25,
+      },
+    },
+
+    fs: {
+      workspaceOnly: false,
+    },
+  },
+}

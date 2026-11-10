@@ -1,0 +1,33 @@
+# Oh My Pi overlay для n150 (рядом с OpenClaw).
+# Применяется install-omp-n150.sh → ~/.omp/agent/config.overlay.n150.yml
+# Запуск: ~/apps/astro/scripts/omp-server.sh
+
+setupVersion: 2
+
+modelRoles:
+  default: anthropic/claude-sonnet-4-6
+  smol: anthropic/claude-haiku-4-5
+  slow: anthropic/claude-sonnet-4-6
+  plan: anthropic/claude-sonnet-4-6
+  advisor: anthropic/claude-haiku-4-5
+
+defaultThinkingLevel: low
+
+composer:
+  shape: default
+
+task:
+  agentModelOverrides:
+    sonic: "@smol"
+    scout: "@smol"
+    task: "@default"
+    reviewer: "@slow"
+    security-reviewer: "@slow"
+
+github:
+  enabled: true
+
+statusLine:
+  preset: minimal
+  contextLine: "off"
+  sessionAccent: false
