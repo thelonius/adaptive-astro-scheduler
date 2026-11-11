@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Adaptive Astro Optimal Timing — marketplace icon 512×512 -->
+  <rect width="512" height="512" rx="112" fill="#0f1419"/>
+  <rect x="56" y="56" width="400" height="400" rx="88" stroke="#c9d1d9" stroke-width="6" opacity="0.22"/>
+
+  <defs>
+    <mask id="moon-mask">
+      <rect width="512" height="512" fill="white"/>
+      <!-- cut circle: shifted right → waxing crescent silhouette -->
+      <circle cx="318" cy="188" r="118" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Large crescent (dominant above bars) -->
+  <circle cx="228" cy="200" r="132" fill="#d4dce6" mask="url(#moon-mask)"/>
+
+  <!-- Day-score bars (best day highlighted) -->
+  <rect x="112" y="292" width="56" height="128" rx="14" fill="#6e7681" opacity="0.45"/>
+  <rect x="192" y="272" width="56" height="148" rx="14" fill="#6e7681" opacity="0.45"/>
+  <rect x="272" y="232" width="56" height="188" rx="14" fill="#E8A33D"/>
+  <rect x="352" y="302" width="56" height="118" rx="14" fill="#6e7681" opacity="0.45"/>
+
+  <!-- Subtle orbit behind composition -->
+  <path
+    d="M 88 248 A 168 168 0 0 1 424 248"
+    stroke="#E8A33D"
+    stroke-width="3"
+    stroke-opacity="0.3"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>

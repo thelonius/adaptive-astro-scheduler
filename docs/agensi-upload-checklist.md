@@ -7,6 +7,9 @@
 # → dist/adaptive-astro-optimal-timing.zip (~23 KB)
 ```
 
+**Listing icon (512×512):** `skills/adaptive-astro-optimal-timing/assets/icon-512.png`  
+Source: `icon-512.svg` — re-export: `magick -background none icon-512.svg -resize 512x512 icon-512.png`
+
 ## Where to upload
 
 1. Log in: https://www.agensi.io (creator account)
